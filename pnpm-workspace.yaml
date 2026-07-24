@@ -1,3 +1,5 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  # 业务应用层
+  - 'apps/*'
+  # 内部工具包层
+  - 'packages/*'
