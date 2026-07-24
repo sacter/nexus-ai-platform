@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-- **数据库**: PostgreSQL 16+
+- **数据库**: PostgreSQL 18+
 - **向量扩展**: pgvector (0.7+)
 - **ORM**: Prisma
 - **字符集**: UTF-8
@@ -211,7 +211,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 ┌──────────────────────┐      └──────────────────────┘
 │  system_settings     │
 ├──────────────────────┤
-│ id (单行)            │
+│ id (单行)             │
 │ config (JSONB)       │
 │ updated_by (FK) ─────│──► users
 │ updated_at           │
