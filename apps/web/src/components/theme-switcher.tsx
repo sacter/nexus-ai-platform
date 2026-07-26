@@ -1,60 +1,80 @@
 'use client';
 
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Palette } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
+import { Dropdown, Button } from '@heroui/react';
+import { Moon, Sun, Palette, Car } from 'lucide-react';
 
 const themes = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'blue', label: 'Blue', icon: Palette },
+  // { key: 'default', label: '默认', icon: Sun },
+  { key: 'coinbase', label: 'Coinbase', icon: Palette },
+  { key: 'uber', label: 'Uber', icon: Car },
+  { key: 'rabbit', label: 'Rabbit', icon: Palette },
 ] as const;
 
 export function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { theme: mode, setTheme: setMode } = useTheme();
+  const [colorTheme, setColorTheme] = useState('coinbase');
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const stored = localStorage.getItem('nexus-color-theme') || 'coinbase';
+    queueMicrotask(() => {
+      setMounted(true);
+      setColorTheme(stored);
+    });
+  }, []);
+
+  const applyColorTheme = (key: string) => {
+    setColorTheme(key);
+    localStorage.setItem('nexus-color-theme', key);
+    document.documentElement.setAttribute('data-theme', key);
+  };
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" disabled>
+      <Button variant="ghost" isIconOnly isDisabled>
         <Sun className="h-[1.15rem] w-[1.15rem]" />
       </Button>
     );
   }
 
-  const current = themes.find((t) => t.value === theme) ?? themes[0];
-  const Icon = current.icon;
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Icon className="h-[1.15rem] w-[1.15rem] transition-all" />
+    <div className="flex items-center gap-1">
+      {/* color theme selector */}
+      <Dropdown>
+        <Button isIconOnly aria-label="Menu" variant="secondary">
+          <Palette className="h-[1.15rem] w-[1.15rem]" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {themes.map((t) => (
-          <DropdownMenuItem
-            key={t.value}
-            onClick={() => setTheme(t.value)}
-            className={theme === t.value ? 'font-semibold' : ''}
+        <Dropdown.Popover>
+          <Dropdown.Menu
+            aria-label="选择配色主题"
+            selectedKeys={new Set([colorTheme])}
+            selectionMode="single"
+            onAction={(key) => applyColorTheme(key as string)}
           >
-            <t.icon className="mr-2 h-4 w-4" />
-            {t.label}
-            {theme === t.value && ' ✓'}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+            {themes.map((t) => (
+              <Dropdown.Item key={t.key} id={t.key}>
+                <t.icon className="h-4 w-4" />
+                <span className="ml-2">{t.label}</span>
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        </Dropdown.Popover>
+      </Dropdown>
+
+      {/* dark/light toggle */}
+      <Button
+        variant="ghost"
+        isIconOnly
+        onPress={() => setMode(mode === 'dark' ? 'light' : 'dark')}
+      >
+        {mode === 'dark' ? (
+          <Moon className="h-[1.15rem] w-[1.15rem]" />
+        ) : (
+          <Sun className="h-[1.15rem] w-[1.15rem]" />
+        )}
+      </Button>
+    </div>
   );
 }

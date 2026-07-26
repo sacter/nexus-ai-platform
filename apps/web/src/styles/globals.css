@@ -1,149 +1,252 @@
 @import "tailwindcss";
+@import "@heroui/styles";
 
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================
-   Theme: Light (default)
+   HeroUI v3 Custom Theme: uber
    ============================================ */
-:root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
-  --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #18181b;
+[data-theme="uber"] {
+  /* Theme Colors (Light Mode) */
+  --accent: oklch(0 0 0);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(97.02% 0.0000 0.00);
+  --border: oklch(90.00% 0.0000 0.00);
+  --danger: oklch(0.573 0.2249 21.97);
+  --danger-foreground: oklch(98% 0.0200 21.97);
+  --default: oklch(94.00% 0.0000 0.00);
+  --default-foreground: oklch(21.03% 0.0059 0.00);
+  --field-background: oklch(100.00% 0.0000 0.00);
+  --field-border: transparent;
+  --field-foreground: oklch(21.03% 0.0000 0.00);
+  --field-placeholder: oklch(55.17% 0.0000 0.00);
+  --focus: oklch(0 0 0);
+  --foreground: oklch(21.03% 0.0000 0.00);
+  --muted: oklch(55.17% 0.0000 0.00);
+  --overlay: oklch(100.00% 0.0000 0.00);
+  --overlay-foreground: oklch(21.03% 0.0000 0.00);
+  --scrollbar: oklch(87.10% 0.0000 0.00);
+  --segment: oklch(100.00% 0.0000 0.00);
+  --segment-foreground: oklch(21.03% 0.0000 0.00);
+  --separator: oklch(92.00% 0.0000 0.00);
+  --success: oklch(0.6277 0.1604 153.06);
+  --success-foreground: oklch(98% 0.0160 153.06);
+  --surface: oklch(100.00% 0.0000 0.00);
+  --surface-foreground: oklch(21.03% 0.0000 0.00);
+  --surface-secondary: oklch(95.24% 0.0000 0.00);
+  --surface-secondary-foreground: oklch(21.03% 0.0000 0.00);
+  --surface-tertiary: oklch(93.73% 0.0000 0.00);
+  --surface-tertiary-foreground: oklch(21.03% 0.0000 0.00);
+  --warning: oklch(0.8446 0.1525 80.6);
+  --warning-foreground: oklch(15% 0.0457 80.60);
+  --accent-soft-foreground: oklch(0 0 0);
+
+  /* Border Radius */
+  --radius: 0.25rem;
+  --field-radius: 0.25rem;
+
+  /* Font Family */
+  /* Make sure to load Inter font in your app */
+  --font-sans: var(--font-inter);
+}
+
+.dark[data-theme="uber"] {
+  color-scheme: dark;
+  /* Theme Colors (Dark Mode) */
+  --accent: oklch(0.9848 0 0);
+  --accent-foreground: oklch(15% 0.0000 0.00);
+  --background: oklch(12.00% 0.0000 0.00);
+  --border: oklch(28.00% 0.0000 0.00);
+  --danger: oklch(0.7044 0.1872 23.19);
+  --danger-foreground: oklch(15% 0.0500 23.19);
+  --default: oklch(27.40% 0.0000 0.00);
+  --default-foreground: oklch(99.11% 0 0);
+  --field-background: oklch(21.03% 0.0000 0.00);
+  --field-border: transparent;
+  --field-foreground: oklch(99.11% 0.0000 0.00);
+  --field-placeholder: oklch(70.50% 0.0000 0.00);
+  --focus: oklch(0.9848 0 0);
+  --foreground: oklch(99.11% 0.0000 0.00);
+  --muted: oklch(70.50% 0.0000 0.00);
+  --overlay: oklch(21.03% 0.0000 0.00);
+  --overlay-foreground: oklch(99.11% 0.0000 0.00);
+  --scrollbar: oklch(70.50% 0.0000 0.00);
+  --segment: oklch(39.64% 0.0000 0.00);
+  --segment-foreground: oklch(99.11% 0.0000 0.00);
+  --separator: oklch(25.00% 0.0000 0.00);
+  --success: oklch(0.6514 0.1321 156.22);
+  --success-foreground: oklch(15% 0.0396 156.22);
+  --surface: oklch(21.03% 0.0000 0.00);
+  --surface-foreground: oklch(99.11% 0.0000 0.00);
+  --surface-secondary: oklch(25.70% 0.0000 0.00);
+  --surface-secondary-foreground: oklch(99.11% 0.0000 0.00);
+  --surface-tertiary: oklch(27.21% 0.0000 0.00);
+  --surface-tertiary-foreground: oklch(99.11% 0.0000 0.00);
+  --warning: oklch(0.8803 0.1348 86.06);
+  --warning-foreground: oklch(15% 0.0404 86.06);
+  --accent-soft-foreground: oklch(0.9848 0 0);
+}
+
+/* ============================================
+   HeroUI v3 Custom Theme: coinbase
+   ============================================ */
+[data-theme="coinbase"] {
+  /* Theme Colors (Light Mode) */
+  --accent: oklch(52.82% 0.2628 262.87);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(97.02% 0.0020 262.87);
+  --border: oklch(90.00% 0.0020 262.87);
+  --danger: oklch(0.5507 0.2062 24);
+  --danger-foreground: oklch(98% 0.0200 24.00);
+  --default: oklch(94.00% 0.0020 262.87);
+  --default-foreground: oklch(21.03% 0.0059 262.87);
+  --field-background: oklch(100.00% 0.0010 262.87);
+  --field-border: transparent;
+  --field-foreground: oklch(21.03% 0.0020 262.87);
+  --field-placeholder: oklch(55.17% 0.0040 262.87);
+  --focus: oklch(52.82% 0.2628 262.87);
+  --foreground: oklch(21.03% 0.0020 262.87);
+  --muted: oklch(55.17% 0.0040 262.87);
+  --overlay: oklch(100.00% 0.0006 262.87);
+  --overlay-foreground: oklch(21.03% 0.0020 262.87);
+  --scrollbar: oklch(87.10% 0.0020 262.87);
+  --segment: oklch(100.00% 0.0020 262.87);
+  --segment-foreground: oklch(21.03% 0.0020 262.87);
+  --separator: oklch(92.00% 0.0020 262.87);
+  --success: oklch(0.5438 0.1268 157.17);
+  --success-foreground: oklch(98% 0.0127 157.17);
+  --surface: oklch(100.00% 0.0010 262.87);
+  --surface-foreground: oklch(21.03% 0.0020 262.87);
+  --surface-secondary: oklch(95.24% 0.0016 262.87);
+  --surface-secondary-foreground: oklch(21.03% 0.0020 262.87);
+  --surface-tertiary: oklch(93.73% 0.0016 262.87);
+  --surface-tertiary-foreground: oklch(21.03% 0.0020 262.87);
+  --warning: oklch(0.8095 0.1119 61.69);
+  --warning-foreground: oklch(15% 0.0336 61.69);
+
+  /* Border Radius */
   --radius: 0.5rem;
-  --sidebar-background: #fafafa;
-  --sidebar-foreground: #3f3f46;
-  --sidebar-primary: #18181b;
-  --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #f4f4f5;
-  --sidebar-accent-foreground: #18181b;
-  --sidebar-border: #e4e4e7;
-  --sidebar-ring: #a1a1aa;
+  --field-radius: 0.125rem;
+
+  /* Font Family */
+  /* Make sure to load Inter font in your app */
+  --font-sans: var(--font-inter);
+}
+
+.dark[data-theme="coinbase"] {
+  color-scheme: dark;
+  /* Theme Colors (Dark Mode) */
+  --accent: oklch(52.82% 0.2628 262.87);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(12.00% 0.0020 262.87);
+  --border: oklch(28.00% 0.0020 262.87);
+  --danger: oklch(0.6545 0.2145 22.31);
+  --danger-foreground: oklch(15% 0.0500 22.31);
+  --default: oklch(27.40% 0.0020 262.87);
+  --default-foreground: oklch(99.11% 0 0);
+  --field-background: oklch(21.03% 0.0040 262.87);
+  --field-border: transparent;
+  --field-foreground: oklch(99.11% 0.0020 262.87);
+  --field-placeholder: oklch(70.50% 0.0040 262.87);
+  --focus: oklch(52.82% 0.2628 262.87);
+  --foreground: oklch(99.11% 0.0020 262.87);
+  --muted: oklch(70.50% 0.0040 262.87);
+  --overlay: oklch(21.03% 0.0040 262.87);
+  --overlay-foreground: oklch(99.11% 0.0020 262.87);
+  --scrollbar: oklch(70.50% 0.0020 262.87);
+  --segment: oklch(39.64% 0.0020 262.87);
+  --segment-foreground: oklch(99.11% 0.0020 262.87);
+  --separator: oklch(25.00% 0.0020 262.87);
+  --success: oklch(0.7574 0.180554 156.931);
+  --success-foreground: oklch(15% 0.0500 156.93);
+  --surface: oklch(21.03% 0.0040 262.87);
+  --surface-foreground: oklch(99.11% 0.0020 262.87);
+  --surface-secondary: oklch(25.70% 0.0030 262.87);
+  --surface-secondary-foreground: oklch(99.11% 0.0020 262.87);
+  --surface-tertiary: oklch(27.21% 0.0030 262.87);
+  --surface-tertiary-foreground: oklch(99.11% 0.0020 262.87);
+  --warning: oklch(0.8095 0.1119 61.69);
+  --warning-foreground: oklch(15% 0.0336 61.69);
 }
 
 /* ============================================
-   Theme: Dark
+   HeroUI v3 Custom Theme: rabbit
    ============================================ */
-.dark {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #0a0a0a;
-  --card-foreground: #fafafa;
-  --popover: #0a0a0a;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #18181b;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
-  --destructive: #7f1d1d;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4d4d8;
-  --sidebar-background: #18181b;
-  --sidebar-foreground: #a1a1aa;
-  --sidebar-primary: #fafafa;
-  --sidebar-primary-foreground: #18181b;
-  --sidebar-accent: #27272a;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #27272a;
-  --sidebar-ring: #71717a;
+[data-theme="rabbit"] {
+   /* Theme Colors (Light Mode) */
+  --accent: oklch(66.78% 0.2232 36.66);
+  --accent-foreground: oklch(15% 0.0300 36.66);
+  --background: oklch(97.02% 0.0100 36.66);
+  --border: oklch(90.00% 0.0100 36.66);
+  --danger: oklch(0.6291 0.2565 29.09);
+  --danger-foreground: oklch(98% 0.0200 29.09);
+  --default: oklch(94.00% 0.0100 36.66);
+  --default-foreground: oklch(21.03% 0.0059 36.66);
+  --field-background: oklch(100.00% 0.0050 36.66);
+  --field-border: transparent;
+  --field-foreground: oklch(21.03% 0.0100 36.66);
+  --field-placeholder: oklch(55.17% 0.0200 36.66);
+  --focus: oklch(66.78% 0.2232 36.66);
+  --foreground: oklch(21.03% 0.0100 36.66);
+  --muted: oklch(55.17% 0.0200 36.66);
+  --overlay: oklch(100.00% 0.0030 36.66);
+  --overlay-foreground: oklch(21.03% 0.0100 36.66);
+  --scrollbar: oklch(87.10% 0.0100 36.66);
+  --segment: oklch(100.00% 0.0100 36.66);
+  --segment-foreground: oklch(21.03% 0.0100 36.66);
+  --separator: oklch(92.00% 0.0100 36.66);
+  --success: oklch(0.7113 0.2043 140.81);
+  --success-foreground: oklch(15% 0.0500 140.81);
+  --surface: oklch(100.00% 0.0050 36.66);
+  --surface-foreground: oklch(21.03% 0.0100 36.66);
+  --surface-secondary: oklch(95.24% 0.0080 36.66);
+  --surface-secondary-foreground: oklch(21.03% 0.0100 36.66);
+  --surface-tertiary: oklch(93.73% 0.0080 36.66);
+  --surface-tertiary-foreground: oklch(21.03% 0.0100 36.66);
+  --warning: oklch(78.19% 0.1617 46.27);
+  --warning-foreground: oklch(21.03% 0.0059 46.27);
+
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 1rem;
+
+  /* Font Family */
+  /* Make sure to load Inter font in your app */
+  --font-sans: var(--font-inter);
 }
 
-/* ============================================
-   Theme: Blue
-   ============================================ */
-.blue {
-  --background: #eff6ff;
-  --foreground: #1e3a5f;
-  --card: #ffffff;
-  --card-foreground: #1e3a5f;
-  --popover: #ffffff;
-  --popover-foreground: #1e3a5f;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #dbeafe;
-  --secondary-foreground: #1e40af;
-  --muted: #dbeafe;
-  --muted-foreground: #3b82f6;
-  --accent: #bfdbfe;
-  --accent-foreground: #1e40af;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #bfdbfe;
-  --input: #bfdbfe;
-  --ring: #2563eb;
-  --sidebar-background: #dbeafe;
-  --sidebar-foreground: #1e40af;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #bfdbfe;
-  --sidebar-accent-foreground: #1e40af;
-  --sidebar-border: #93c5fd;
-  --sidebar-ring: #2563eb;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar-background: var(--sidebar-background);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-* {
-  border-color: var(--border);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+.dark[data-theme="rabbit"] {
+  color-scheme: dark;
+  /* Theme Colors (Dark Mode) */
+  --accent: oklch(66.78% 0.2232 36.66);
+  --accent-foreground: oklch(15% 0.0300 36.66);
+  --background: oklch(12.00% 0.0100 36.66);
+  --border: oklch(28.00% 0.0100 36.66);
+  --danger: oklch(0.6291 0.2565 29.09);
+  --danger-foreground: oklch(98% 0.0200 29.09);
+  --default: oklch(27.40% 0.0100 36.66);
+  --default-foreground: oklch(99.11% 0 0);
+  --field-background: oklch(21.03% 0.0200 36.66);
+  --field-border: transparent;
+  --field-foreground: oklch(99.11% 0.0100 36.66);
+  --field-placeholder: oklch(70.50% 0.0200 36.66);
+  --focus: oklch(66.78% 0.2232 36.66);
+  --foreground: oklch(99.11% 0.0100 36.66);
+  --muted: oklch(70.50% 0.0200 36.66);
+  --overlay: oklch(21.03% 0.0200 36.66);
+  --overlay-foreground: oklch(99.11% 0.0100 36.66);
+  --scrollbar: oklch(70.50% 0.0100 36.66);
+  --segment: oklch(39.64% 0.0100 36.66);
+  --segment-foreground: oklch(99.11% 0.0100 36.66);
+  --separator: oklch(25.00% 0.0100 36.66);
+  --success: oklch(0.7113 0.2043 140.81);
+  --success-foreground: oklch(15% 0.0500 140.81);
+  --surface: oklch(21.03% 0.0200 36.66);
+  --surface-foreground: oklch(99.11% 0.0100 36.66);
+  --surface-secondary: oklch(25.70% 0.0150 36.66);
+  --surface-secondary-foreground: oklch(99.11% 0.0100 36.66);
+  --surface-tertiary: oklch(27.21% 0.0150 36.66);
+  --surface-tertiary-foreground: oklch(99.11% 0.0100 36.66);
+  --warning: oklch(82.03% 0.1416 50.28);
+  --warning-foreground: oklch(21.03% 0.0059 50.28);
 }

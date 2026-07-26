@@ -6,21 +6,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/auth';
 import { api } from '@/lib/api/client';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+import { Input } from '@heroui/react';
+import { Button } from '@heroui/react';
 import { AuthCard } from '@/components/auth/auth-card';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const form = useForm<RegisterFormValues>({
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { username: '', email: '', password: '' },
   });
@@ -33,7 +30,7 @@ export default function RegisterPage() {
       });
       router.push('/login');
     } catch (err) {
-      form.setError('root', {
+      setError('root', {
         message: err instanceof Error ? err.message : '注册失败',
       });
     }
@@ -44,84 +41,59 @@ export default function RegisterPage() {
       title="注册"
       description="创建您的账号"
       footer={
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-foreground/60">
           已有账号？{' '}
           <Link
             href="/login"
-            className="font-medium text-primary underline underline-offset-4"
+            className="font-medium text-accent underline underline-offset-4"
           >
             登录
           </Link>
         </p>
       }
     >
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {form.formState.errors.root && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive">
-              {form.formState.errors.root.message}
-            </div>
-          )}
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>用户名</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    placeholder="2-64个字符"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+        {errors.root && (
+          <div className="rounded-lg bg-danger/10 border border-danger/30 px-4 py-3 text-sm text-danger">
+            {errors.root.message}
+          </div>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">用户名</label>
+          <Input
+            type="text"
+            placeholder="2-64个字符"
+            {...register('username')}
           />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>邮箱</FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    placeholder="you@example.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          {errors.username && <p className="text-xs text-danger">{errors.username.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">邮箱</label>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            {...register('email')}
           />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>密码</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="至少6位密码"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+          {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">密码</label>
+          <Input
+            type="password"
+            placeholder="至少6位密码"
+            {...register('password')}
           />
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? '注册中...' : '注册'}
-          </Button>
-        </form>
-      </Form>
+          {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          isPending={isSubmitting}
+        >
+          注册
+        </Button>
+      </form>
     </AuthCard>
   );
 }

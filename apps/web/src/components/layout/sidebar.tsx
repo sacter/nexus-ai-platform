@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard,
   BookOpen,
@@ -34,24 +33,25 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 border-r bg-sidebar-background h-screen sticky top-0 overflow-y-auto">
-      <div className="flex items-center gap-2 h-14 px-4 border-b border-sidebar-border">
-        <FileText className="h-5 w-5 text-sidebar-primary" />
-        <span className="font-semibold text-sm text-sidebar-foreground">Nexus AI</span>
+    <aside className="w-56 shrink-0 border-r border-border bg-surface h-screen sticky top-0 overflow-y-auto">
+      <div className="flex items-center gap-2 h-14 px-4 border-b border-border">
+        <FileText className="h-5 w-5 text-accent" />
+        <span className="font-semibold text-sm text-foreground">Nexus AI</span>
       </div>
       <nav className="p-3 flex flex-col gap-0.5">
         {navItems.map((item) => {
-          const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+          const active =
+            pathname === item.href ||
+            (item.href !== '/' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
-              )}
+                  ? 'bg-accent/10 text-accent'
+                  : 'text-foreground/60 hover:bg-surface-secondary hover:text-foreground'
+              }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}

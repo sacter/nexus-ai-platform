@@ -1,19 +1,31 @@
-import { MainLayout } from '@/components/layout/main-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+'use client';
 
-export default async function KnowledgeBaseDetailPage({
+import { use } from 'react';
+import { MainLayout } from '@/components/layout/main-layout';
+import { Card, CardContent, CardHeader } from '@heroui/react';
+
+export default function KnowledgeBaseDetailPage({
   params,
 }: {
   params: Promise<{ kbId: string }>;
 }) {
-  const { kbId } = await params;
+  const { kbId } = use(params);
+
   return (
     <MainLayout>
-      <h1 className="text-2xl font-semibold mb-2">知识库概览</h1>
-      <p className="text-sm text-muted-foreground mb-6">ID: {kbId}</p>
+      <h1 className="text-2xl font-semibold mb-2 text-foreground">
+        知识库概览
+      </h1>
+      <p className="text-sm text-foreground/60 mb-6">ID: {kbId}</p>
       <Card>
-        <CardHeader><CardTitle className="text-base">统计信息</CardTitle></CardHeader>
-        <CardContent><p className="text-sm text-muted-foreground">文档数量、Chunk 数量、最近更新等</p></CardContent>
+        <CardHeader>
+          <h2 className="text-base font-semibold text-foreground">统计信息</h2>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-foreground/60">
+            文档数量、Chunk 数量、最近更新等
+          </p>
+        </CardContent>
       </Card>
     </MainLayout>
   );
