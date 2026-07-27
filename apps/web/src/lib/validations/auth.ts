@@ -33,7 +33,7 @@ export const usernameSchema = z
 export const loginSchema = z.object({
   username: usernameSchema,
   password: z.string().min(1, '请输入密码'),
-  captcha: z.string().min(1, '请输入验证码'),
+  captchaCode: z.string().min(1, '请输入验证码'),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
@@ -42,7 +42,7 @@ export const registerSchema = z.object({
   username: usernameSchema,
   email: z.string().email('请输入有效的邮箱地址'),
   password: passwordSchema,
-  captcha: z.string().min(1, '请输入验证码'),
+  captchaCode: z.string().min(1, '请输入验证码'),
 });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

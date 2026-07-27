@@ -4,15 +4,23 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
+import { CaptchaService } from './captcha.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly captchaService: CaptchaService,
+  ) {}
 
   async register(dto: RegisterDto) {
+    if (!this.captchaService.verifyCaptcha(dto.captchaId, dto.captchaCode)) {
+      throw new UnauthorizedException('验证码错误或已过期');
+    }
+
     const existingUser =
       (await this.userService.findByEmail(dto.email)) ??
       (await this.userService.findByUsername(dto.username));
@@ -23,13 +31,17 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.userService.findByEmail(dto.email);
+    if (!this.captchaService.verifyCaptcha(dto.captchaId, dto.captchaCode)) {
+      throw new UnauthorizedException('验证码错误或已过期');
+    }
+
+    const user = await this.userService.findByUsername(dto.username);
     if (!user) {
-      throw new UnauthorizedException('邮箱或密码错误');
+      throw new UnauthorizedException('用户名或密码错误');
     }
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
-      throw new UnauthorizedException('邮箱或密码错误');
+      throw new UnauthorizedException('用户名或密码错误');
     }
     // TODO: 后续接入 JWT 返回 token
     return {

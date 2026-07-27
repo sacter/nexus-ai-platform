@@ -22,6 +22,7 @@
     "incremental": true,
     "rootDir": "./",
     "types": ["jest", "node"],
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     "outDir": "./dist"
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],

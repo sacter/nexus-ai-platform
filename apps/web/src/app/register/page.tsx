@@ -1,35 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterFormValues } from '@/lib/validations/auth';
 import http from '@/lib/api/client';
+import { authApi, type CaptchaData } from '@/lib/api/auth';
 import { Input } from '@heroui/react';
 import { Button } from '@heroui/react';
 import { AuthCard } from '@/components/auth/auth-card';
-import { Captcha } from '@/components/auth/captcha';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [captchaCode, setCaptchaCode] = useState('');
+  const [captcha, setCaptcha] = useState<CaptchaData | null>(null);
 
   const {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { username: '', email: '', password: '', captcha: '' },
+    defaultValues: { username: '', email: '', password: '', captchaCode: '' },
   });
 
+  const fetchCaptcha = useCallback(async () => {
+    try {
+      const data = await authApi.getCaptcha();
+      setCaptcha(data);
+      setValue('captchaCode', '');
+    } catch {
+      // 获取验证码失败，静默处理
+    }
+  }, [setValue]);
+
+  useEffect(() => {
+    fetchCaptcha();
+  }, [fetchCaptcha]);
+
   const onSubmit = async (values: RegisterFormValues) => {
-    // 验证码比对（大小写不敏感）
-    if (values.captcha.toUpperCase() !== captchaCode.toUpperCase()) {
-      setError('captcha', { message: '验证码错误' });
+    if (!captcha?.captchaId) {
+      setError('captchaCode', { message: '请先获取验证码' });
       return;
     }
 
@@ -38,9 +52,13 @@ export default function RegisterPage() {
         username: values.username,
         email: values.email,
         password: values.password,
+        captchaId: captcha.captchaId,
+        captchaCode: values.captchaCode,
       });
       router.push('/login');
     } catch (err) {
+      // 验证码错误时刷新
+      fetchCaptcha();
       setError('root', {
         message: err instanceof Error ? err.message : '注册失败',
       });
@@ -114,12 +132,21 @@ export default function RegisterPage() {
               placeholder="请输入验证码"
               className="flex-1"
               maxLength={4}
-              {...register('captcha')}
+              {...register('captchaCode')}
             />
-            <Captcha onCodeChange={setCaptchaCode} />
+            {captcha?.svg ? (
+              <span
+                className="cursor-pointer select-none shrink-0 rounded border border-divider"
+                dangerouslySetInnerHTML={{ __html: captcha.svg }}
+                onClick={fetchCaptcha}
+                title="点击刷新验证码"
+              />
+            ) : (
+              <div className="w-[150px] h-[50px] rounded border border-divider bg-surface-secondary animate-pulse shrink-0" />
+            )}
           </div>
-          {errors.captcha && (
-            <p className="text-xs text-danger">{errors.captcha.message}</p>
+          {errors.captchaCode && (
+            <p className="text-xs text-danger">{errors.captchaCode.message}</p>
           )}
         </div>
 

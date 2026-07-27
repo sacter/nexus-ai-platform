@@ -24,4 +24,10 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   role?: 'admin' | 'user';
+
+  @IsString()
+  captchaId!: string;
+
+  @IsString()
+  captchaCode!: string;
 }
