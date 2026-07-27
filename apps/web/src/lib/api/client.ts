@@ -10,14 +10,14 @@ interface ApiResponse<T = unknown> {
   path: string;
 }
 
-const http = axios.create({
+const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000',
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 // ── 请求拦截器：自动附加 Authorization token ──
-http.interceptors.request.use((config) => {
+instance.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token) {
@@ -28,26 +28,21 @@ http.interceptors.request.use((config) => {
 });
 
 // ── 响应拦截器：解包统一响应 + 统一错误处理 ──
-http.interceptors.response.use(
-  // ── 2xx 成功响应 ──
-  (response) => {
+// 拦截器在运行时解包 body.data，因此调用方 http.get<T>() 实际拿到 T。
+// TypeScript 原生类型不支持这种变换，故用类型断言适配。
+// 拦截器解包返回 data 而非 AxiosResponse，用类型断言适配
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+instance.interceptors.response.use(
+  ((response: { data: unknown }) => {
     const body = response.data as ApiResponse;
-
-    // 后端 ResponseInterceptor 包装 → code 固定为 0
     if (body !== null && typeof body === 'object' && 'code' in body) {
       if (body.code === 0) {
-        // 成功：返回解包后的业务 data
         return body.data;
       }
-      // 业务错误（code !== 0）：转为异常走 reject
       return Promise.reject(new Error(body.message || '请求失败'));
     }
-
-    // 非标准响应（不包含 code 字段）：原样返回
     return body;
-  },
-
-  // ── 4xx / 5xx 异常响应 ──
+  }) as any,
   (error) => {
     // 401 → 清除 token 并跳转登录（登录/注册页除外，避免错误密码也跳转的死循环）
     if (error.response?.status === 401) {
@@ -68,5 +63,18 @@ http.interceptors.response.use(
     return Promise.reject(new Error(message));
   },
 );
+
+/**
+ * 类型安全的 HTTP 客户端
+ *
+ * 拦截器在运行时已将 ApiResponse 解包为业务 data，
+ * 此处断言对齐运行时行为，使调用方无需额外处理类型。
+ */
+const http = instance as unknown as {
+  get<T = unknown>(url: string, config?: Record<string, unknown>): Promise<T>;
+  post<T = unknown>(url: string, data?: unknown, config?: Record<string, unknown>): Promise<T>;
+  patch<T = unknown>(url: string, data?: unknown, config?: Record<string, unknown>): Promise<T>;
+  delete<T = unknown>(url: string, config?: Record<string, unknown>): Promise<T>;
+};
 
 export default http;

@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth';
-import http from '@/lib/api/client';
-import { authApi, type CaptchaData } from '@/lib/api/auth';
+import { authApi, type CaptchaData, clearPublicKeyCache } from '@/lib/api/auth';
 import { Input } from '@heroui/react';
 import { Button } from '@heroui/react';
 import { AuthCard } from '@/components/auth/auth-card';
@@ -48,22 +47,22 @@ export default function LoginPage() {
     }
 
     try {
-      await http.post<{
-        message: string;
-        user: { id: string; username: string; email: string; role: string };
-      }>('/auth/login', {
-        username: values.username,
-        password: values.password,
-        captchaId: captcha.captchaId,
-        captchaCode: values.captchaCode,
-      });
+      await authApi.login(
+        values.username,
+        values.password,
+        captcha.captchaId,
+        values.captchaCode,
+      );
       router.push('/');
     } catch (err) {
+      const message = err instanceof Error ? err.message : '登录失败';
+      // 解密失败说明公钥可能已过期（服务重启后密钥更换），清除缓存让下次重新获取
+      if (message.includes('解密') || message.includes('刷新')) {
+        clearPublicKeyCache();
+      }
       // 验证码错误时刷新
       fetchCaptcha();
-      setError('root', {
-        message: err instanceof Error ? err.message : '登录失败',
-      });
+      setError('root', { message });
     }
   };
 

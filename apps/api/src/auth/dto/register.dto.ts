@@ -16,10 +16,9 @@ export class RegisterDto {
   @MaxLength(255)
   email!: string;
 
+  /** RSA-2048 加密后的 Base64 密码（~344 字节） */
   @IsString()
-  @MinLength(6)
-  @MaxLength(255)
-  password!: string;
+  encryptedPassword!: string;
 
   @IsOptional()
   @IsString()
