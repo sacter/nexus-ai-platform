@@ -1,11 +1,11 @@
-import { api } from './client';
+import http from './client';
 
 // knowledge-bases API functions
 // TODO: implement actual API calls
 export const knowledge_basesApi = {
-  list: async (params?: Record<string, unknown>) => api(`/${params ? '?' + new URLSearchParams(params as Record<string,string>).toString() : ''}`),
-  get: async (id: string) => api(`/api/v1/knowledge-bases/${id}`),
-  create: async (data: unknown) => api('/api/v1/knowledge-bases', { method: 'POST', body: JSON.stringify(data) }),
-  update: async (id: string, data: unknown) => api(`/api/v1/knowledge-bases/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  delete: async (id: string) => api(`/api/v1/knowledge-bases/${id}`, { method: 'DELETE' }),
+  list: (params?: Record<string, unknown>) => http.get('/api/v1/knowledge-bases', { params }),
+  get: (id: string) => http.get(`/api/v1/knowledge-bases/${id}`),
+  create: (data: unknown) => http.post('/api/v1/knowledge-bases', data),
+  update: (id: string, data: unknown) => http.patch(`/api/v1/knowledge-bases/${id}`, data),
+  delete: (id: string) => http.delete(`/api/v1/knowledge-bases/${id}`),
 };

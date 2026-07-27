@@ -147,7 +147,7 @@
 | 框架 | Next.js (App Router) | SSR + SSG, 文件路由 |
 | 语言 | TypeScript | 类型安全 |
 | 构建 | Turbopack (Next.js 内置) |
-| UI 组件 | shadcn/ui + Tailwind CSS | 快速构建管理后台 |
+| UI 组件 | heroui + Tailwind CSS | 快速构建管理后台 |
 | 状态管理 | TanStack Query (React Query) | 服务端状态 + 缓存 |
 | 表单 | React Hook Form + Zod | 表单验证 |
 | HTTP 客户端 | axios / fetch / ky | 数据请求、文件上传用axios，SSE打字机fetch / ky |
@@ -212,7 +212,7 @@ frontend/
 │   │       └── page.tsx
 │   │
 │   ├── components/                   # 共享组件
-│   │   ├── ui/                       # shadcn/ui 基础组件
+│   │   ├── ui/                       # heroui 基础组件
 │   │   │   ├── button.tsx
 │   │   │   ├── table.tsx
 │   │   │   ├── dialog.tsx

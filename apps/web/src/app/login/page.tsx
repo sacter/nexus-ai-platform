@@ -1,17 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth';
-import { api } from '@/lib/api/client';
+import http from '@/lib/api/client';
 import { Input } from '@heroui/react';
 import { Button } from '@heroui/react';
 import { AuthCard } from '@/components/auth/auth-card';
+import { Captcha } from '@/components/auth/captcha';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [captchaCode, setCaptchaCode] = useState('');
+
   const {
     register,
     handleSubmit,
@@ -19,17 +23,23 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { username: '', password: '', captcha: '' },
   });
 
   const onSubmit = async (values: LoginFormValues) => {
+    // 验证码比对（大小写不敏感）
+    if (values.captcha.toUpperCase() !== captchaCode.toUpperCase()) {
+      setError('captcha', { message: '验证码错误' });
+      return;
+    }
+
     try {
-      await api<{
+      await http.post<{
         message: string;
         user: { id: string; username: string; email: string; role: string };
       }>('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(values),
+        username: values.username,
+        password: values.password,
       });
       router.push('/');
     } catch (err) {
@@ -61,24 +71,48 @@ export default function LoginPage() {
             {errors.root.message}
           </div>
         )}
+
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground">邮箱</label>
+          <label className="text-sm font-medium text-foreground">用户名</label>
           <Input
-            type="email"
-            placeholder="you@example.com"
-            {...register('email')}
+            type="text"
+            placeholder="请输入用户名"
+            {...register('username')}
           />
-          {errors.email && <p className="text-xs text-danger">{errors.email.message}</p>}
+          {errors.username && (
+            <p className="text-xs text-danger">{errors.username.message}</p>
+          )}
         </div>
+
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-foreground">密码</label>
           <Input
             type="password"
-            placeholder="至少6位密码"
+            placeholder="请输入密码"
             {...register('password')}
           />
-          {errors.password && <p className="text-xs text-danger">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="text-xs text-danger">{errors.password.message}</p>
+          )}
         </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">验证码</label>
+          <div className="flex items-center gap-3">
+            <Input
+              type="text"
+              placeholder="请输入验证码"
+              className="flex-1"
+              maxLength={4}
+              {...register('captcha')}
+            />
+            <Captcha onCodeChange={setCaptchaCode} />
+          </div>
+          {errors.captcha && (
+            <p className="text-xs text-danger">{errors.captcha.message}</p>
+          )}
+        </div>
+
         <Button
           type="submit"
           variant="primary"
