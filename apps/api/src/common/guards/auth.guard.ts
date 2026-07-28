@@ -43,7 +43,7 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.jwtService.verify<typeof JwtService>(token);
+      const payload = this.jwtService.verify(token);
       // 将 JWT payload 挂到 request 上，供 @CurrentUser() 装饰器提取
       request.user = payload;
     } catch {

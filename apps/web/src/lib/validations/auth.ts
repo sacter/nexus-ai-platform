@@ -38,11 +38,17 @@ export const loginSchema = z.object({
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
 
-export const registerSchema = z.object({
-  username: usernameSchema,
-  email: z.string().email('请输入有效的邮箱地址'),
-  password: passwordSchema,
-  captchaCode: z.string().min(1, '请输入验证码'),
-});
+export const registerSchema = z
+  .object({
+    username: usernameSchema,
+    email: z.string().email('请输入有效的邮箱地址'),
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, '请再次输入密码'),
+    captchaCode: z.string().min(1, '请输入验证码'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: '两次输入的密码不一致',
+    path: ['confirmPassword'],
+  });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;

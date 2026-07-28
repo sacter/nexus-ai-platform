@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["app_user"]
 }
 
 // ==================== app_user schema 下用户表 ====================

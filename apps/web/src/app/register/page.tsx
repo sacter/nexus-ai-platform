@@ -23,7 +23,7 @@ export default function RegisterPage() {
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { username: '', email: '', password: '', captchaCode: '' },
+    defaultValues: { username: '', email: '', password: '', confirmPassword: '', captchaCode: '' },
   });
 
   const fetchCaptcha = useCallback(async () => {
@@ -123,6 +123,18 @@ export default function RegisterPage() {
           />
           {errors.password && (
             <p className="text-xs text-danger">{errors.password.message}</p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-foreground">确认密码</label>
+          <Input
+            type="password"
+            placeholder="请再次输入密码"
+            {...register('confirmPassword')}
+          />
+          {errors.confirmPassword && (
+            <p className="text-xs text-danger">{errors.confirmPassword.message}</p>
           )}
         </div>
 
