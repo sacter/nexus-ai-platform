@@ -7,14 +7,35 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import {
+  CurrentUser,
+  type JwtPayload,
+} from '../common/decorators/current-user.decorator';
 
-@Controller('users')
+@Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  /**
+   * 获取当前登录用户信息
+   *
+   * 通过 JWT token 中的 sub (userId) 查询数据库，
+   * 返回用户完整信息（不含密码哈希）。
+   */
+  @Get('info')
+  async getInfo(@CurrentUser() payload: JwtPayload) {
+    const user = await this.userService.findOne(payload.sub);
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    const { passwordHash: _, ...safeUser } = user;
+    return safeUser;
+  }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {

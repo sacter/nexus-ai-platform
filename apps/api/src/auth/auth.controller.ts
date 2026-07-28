@@ -3,17 +3,23 @@ import {
   Get,
   Post,
   Body,
+  Req,
   HttpCode,
   HttpStatus,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { CaptchaService } from './captcha.service';
 import { PublicKeyService } from './public-key.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 import { RateLimitGuard } from '../common/guards/rate-limit.guard';
 import { Public } from '../common/decorators/public.decorator';
+import type { JwtPayload } from '../common/decorators/current-user.decorator';
 
 /**
  * 验证码接口限流配置
@@ -63,6 +69,8 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly captchaService: CaptchaService,
     private readonly publicKeyService: PublicKeyService,
+    private readonly jwtService: JwtService,
+    private readonly tokenBlacklist: TokenBlacklistService,
   ) {}
 
   /** 获取 RSA-2048 公钥（前端加密密码用） */
@@ -91,5 +99,31 @@ export class AuthController {
   @UseGuards(new RateLimitGuard(REGISTER_RATE_LIMIT))
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  /**
+   * 登出
+   *
+   * 从 Authorization header 提取 JWT，将其 jti 加入黑名单。
+   * 黑名单中的 token 在有效期内也无法通过 AuthGuard 验证。
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  logout(@Req() req: Request) {
+    const [type, token] = req.headers.authorization?.split(' ') ?? [];
+    if (type !== 'Bearer' || !token) {
+      throw new UnauthorizedException('未提供有效的认证令牌');
+    }
+
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      if (payload.jti && payload.exp) {
+        this.tokenBlacklist.add(payload.jti, payload.exp);
+      }
+    } catch {
+      // token 本身已过期/无效，无需加入黑名单
+    }
+
+    return { message: '已退出登录' };
   }
 }

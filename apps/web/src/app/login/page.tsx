@@ -7,12 +7,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/auth';
 import { authApi, type CaptchaData, clearPublicKeyCache } from '@/lib/api/auth';
+import { useAuth } from '@/lib/auth/auth-context';
 import { Input } from '@heroui/react';
 import { Button } from '@heroui/react';
 import { AuthCard } from '@/components/auth/auth-card';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [captcha, setCaptcha] = useState<CaptchaData | null>(null);
 
   const {
@@ -47,12 +49,14 @@ export default function LoginPage() {
     }
 
     try {
-      await authApi.login(
+      const data = await authApi.login(
         values.username,
         values.password,
         captcha.captchaId,
         values.captchaCode,
       );
+      // 将用户信息注入 AuthContext（token 已在 authApi.login 内部写入 localStorage）
+      setUser(data);
       router.push('/');
     } catch (err) {
       const message = err instanceof Error ? err.message : '登录失败';

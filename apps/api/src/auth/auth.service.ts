@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { CaptchaService } from './captcha.service';
@@ -84,11 +85,12 @@ export class AuthService {
       throw new UnauthorizedException('用户名或密码错误');
     }
 
-    // 5. 签发 JWT
+    // 5. 签发 JWT（含 jti 用于登出时黑名单）
     const payload: JwtPayload = {
       sub: user.id,
       username: user.username,
       role: user.role,
+      jti: randomUUID(),
     };
     const accessToken = this.jwtService.sign(payload);
 

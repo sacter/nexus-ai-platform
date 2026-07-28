@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
 import { PublicKeyService } from './public-key.service';
+import { TokenBlacklistService } from './token-blacklist.service';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
@@ -13,7 +14,7 @@ import { UserModule } from '../user/user.module';
     UserModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'nexus-dev-secret-change-in-production',
-      signOptions: { expiresIn: '24h' },
+      signOptions: { expiresIn: '8h' },
     }),
   ],
   controllers: [AuthController],
@@ -21,6 +22,7 @@ import { UserModule } from '../user/user.module';
     AuthService,
     CaptchaService,
     PublicKeyService,
+    TokenBlacklistService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

@@ -7,14 +7,19 @@ export interface CaptchaData {
   svg: string;
 }
 
+export interface UserInfo {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
-  user: {
-    id: string;
-    username: string;
-    email: string;
-    role: string;
-  };
+  user: UserInfo;
 }
 
 interface PublicKeyResponse {
@@ -121,4 +126,15 @@ export const authApi = {
       captchaCode,
     });
   },
+
+  /**
+   * 通过 token 获取当前用户信息
+   *
+   * 页面刷新时 AuthProvider 自动调用此方法恢复登录态。
+   * token 由 axios 拦截器自动附加。
+   */
+  getUserInfo: () => http.get<UserInfo>('/user/info'),
+
+  /** 登出 */
+  logout: () => http.post<void>('/auth/logout'),
 };

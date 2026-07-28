@@ -11,6 +11,12 @@ export interface JwtPayload {
   username: string;
   /** 角色：admin | user */
   role: string;
+  /** JWT 唯一标识，用于登出时加入黑名单 */
+  jti: string;
+  /** JWT 过期时间戳（秒），由 @nestjs/jwt 自动注入 */
+  exp?: number;
+  /** JWT 签发时间戳（秒） */
+  iat?: number;
 }
 
 /**
