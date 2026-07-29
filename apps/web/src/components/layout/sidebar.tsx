@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
 import {
+  FileText,
   LayoutDashboard,
   BookOpen,
   Bot,
@@ -13,21 +15,21 @@ import {
   Activity,
   Settings,
   ShieldCheck,
-  FileText,
 } from 'lucide-react';
+import { NAV_ITEMS, type IconName } from '@/config/routes';
 
-const navItems = [
-  { href: '/', label: '仪表盘', icon: LayoutDashboard },
-  { href: '/knowledge-bases', label: '知识库', icon: BookOpen },
-  { href: '/ai-applications', label: 'AI 应用', icon: Bot },
-  { href: '/chat', label: '对话', icon: MessageSquare },
-  { href: '/workflows', label: 'Workflow', icon: Workflow },
-  { href: '/models', label: '模型', icon: Cpu },
-  { href: '/tools', label: '工具', icon: Wrench },
-  { href: '/jobs', label: 'Job', icon: Activity },
-  { href: '/settings', label: '设置', icon: Settings },
-  { href: '/audit-logs', label: '审计', icon: ShieldCheck },
-];
+const ICON_MAP: Record<IconName, LucideIcon> = {
+  LayoutDashboard,
+  BookOpen,
+  Bot,
+  MessageSquare,
+  Workflow,
+  Cpu,
+  Wrench,
+  Activity,
+  Settings,
+  ShieldCheck,
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -39,10 +41,11 @@ export function Sidebar() {
         <span className="font-semibold text-sm text-foreground">Nexus AI</span>
       </div>
       <nav className="p-3 flex flex-col gap-0.5">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const active =
             pathname === item.href ||
             (item.href !== '/' && pathname.startsWith(item.href));
+          const Icon = ICON_MAP[item.iconName];
           return (
             <Link
               key={item.href}
@@ -53,7 +56,7 @@ export function Sidebar() {
                   : 'text-foreground/60 hover:bg-surface-secondary hover:text-foreground'
               }`}
             >
-              <item.icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" />
               {item.label}
             </Link>
           );

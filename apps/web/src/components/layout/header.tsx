@@ -1,16 +1,29 @@
 'use client';
 
-import { useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { CircleUser, Pencil, LogOut } from 'lucide-react';
-import { Dropdown } from '@heroui/react';
+import { Dropdown, Breadcrumbs } from '@heroui/react';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { useAuth } from '@/lib/auth/auth-context';
+import {
+  buildBreadcrumbs,
+  HIDDEN_BREADCRUMBS,
+} from '@/config/routes';
+import { useBreadcrumbLabels } from '@/config/breadcrumb-context';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+
+  const segmentLabels = useBreadcrumbLabels();
+  const breadcrumbs = useMemo(
+    () => buildBreadcrumbs(pathname, segmentLabels),
+    [pathname, segmentLabels],
+  );
+  const showBreadcrumbs = !HIDDEN_BREADCRUMBS.has(pathname);
 
   const handleEditInfo = useCallback(() => {
     console.log('/settings')
@@ -29,9 +42,18 @@ export function Header() {
   return (
     <header className="h-14 shrink-0 border-b border-border bg-surface flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-sm font-medium text-foreground/60">
-          Enterprise AI Platform
-        </h2>
+        {showBreadcrumbs && (
+          <Breadcrumbs>
+            {breadcrumbs.map((item, index) => (
+              <Breadcrumbs.Item
+                key={item.href}
+                href={index < breadcrumbs.length - 1 ? item.href : undefined}
+              >
+                {item.label}
+              </Breadcrumbs.Item>
+            ))}
+          </Breadcrumbs>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <ThemeSwitcher />
