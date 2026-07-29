@@ -74,6 +74,32 @@ pnpm --filter @nexus/api start:dev
 pnpm --filter @nexus/worker dev
 ```
 
+### 数据库操作
+
+```bash
+# ========== Prisma 开发常用 ==========
+pnpm prisma:gen                  # prisma generate
+pnpm prisma:migrate              # prisma migrate dev
+pnpm prisma:migrate:init         # prisma migrate dev --name init
+
+# 开发新增字段统一规范调用（带备注）
+pnpm db:new                      # prisma migrate dev --name
+
+# 重置本地库（清空表+重新执行所有迁移+seed，本地调试用）
+pnpm db:reset                    # prisma migrate reset
+
+# ========== 生产环境安全部署 ==========
+pnpm prisma:deploy               # prisma migrate deploy
+
+# ========== 辅助工具 ==========
+# 打开 Prisma Studio 可视化数据库
+pnpm db:studio                   # prisma studio
+# 拉取现有数据库反向生成 schema（已有老库接管场景）
+pnpm prisma:pull                 # prisma db pull
+# 执行 seed 填充初始数据
+pnpm prisma:seed                 # prisma db seed
+```
+
 ### 构建
 
 ```bash

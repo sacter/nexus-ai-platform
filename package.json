@@ -8,8 +8,16 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "commit": "cz",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "prisma:gen": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:init": "prisma migrate dev --name init",
+    "db:new": "prisma migrate dev --name",
+    "db:reset": "prisma migrate reset",
+    "prisma:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "prisma:pull": "prisma db pull",
+    "prisma:seed": "prisma db seed"
   },
   "devDependencies": {
     "commitizen": "^4.3.2",

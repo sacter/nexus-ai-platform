@@ -1,23 +1,196 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["app_user"]
 }
 
-// ==================== app_user schema 下用户表 ====================
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  username     String   @unique @db.VarChar(64)
-  email        String   @unique @db.VarChar(255)
-  passwordHash String   @map("password_hash") @db.VarChar(255)
-  role         String   @default("user") @db.VarChar(32)
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username          String              @unique @db.VarChar(64)
+  email             String              @unique @db.VarChar(255)
+  passwordHash      String              @map("password_hash") @db.VarChar(255)
+  role              String              @default("user") @db.VarChar(32)
+  isActive          Boolean             @default(true) @map("is_active")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  document_versions document_versions[]
+  documents         documents[]
+  kb_permissions    kb_permissions[]
+  knowledge_bases   knowledge_bases[]
 
-  @@schema("app_user")
   @@map("users")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model document_chunks {
+  id                    String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  version_id            String                   @db.Uuid
+  page                  Int                      @default(1)
+  chunk_index           Int                      @default(0)
+  parent_chunk_id       String?                  @db.Uuid
+  content               String
+  content_hash          String?                  @db.VarChar(64)
+  token_count           Int                      @default(0)
+  tsv                   Unsupported("tsvector")?
+  metadata              Json?                    @default("{}")
+  created_at            DateTime                 @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                 @default(now()) @db.Timestamptz(6)
+  document_chunks       document_chunks?         @relation("document_chunksTodocument_chunks", fields: [parent_chunk_id], references: [id], onUpdate: NoAction)
+  other_document_chunks document_chunks[]        @relation("document_chunksTodocument_chunks")
+  document_versions     document_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([content_hash], map: "idx_chunks_content_hash")
+  @@index([version_id, page, chunk_index], map: "idx_chunks_page_index")
+  @@index([parent_chunk_id], map: "idx_chunks_parent")
+  @@index([tsv], map: "idx_chunks_tsv", type: Gin)
+  @@index([version_id], map: "idx_chunks_version_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model document_versions {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  document_id     String            @db.Uuid
+  version_number  Int               @default(1)
+  file_url        String            @db.VarChar(1024)
+  page_count      Int               @default(0)
+  chunk_count     Int               @default(0)
+  status          version_status    @default(PROCESSING)
+  change_summary  String?
+  created_by      String?           @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  document_chunks document_chunks[]
+  users           User?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  documents       documents         @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  index_jobs      index_jobs[]
+
+  @@unique([document_id, version_number])
+  @@index([document_id], map: "idx_versions_document_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model documents {
+  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  kb_id              String              @db.Uuid
+  user_id            String?             @db.Uuid
+  current_version_id String?             @db.Uuid
+  name               String              @db.VarChar(512)
+  original_name      String              @db.VarChar(512)
+  url                String              @db.VarChar(1024)
+  file_size          BigInt              @default(0)
+  mime_type          String              @default("application/pdf") @db.VarChar(128)
+  page_count         Int?                @default(0)
+  status             document_status     @default(UPLOADING)
+  chunk_count        Int                 @default(0)
+  embedding_model    String?             @db.VarChar(64)
+  embedding_dim      Int?
+  error_message      String?
+  created_at         DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime            @default(now()) @db.Timestamptz(6)
+  document_versions  document_versions[]
+  knowledge_bases    knowledge_bases     @relation(fields: [kb_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users              User?               @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+  index_jobs         index_jobs[]
+
+  @@index([created_at(sort: Desc)], map: "idx_documents_created_at")
+  @@index([kb_id], map: "idx_documents_kb_id")
+  @@index([status], map: "idx_documents_status")
+  @@index([user_id], map: "idx_documents_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model index_jobs {
+  id                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  document_id       String             @db.Uuid
+  version_id        String?            @db.Uuid
+  job_type          job_type           @default(INDEX)
+  status            job_status         @default(PENDING)
+  progress          Int                @default(0) @db.SmallInt
+  total_steps       Int                @default(0)
+  current_step      Int                @default(0)
+  step_description  String?
+  error_message     String?
+  retry_count       Int                @default(0)
+  started_at        DateTime?          @db.Timestamptz(6)
+  completed_at      DateTime?          @db.Timestamptz(6)
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime           @default(now()) @db.Timestamptz(6)
+  documents         documents          @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  document_versions document_versions? @relation(fields: [version_id], references: [id], onUpdate: NoAction)
+
+  @@unique([document_id, job_type], map: "idx_unique_active_job", where: raw("(status = ANY (ARRAY['PENDING'::job_status, 'RUNNING'::job_status]))"))
+  @@index([created_at(sort: Desc)], map: "idx_jobs_created_at")
+  @@index([document_id], map: "idx_jobs_document_id")
+  @@index([status], map: "idx_jobs_status")
+  @@index([version_id], map: "idx_jobs_version_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model kb_permissions {
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  kb_id           String          @db.Uuid
+  user_id         String          @db.Uuid
+  role            kb_role         @default(viewer)
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  knowledge_bases knowledge_bases @relation(fields: [kb_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           User            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([kb_id, user_id])
+  @@index([kb_id], map: "idx_kb_perm_kb_id")
+  @@index([user_id], map: "idx_kb_perm_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model knowledge_bases {
+  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name               String           @db.VarChar(256)
+  description        String?
+  created_by         String           @db.Uuid
+  embedding_model    String?          @db.VarChar(64)
+  retrieval_strategy String           @default("vector") @db.VarChar(32)
+  is_active          Boolean          @default(true)
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
+  documents          documents[]
+  kb_permissions     kb_permissions[]
+  users              User             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "idx_kb_created_by")
+}
+
+enum document_status {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  DELETED
+}
+
+enum job_status {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum job_type {
+  INDEX
+  REINDEX
+  DELETE_CHUNKS
+}
+
+enum kb_role {
+  admin
+  editor
+  viewer
+}
+
+enum version_status {
+  PROCESSING
+  READY
+  FAILED
 }
