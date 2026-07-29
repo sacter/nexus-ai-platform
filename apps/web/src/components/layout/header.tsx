@@ -44,14 +44,21 @@ export function Header() {
       <div className="flex items-center gap-4">
         {showBreadcrumbs && (
           <Breadcrumbs>
-            {breadcrumbs.map((item, index) => (
-              <Breadcrumbs.Item
-                key={item.href}
-                href={index < breadcrumbs.length - 1 ? item.href : undefined}
-              >
-                {item.label}
-              </Breadcrumbs.Item>
-            ))}
+            {breadcrumbs.map((item, index) => {
+              const isLast = index === breadcrumbs.length - 1;
+              if (isLast) {
+                return (
+                  <Breadcrumbs.Item key={item.href}>
+                    {item.label}
+                  </Breadcrumbs.Item>
+                );
+              }
+              return (
+                <Breadcrumbs.Item key={item.href} href={item.href}>
+                  {item.label}
+                </Breadcrumbs.Item>
+              );
+            })}
           </Breadcrumbs>
         )}
       </div>
