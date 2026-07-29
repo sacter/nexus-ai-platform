@@ -15,7 +15,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import {
   CurrentUser,
   type JwtPayload,
-} from '../common/decorators/current-user.decorator';
+} from '../../common/decorators/current-user.decorator';
 
 @Controller('user')
 export class UserController {

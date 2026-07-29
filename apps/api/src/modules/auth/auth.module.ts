@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
 import { PublicKeyService } from './public-key.service';
 import { TokenBlacklistService } from './token-blacklist.service';
-import { AuthGuard } from '../common/guards/auth.guard';
+import { AuthGuard } from '../../common/guards/auth.guard';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 

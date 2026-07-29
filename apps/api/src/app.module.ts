@@ -3,9 +3,10 @@ import { ConfigModule } from '@nestjs/config';
 import { resolve } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaModule } from './prisma/prisma.module';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
+import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { WorkerModule } from './worker/worker.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
     PrismaModule,
     UserModule,
     AuthModule,
+    WorkerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,7 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-import { TokenBlacklistService } from '../../auth/token-blacklist.service';
+import { TokenBlacklistService } from '../../modules/auth/token-blacklist.service';
 import type { JwtPayload } from '../decorators/current-user.decorator';
 
 /**

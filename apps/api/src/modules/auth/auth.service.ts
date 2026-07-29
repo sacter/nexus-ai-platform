@@ -11,7 +11,7 @@ import { CaptchaService } from './captcha.service';
 import { PublicKeyService } from './public-key.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import type { JwtPayload } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()

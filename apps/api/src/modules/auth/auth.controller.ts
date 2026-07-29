@@ -17,9 +17,9 @@ import { RegisterDto } from './dto/register.dto';
 import { CaptchaService } from './captcha.service';
 import { PublicKeyService } from './public-key.service';
 import { TokenBlacklistService } from './token-blacklist.service';
-import { RateLimitGuard } from '../common/guards/rate-limit.guard';
-import { Public } from '../common/decorators/public.decorator';
-import type { JwtPayload } from '../common/decorators/current-user.decorator';
+import { RateLimitGuard } from '../../common/guards/rate-limit.guard';
+import { Public } from '../../common/decorators/public.decorator';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 /**
  * 验证码接口限流配置
