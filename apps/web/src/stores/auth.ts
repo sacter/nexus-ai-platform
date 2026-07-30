@@ -6,7 +6,7 @@ import {
   removeToken,
   type UserInfo,
   type LoginResponse,
-} from '@/api/auth'
+} from '@/modules/system/auth/api/auth.api'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserInfo | null>(null)
