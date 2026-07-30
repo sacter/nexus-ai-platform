@@ -7,6 +7,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkerModule } from './worker/worker.module';
+import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledge-base.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WorkerModule } from './worker/worker.module';
     UserModule,
     AuthModule,
     WorkerModule,
+    KnowledgeBaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

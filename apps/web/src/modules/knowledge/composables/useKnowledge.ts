@@ -4,14 +4,14 @@ import { knowledgeBasesApi } from '@/modules/knowledge/api/knowledge.api'
 
 export function useKnowledgeBases() {
   return useQuery({
-    queryKey: ['knowledge-bases'],
+    queryKey: ['knowledge-base'],
     queryFn: () => knowledgeBasesApi.list(),
   })
 }
 
 export function useKnowledgeBase(id: MaybeRef<string>) {
   return useQuery({
-    queryKey: ['knowledge-bases', id],
+    queryKey: ['knowledge-base', id],
     queryFn: () => knowledgeBasesApi.get(toValue(id)),
     enabled: () => !!toValue(id),
   })
@@ -21,7 +21,7 @@ export function useCreateKnowledgeBase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: knowledgeBasesApi.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-bases'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-base'] }),
   })
 }
 
@@ -29,6 +29,6 @@ export function useDeleteKnowledgeBase() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: knowledgeBasesApi.delete,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-bases'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-base'] }),
   })
 }

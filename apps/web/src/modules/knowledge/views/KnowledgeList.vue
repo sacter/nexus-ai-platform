@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus } from '@element-plus/icons-vue'
 import { useKnowledgeBases, useDeleteKnowledgeBase } from '@/modules/knowledge/composables/useKnowledge'
@@ -15,15 +15,20 @@ const createDialogVisible = ref(false)
 function handleView(id: string) { router.push(`/knowledge-bases/${id}`) }
 function handleEdit(id: string) { router.push(`/knowledge-bases/${id}`) }
 function handleDelete(id: string) { deleteMutation.mutate(id) }
+
+onMounted(() => {
+  // getKBList()
+})
 </script>
 
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-semibold" style="color: var(--foreground)">知识库</h1>
-      <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">创建知识库</el-button>
-    </div>
-
+  <el-card>
+    <template #header>
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold" style="color: var(--foreground)">知识库</h3>
+        <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">创建知识库</el-button>
+      </div>
+    </template>
     <div v-if="isLoading" class="flex justify-center py-12">
       <el-icon class="is-loading" :size="24"><Plus /></el-icon>
     </div>
@@ -43,5 +48,5 @@ function handleDelete(id: string) { deleteMutation.mutate(id) }
     <el-empty v-else description="暂无知识库" />
 
     <KbCreateDialog v-model:visible="createDialogVisible" />
-  </div>
+  </el-card>
 </template>

@@ -9,7 +9,7 @@ import AppHeader from '@/components/layout/AppHeader.vue'
     <div class="flex flex-1 flex-col overflow-hidden">
       <AppHeader />
       <main
-        class="flex-1 overflow-y-auto p-6"
+        class="flex-1 overflow-y-auto px-5 py-4"
         style="background-color: var(--surface-secondary)"
       >
         <router-view />

@@ -14,8 +14,7 @@ async function bootstrap() {
   });
 
   // ── 全局路径前缀 ──
-  // 如需统一前缀（如 /api/v1），取消下一行注释即可
-  // app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1');
 
   // ── 全局管道：自动校验 DTO ──
   app.useGlobalPipes(

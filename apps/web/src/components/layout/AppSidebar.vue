@@ -58,7 +58,7 @@ function navigate(href: string) {
       <button
         v-for="item in navItems"
         :key="item.href"
-        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left w-full"
+        class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-left w-full cursor-pointer"
         :class="
           isActive(item.href)
             ? 'bg-accent/10 text-accent'
