@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   Element Plus theme variables - bridge from HeroUI Design Tokens
+   ============================================ */
+
+:root {
+  --el-color-primary: oklch(0 0 0);
+  --el-color-primary-light-3: oklch(40% 0 0);
+  --el-color-primary-light-5: oklch(60% 0 0);
+  --el-color-primary-light-7: oklch(80% 0 0);
+  --el-color-primary-light-9: oklch(95% 0 0);
+
+  --el-bg-color: oklch(100.00% 0.0000 0.00);
+  --el-bg-color-page: oklch(97.02% 0.0000 0.00);
+  --el-bg-color-overlay: oklch(100.00% 0.0000 0.00);
+
+  --el-border-color: oklch(90.00% 0.0000 0.00);
+  --el-text-color-primary: oklch(21.03% 0.0000 0.00);
+  --el-text-color-regular: oklch(21.03% 0.0000 0.00);
+  --el-text-color-secondary: oklch(55.17% 0.0000 0.00);
+
+  --el-border-radius-base: 4px;
+
+  --surface: oklch(100.00% 0.0000 0.00);
+  --surface-secondary: oklch(95.24% 0.0000 0.00);
+  --border: oklch(90.00% 0.0000 0.00);
+  --accent: oklch(0 0 0);
+  --foreground: oklch(21.03% 0.0000 0.00);
+}
+
+.dark {
+  --el-color-primary: oklch(0.9848 0 0);
+  --el-color-primary-light-3: oklch(70% 0 0);
+  --el-color-primary-light-5: oklch(50% 0 0);
+  --el-color-primary-light-7: oklch(35% 0 0);
+  --el-color-primary-light-9: oklch(20% 0 0);
+
+  --el-bg-color: oklch(21.03% 0.0000 0.00);
+  --el-bg-color-page: oklch(12.00% 0.0000 0.00);
+  --el-bg-color-overlay: oklch(21.03% 0.0000 0.00);
+
+  --el-border-color: oklch(28.00% 0.0000 0.00);
+  --el-text-color-primary: oklch(99.11% 0.0000 0.00);
+  --el-text-color-regular: oklch(99.11% 0.0000 0.00);
+  --el-text-color-secondary: oklch(70.50% 0.0000 0.00);
+
+  --surface: oklch(21.03% 0.0000 0.00);
+  --surface-secondary: oklch(25.70% 0.0000 0.00);
+  --border: oklch(28.00% 0.0000 0.00);
+  --accent: oklch(0.9848 0 0);
+  --foreground: oklch(99.11% 0.0000 0.00);
+}
