@@ -1,0 +1,41 @@
+<script setup lang="ts">
+import { Plus, ChatDotRound, Delete } from '@element-plus/icons-vue'
+import { useChatSessions } from '@/composables/use-chat'
+
+defineProps<{
+  activeId?: string
+}>()
+
+const emit = defineEmits<{
+  select: [id: string]
+  new: []
+}>()
+
+const { data: sessions, isLoading } = useChatSessions()
+</script>
+
+<template>
+  <div class="w-60 shrink-0 border-r h-full flex flex-col" style="border-color: var(--border); background-color: var(--surface)">
+    <div class="p-3 border-b" style="border-color: var(--border)">
+      <el-button :icon="Plus" size="small" class="w-full" @click="emit('new')">新建对话</el-button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-2">
+      <div v-if="isLoading" class="flex justify-center py-8">
+        <el-icon class="is-loading"><Plus /></el-icon>
+      </div>
+      <div v-else-if="sessions && Array.isArray(sessions) && sessions.length > 0" class="flex flex-col gap-0.5">
+        <button
+          v-for="s in sessions"
+          :key="(s as Record<string,string>).id"
+          class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left w-full transition-colors"
+          :class="(s as Record<string,string>).id === activeId ? 'bg-accent/10 text-accent' : 'text-foreground/60 hover:bg-surface-secondary'"
+          @click="emit('select', (s as Record<string,string>).id)"
+        >
+          <el-icon :size="14"><ChatDotRound /></el-icon>
+          <span class="truncate">{{ (s as Record<string,string>).title || '对话' }}</span>
+        </button>
+      </div>
+      <el-empty v-else description="暂无对话" :image-size="40" />
+    </div>
+  </div>
+</template>
