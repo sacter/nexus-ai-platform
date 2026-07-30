@@ -1,168 +1,14 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["partialIndexes"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id                String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  username          String              @unique @db.VarChar(64)
-  email             String              @unique @db.VarChar(255)
-  passwordHash      String              @map("password_hash") @db.VarChar(255)
-  role              String              @default("user") @db.VarChar(32)
-  isActive          Boolean             @default(true) @map("is_active")
-  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  document_versions document_versions[]
-  documents         documents[]
-  kb_permissions    kb_permissions[]
-  knowledge_bases   knowledge_bases[]
+// ── Enums ──
 
-  @@map("users")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model document_chunks {
-  id                    String                   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  version_id            String                   @db.Uuid
-  page                  Int                      @default(1)
-  chunk_index           Int                      @default(0)
-  parent_chunk_id       String?                  @db.Uuid
-  content               String
-  content_hash          String?                  @db.VarChar(64)
-  token_count           Int                      @default(0)
-  tsv                   Unsupported("tsvector")?
-  metadata              Json?                    @default("{}")
-  created_at            DateTime                 @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime                 @default(now()) @db.Timestamptz(6)
-  document_chunks       document_chunks?         @relation("document_chunksTodocument_chunks", fields: [parent_chunk_id], references: [id], onUpdate: NoAction)
-  other_document_chunks document_chunks[]        @relation("document_chunksTodocument_chunks")
-  document_versions     document_versions        @relation(fields: [version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([content_hash], map: "idx_chunks_content_hash")
-  @@index([version_id, page, chunk_index], map: "idx_chunks_page_index")
-  @@index([parent_chunk_id], map: "idx_chunks_parent")
-  @@index([tsv], map: "idx_chunks_tsv", type: Gin)
-  @@index([version_id], map: "idx_chunks_version_id")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model document_versions {
-  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  document_id     String            @db.Uuid
-  version_number  Int               @default(1)
-  file_url        String            @db.VarChar(1024)
-  page_count      Int               @default(0)
-  chunk_count     Int               @default(0)
-  status          version_status    @default(PROCESSING)
-  change_summary  String?
-  created_by      String?           @db.Uuid
-  created_at      DateTime          @default(now()) @db.Timestamptz(6)
-  document_chunks document_chunks[]
-  users           User?             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  documents       documents         @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  index_jobs      index_jobs[]
-
-  @@unique([document_id, version_number])
-  @@index([document_id], map: "idx_versions_document_id")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model documents {
-  id                 String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  kb_id              String              @db.Uuid
-  user_id            String?             @db.Uuid
-  current_version_id String?             @db.Uuid
-  name               String              @db.VarChar(512)
-  original_name      String              @db.VarChar(512)
-  url                String              @db.VarChar(1024)
-  file_size          BigInt              @default(0)
-  mime_type          String              @default("application/pdf") @db.VarChar(128)
-  page_count         Int?                @default(0)
-  status             document_status     @default(UPLOADING)
-  chunk_count        Int                 @default(0)
-  embedding_model    String?             @db.VarChar(64)
-  embedding_dim      Int?
-  error_message      String?
-  created_at         DateTime            @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime            @default(now()) @db.Timestamptz(6)
-  document_versions  document_versions[]
-  knowledge_bases    knowledge_bases     @relation(fields: [kb_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users              User?               @relation(fields: [user_id], references: [id], onUpdate: NoAction)
-  index_jobs         index_jobs[]
-
-  @@index([created_at(sort: Desc)], map: "idx_documents_created_at")
-  @@index([kb_id], map: "idx_documents_kb_id")
-  @@index([status], map: "idx_documents_status")
-  @@index([user_id], map: "idx_documents_user_id")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model index_jobs {
-  id                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  document_id       String             @db.Uuid
-  version_id        String?            @db.Uuid
-  job_type          job_type           @default(INDEX)
-  status            job_status         @default(PENDING)
-  progress          Int                @default(0) @db.SmallInt
-  total_steps       Int                @default(0)
-  current_step      Int                @default(0)
-  step_description  String?
-  error_message     String?
-  retry_count       Int                @default(0)
-  started_at        DateTime?          @db.Timestamptz(6)
-  completed_at      DateTime?          @db.Timestamptz(6)
-  created_at        DateTime           @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime           @default(now()) @db.Timestamptz(6)
-  documents         documents          @relation(fields: [document_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  document_versions document_versions? @relation(fields: [version_id], references: [id], onUpdate: NoAction)
-
-  @@unique([document_id, job_type], map: "idx_unique_active_job", where: raw("(status = ANY (ARRAY['PENDING'::job_status, 'RUNNING'::job_status]))"))
-  @@index([created_at(sort: Desc)], map: "idx_jobs_created_at")
-  @@index([document_id], map: "idx_jobs_document_id")
-  @@index([status], map: "idx_jobs_status")
-  @@index([version_id], map: "idx_jobs_version_id")
-}
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model kb_permissions {
-  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  kb_id           String          @db.Uuid
-  user_id         String          @db.Uuid
-  role            kb_role         @default(viewer)
-  created_at      DateTime        @default(now()) @db.Timestamptz(6)
-  knowledge_bases knowledge_bases @relation(fields: [kb_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users           User            @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([kb_id, user_id])
-  @@index([kb_id], map: "idx_kb_perm_kb_id")
-  @@index([user_id], map: "idx_kb_perm_user_id")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model knowledge_bases {
-  id                 String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  name               String           @db.VarChar(256)
-  description        String?
-  created_by         String           @db.Uuid
-  embedding_model    String?          @db.VarChar(64)
-  retrieval_strategy String           @default("vector") @db.VarChar(32)
-  is_active          Boolean          @default(true)
-  created_at         DateTime         @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime         @default(now()) @db.Timestamptz(6)
-  documents          documents[]
-  kb_permissions     kb_permissions[]
-  users              User             @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([created_by], map: "idx_kb_created_by")
-}
-
-enum document_status {
+enum DocumentStatus {
   UPLOADING
   PROCESSING
   READY
@@ -170,27 +16,627 @@ enum document_status {
   DELETED
 }
 
-enum job_status {
+enum VersionStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum JobStatus {
   PENDING
   RUNNING
   DONE
   FAILED
 }
 
-enum job_type {
+enum JobType {
   INDEX
   REINDEX
   DELETE_CHUNKS
 }
 
-enum kb_role {
+enum KbRole {
   admin
   editor
   viewer
 }
 
-enum version_status {
-  PROCESSING
-  READY
+enum MessageRole {
+  user
+  assistant
+  system
+}
+enum AuditAction {
+  DOCUMENT_UPLOAD
+  DOCUMENT_DELETE
+  DOCUMENT_REINDEX
+  KB_CREATE
+  KB_DELETE
+  KB_UPDATE
+  PERMISSION_CHANGE
+  SETTING_CHANGE
+  API_KEY_CREATE
+  API_KEY_DELETE
+  PROMPT_CREATE
+  PROMPT_UPDATE
+  USER_LOGIN
+  VERSION_ACTIVATE
+  // ★ V2
+  AI_APP_CREATE
+  AI_APP_DELETE
+  AI_APP_UPDATE
+  MODEL_REGISTER
+  MODEL_DELETE
+  WORKFLOW_CREATE
+  WORKFLOW_UPDATE
+  WORKFLOW_EXECUTE
+  // ★ V3
+  TOOL_REGISTER
+  TOOL_DELETE
+  TOOL_EXECUTE
+  CHAT_FEEDBACK
+}
+
+// ★ 新增 Enum
+enum ModelType {
+  chat
+  embedding
+  rerank
+}
+
+enum ToolType {
+  sql
+  http
+  search
+  function
+  filesystem
+}
+
+enum ApplicationStatus {
+  active
+  inactive
+  draft
+}
+
+enum ExecutionStatus {
+  RUNNING
+  COMPLETED
   FAILED
+  CANCELLED
+  PAUSED
+  WAITING
+}
+
+enum WorkflowNodeType {
+  start
+  end
+  retriever
+  llm
+  tool
+  condition
+  reflection
+  planner
+  solver
+  aggregator
+  code
+}
+
+// ── Models (原有, 未改动部分省略注释) ──
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  username     String   @unique @db.VarChar(64)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @default("user") @db.VarChar(32)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  knowledgeBases    KnowledgeBase[]
+  kbPermissions     KbPermission[]
+  documents         Document[]
+  chatSessions      ChatSession[]
+  apiKeys           ApiKey[]
+  auditLogs         AuditLog[]
+  promptVersions    PromptTemplateVersion[]
+  documentVersions  DocumentVersion[]
+  aiApplications    AiApplication[]     // ★
+  models            Model[]             // ★
+  tools             Tool[]              // ★
+  workflows         Workflow[]          // ★
+  systemSettings    SystemSetting[]
+
+  @@map("users")
+}
+
+model KnowledgeBase {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String   @db.VarChar(256)
+  description       String?
+  embeddingModel    String?  @map("embedding_model") @db.VarChar(64)
+  retrievalStrategy String   @default("vector") @map("retrieval_strategy") @db.VarChar(32)
+  createdBy         String   @map("created_by") @db.Uuid
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  createdByUser  User           @relation(fields: [createdBy], references: [id])
+  permissions    KbPermission[]
+  documents      Document[]
+  chatSessions   ChatSession[]
+  auditLogs      AuditLog[]
+  aiApplications AiApplication[]  // ★
+  chunkEmbeddings ChunkEmbedding[]
+
+  @@index([createdBy])
+  @@map("knowledge_bases")
+}
+
+model KbPermission {
+  id        String    @id @default(uuid()) @db.Uuid
+  kbId      String    @map("kb_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  role      KbRole    @default(viewer)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  kb   KnowledgeBase @relation(fields: [kbId], references: [id], onDelete: Cascade)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([kbId, userId])
+  @@index([kbId])
+  @@index([userId])
+  @@map("kb_permissions")
+}
+
+model Document {
+  id               String         @id @default(uuid()) @db.Uuid
+  kbId             String         @map("kb_id") @db.Uuid
+  userId           String?        @map("user_id") @db.Uuid
+  currentVersionId String?        @unique @map("current_version_id") @db.Uuid
+  name             String         @db.VarChar(512)
+  originalName     String         @map("original_name") @db.VarChar(512)
+  url              String         @db.VarChar(1024)
+  fileSize         BigInt         @default(0) @map("file_size")
+  mimeType         String         @default("application/pdf") @map("mime_type") @db.VarChar(128)
+  pageCount        Int?           @map("page_count")
+  status           DocumentStatus @default(UPLOADING)
+  chunkCount       Int            @default(0) @map("chunk_count")
+  embeddingModel   String?        @map("embedding_model") @db.VarChar(64)
+  embeddingDim     Int?           @map("embedding_dim")
+  errorMessage     String?        @map("error_message") @db.Text
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  kb            KnowledgeBase     @relation(fields: [kbId], references: [id], onDelete: Cascade)
+  user          User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  currentVersion DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions      DocumentVersion[] @relation("DocumentVersions")
+  jobs          IndexJob[]
+
+  @@index([kbId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String        @id @default(uuid()) @db.Uuid
+  documentId    String        @map("document_id") @db.Uuid
+  versionNumber Int           @default(1) @map("version_number")
+  fileUrl       String        @map("file_url") @db.VarChar(1024)
+  pageCount     Int           @default(0) @map("page_count")
+  chunkCount    Int           @default(0) @map("chunk_count")
+  status        VersionStatus @default(PROCESSING)
+  changeSummary String?       @map("change_summary") @db.Text
+  createdBy     String?       @map("created_by") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  document       Document         @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  createdByUser  User?            @relation(fields: [createdBy], references: [id])
+  currentForDoc  Document?        @relation("CurrentVersion")
+  chunks         DocumentChunk[]
+  jobs           IndexJob[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+model DocumentChunk {
+  id             String   @id @default(uuid()) @db.Uuid
+  versionId      String   @map("version_id") @db.Uuid
+  page           Int      @default(1)
+  chunkIndex     Int      @default(0) @map("chunk_index")
+  parentChunkId  String?  @map("parent_chunk_id") @db.Uuid     // ★ Parent-Child Chunking
+  content        String   @db.Text
+  contentHash    String?  @map("content_hash") @db.VarChar(64)
+  tokenCount     Int      @default(0) @map("token_count")
+  tsv            Unsupported("tsvector")?
+  metadata       Json     @default("{}") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  version        DocumentVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  parentChunk    DocumentChunk?    @relation("ParentChild", fields: [parentChunkId], references: [id], onDelete: SetNull)
+  childChunks    DocumentChunk[]   @relation("ParentChild")
+  embeddings     ChunkEmbedding[]
+
+  @@index([versionId])
+  @@index([versionId, page, chunkIndex])
+  @@index([contentHash])
+  @@map("document_chunks")
+}
+
+model ChunkEmbedding {
+  id        String   @id @default(uuid()) @db.Uuid
+  chunkId   String   @map("chunk_id") @db.Uuid
+  modelName String   @map("model_name") @db.VarChar(64)
+  kbId      String   @map("kb_id") @db.Uuid                   // ★ 冗余 kb_id 加速过滤
+  embedding Unsupported("vector(3072)")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  chunk DocumentChunk   @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  kb    KnowledgeBase   @relation(fields: [kbId], references: [id], onDelete: Cascade)
+
+  @@unique([chunkId, modelName])
+  @@index([chunkId])
+  @@index([modelName])
+  @@index([kbId])                                             // ★
+  @@map("chunk_embeddings")
+}
+
+model IndexJob {
+  id              String    @id @default(uuid()) @db.Uuid
+  documentId      String    @map("document_id") @db.Uuid
+  versionId       String?   @map("version_id") @db.Uuid
+  jobType         JobType   @default(INDEX) @map("job_type")
+  status          JobStatus @default(PENDING)
+  progress        Int       @default(0) @db.SmallInt
+  totalSteps      Int       @default(0) @map("total_steps")
+  currentStep     Int       @default(0) @map("current_step")
+  stepDescription String?   @map("step_description") @db.Text
+  errorMessage    String?   @map("error_message") @db.Text
+  retryCount      Int       @default(0) @map("retry_count")
+  startedAt       DateTime? @map("started_at") @db.Timestamptz()
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  document Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version  DocumentVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@index([versionId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("index_jobs")
+}
+
+model ChatSession {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  kbId              String?  @map("kb_id") @db.Uuid
+  title             String   @default("New Chat") @db.VarChar(512)
+  promptTemplateId  String?  @map("prompt_template_id") @db.Uuid
+  aiApplicationId   String?  @map("ai_application_id") @db.Uuid      // ★ V2
+  workflowType      String   @default("rag") @map("workflow_type") @db.VarChar(32)
+  workflowId        String?  @map("workflow_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kb             KnowledgeBase?    @relation(fields: [kbId], references: [id], onDelete: SetNull)
+  aiApplication  AiApplication?    @relation(fields: [aiApplicationId], references: [id])  // ★
+  workflow       Workflow?         @relation(fields: [workflowId], references: [id])
+  messages       ChatMessage[]
+  executions     WorkflowExecution[]  // ★
+
+  @@index([userId])
+  @@index([kbId])
+  @@index([aiApplicationId])  // ★
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id               String      @id @default(uuid()) @db.Uuid
+  sessionId        String      @map("session_id") @db.Uuid
+  role             MessageRole
+  content          String      @db.Text
+  citations        Json        @default("[]") @db.JsonB
+  promptTokens     Int         @default(0) @map("prompt_tokens")      // ★
+  completionTokens Int         @default(0) @map("completion_tokens")  // ★
+  totalTokens      Int         @default(0) @map("total_tokens")       // ★
+  metadata         Json        @default("{}") @db.JsonB
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
+
+model PromptTemplate {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String   @unique @db.VarChar(256)
+  description      String?
+  currentVersionId String?  @map("current_version_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  versions         PromptTemplateVersion[]
+  aiApplications   AiApplication[]           // ★
+
+  @@map("prompt_templates")
+}
+
+model PromptTemplateVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  templateId    String   @map("template_id") @db.Uuid
+  versionNumber Int      @default(1) @map("version_number")
+  content       String   @db.Text
+  variables     Json     @default("[]") @db.JsonB
+  isActive      Boolean  @default(true) @map("is_active")
+  createdBy     String?  @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  template      PromptTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdByUser User?          @relation(fields: [createdBy], references: [id])
+
+  @@unique([templateId, versionNumber])
+  @@index([templateId])
+  @@map("prompt_template_versions")
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String?     @map("user_id") @db.Uuid
+  action     AuditAction
+  entityType String      @map("entity_type") @db.VarChar(64)
+  entityId   String?     @map("entity_id") @db.Uuid
+  kbId       String?     @map("kb_id") @db.Uuid
+  details    Json        @default("{}") @db.JsonB
+  ipAddress  String?     @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kb   KnowledgeBase? @relation(fields: [kbId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([kbId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+model ApiKey {
+  id        String   @id @default(uuid()) @db.Uuid
+  provider  String   @db.VarChar(64)
+  name      String   @db.VarChar(256)
+  model     String   @default("") @db.VarChar(128)
+  baseUrl   String?  @map("base_url") @db.VarChar(512)
+  apiKey    String   @map("api_key") @db.VarChar(512)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  createdByUser User     @relation(fields: [createdBy], references: [id])
+  models        Model[]  // ★ 一个 api_key 可被多个 model 引用
+  tools         Tool[]   // ★
+
+  @@unique([provider, name])
+  @@index([provider])
+  @@map("api_keys")
+}
+
+model SystemSetting {
+  id        Int       @id @default(1)
+  config    Json      @default("{}") @db.JsonB
+  updatedBy String?   @map("updated_by") @db.Uuid
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  updatedByUser User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("system_settings")
+}
+
+model Workflow {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(256)
+  type        String   @db.VarChar(32)
+  description String?
+  version     Int      @default(1)
+  config      Json     @default("{}") @db.JsonB
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  createdByUser User?               @relation(fields: [createdBy], references: [id])
+  chatSessions  ChatSession[]
+  nodes         WorkflowNode[]      // ★
+  edges         WorkflowEdge[]      // ★
+  executions    WorkflowExecution[] // ★
+  aiApplications AiApplication[]    // ★
+
+  @@index([type])
+  @@map("workflows")
+}
+
+// ── ★★★ 新增 Models (V2/V3) ★★★ ──
+
+// ★ V2: AI Application
+model AiApplication {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String            @db.VarChar(256)
+  description      String?
+  icon             String            @default("bot") @db.VarChar(64)
+  knowledgeBaseId  String            @map("knowledge_base_id") @db.Uuid
+  workflowId       String            @map("workflow_id") @db.Uuid
+  modelId          String            @map("model_id") @db.Uuid
+  promptTemplateId String?           @map("prompt_template_id") @db.Uuid
+  status           ApplicationStatus @default(draft)
+  config           Json              @default("{}") @db.JsonB
+  createdBy        String            @map("created_by") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz()
+
+  kb              KnowledgeBase           @relation(fields: [knowledgeBaseId], references: [id], onDelete: Restrict)
+  workflow        Workflow               @relation(fields: [workflowId], references: [id], onDelete: Restrict)
+  model           Model                  @relation(fields: [modelId], references: [id], onDelete: Restrict)
+  promptTemplate  PromptTemplate?        @relation(fields: [promptTemplateId], references: [id], onDelete: SetNull)
+  createdByUser   User                   @relation(fields: [createdBy], references: [id])
+  tools           AiApplicationTool[]    // ★ N:M → tools
+  chatSessions    ChatSession[]
+  executions      WorkflowExecution[]
+
+  @@index([knowledgeBaseId])
+  @@index([workflowId])
+  @@index([modelId])
+  @@index([status])
+  @@index([createdBy])
+  @@map("ai_applications")
+}
+
+// ★ V3: AI Application ↔ Tool (N:M junction)
+model AiApplicationTool {
+  id             String   @id @default(uuid()) @db.Uuid
+  applicationId  String   @map("application_id") @db.Uuid
+  toolId         String   @map("tool_id") @db.Uuid
+  config         Json     @default("{}") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  application AiApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  tool        Tool          @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, toolId])
+  @@index([applicationId])
+  @@index([toolId])
+  @@map("ai_application_tools")
+}
+
+// ★ V2: Model Center
+model Model {
+  id          String    @id @default(uuid()) @db.Uuid
+  provider    String    @db.VarChar(64)
+  modelName   String    @map("model_name") @db.VarChar(128)
+  type        ModelType
+  displayName String    @map("display_name") @db.VarChar(256)
+  description String?
+  apiKeyId    String?   @map("api_key_id") @db.Uuid
+  config      Json      @default("{}") @db.JsonB
+  isActive    Boolean   @default(true) @map("is_active")
+  createdBy   String    @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  apiKey         ApiKey?          @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  createdByUser  User             @relation(fields: [createdBy], references: [id])
+  aiApplications AiApplication[]
+
+  @@unique([provider, modelName])
+  @@index([provider])
+  @@index([type])
+  @@index([apiKeyId])
+  @@index([createdBy])
+  @@map("models")
+}
+
+// ★ V2: Workflow Nodes
+model WorkflowNode {
+  id          String           @id @default(uuid()) @db.Uuid
+  workflowId  String           @map("workflow_id") @db.Uuid
+  type        WorkflowNodeType
+  label       String           @db.VarChar(128)
+  description String?
+  positionX   Float            @default(0) @map("position_x")
+  positionY   Float            @default(0) @map("position_y")
+  config      Json             @default("{}") @db.JsonB
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+
+  workflow       Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceEdges    WorkflowEdge[]   @relation("SourceNode")
+  targetEdges    WorkflowEdge[]   @relation("TargetNode")
+
+  @@index([workflowId])
+  @@map("workflow_nodes")
+}
+
+// ★ V2: Workflow Edges
+model WorkflowEdge {
+  id            String   @id @default(uuid()) @db.Uuid
+  workflowId    String   @map("workflow_id") @db.Uuid
+  sourceNodeId  String   @map("source_node_id") @db.Uuid
+  targetNodeId  String   @map("target_node_id") @db.Uuid
+  sourceHandle  String?  @map("source_handle") @db.VarChar(64)
+  targetHandle  String?  @map("target_handle") @db.VarChar(64)
+  label         String?  @db.VarChar(128)
+  condition     Json?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  workflow     Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceNode   WorkflowNode @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode   WorkflowNode @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
+  @@map("workflow_edges")
+}
+
+// ★ V2: Workflow Execution
+model WorkflowExecution {
+  id             String          @id @default(uuid()) @db.Uuid
+  workflowId     String?         @map("workflow_id") @db.Uuid
+  applicationId  String?         @map("application_id") @db.Uuid
+  sessionId      String?         @map("session_id") @db.Uuid
+  input          Json            @default("{}") @db.JsonB
+  output         Json?
+  status         ExecutionStatus @default(RUNNING)
+  durationMs     Int?            @map("duration_ms")
+  errorMessage   String?         @map("error_message") @db.Text
+  nodeSteps      Json            @default("[]") @db.JsonB  @map("node_steps")
+  startedAt      DateTime?       @map("started_at") @db.Timestamptz()
+  completedAt    DateTime?       @map("completed_at") @db.Timestamptz()
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz()
+
+  workflow     Workflow?        @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+  application  AiApplication?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  session      ChatSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([workflowId])
+  @@index([applicationId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("workflow_executions")
+}
+
+// ★ V3: Tool Center
+model Tool {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(128)
+  type        ToolType
+  displayName String   @map("display_name") @db.VarChar(256)
+  description String?
+  apiKeyId    String?  @map("api_key_id") @db.Uuid
+  config      Json     @default("{}") @db.JsonB
+  security    Json     @default("{}") @db.JsonB
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  apiKey        ApiKey?              @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  createdByUser User                 @relation(fields: [createdBy], references: [id])
+  applications  AiApplicationTool[]
+
+  @@index([type])
+  @@index([apiKeyId])
+  @@index([isActive])
+  @@map("tools")
 }
