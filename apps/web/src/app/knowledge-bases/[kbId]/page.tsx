@@ -35,11 +35,12 @@ import {
 } from 'lucide-react';
 import { KNOWLEDGE_BASES, EMPTY_DOCUMENTS, type Document } from '../data';
 import { setBreadcrumbLabels } from '@/config/breadcrumb-context';
+import { UploadDocumentsModal } from '@/components/knowledge-bases/upload-documents-modal';
 
 function DocumentEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20">
-      <FileUp className="w-20 h-20 text-blue-500 mb-4" />
+      <FileUp className="w-20 h-20 text-accent mb-4" />
       <h3 className="text-lg font-semibold text-foreground mb-2">请先导入文档</h3>
       <p className="text-sm text-foreground/50">为你的知识库添加文档以开始问答</p>
     </div>
@@ -114,7 +115,13 @@ function SortDropdown({
   );
 }
 
-function DocumentsTabPanel({ documents }: { documents: Document[] }) {
+function DocumentsTabPanel({
+  documents,
+  onOpenUpload,
+}: {
+  documents: Document[];
+  onOpenUpload: () => void;
+}) {
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('list');
   const [sortBy, setSortBy] = useState('name');
 
@@ -122,7 +129,7 @@ function DocumentsTabPanel({ documents }: { documents: Document[] }) {
     return (
       <div className="mt-6">
         <div className="flex items-center justify-between mb-4">
-          <Button variant="primary">
+          <Button variant="primary" onPress={onOpenUpload}>
             <Upload className="w-4 h-4 mr-1" />
             上传文档
           </Button>
@@ -162,7 +169,7 @@ function DocumentsTabPanel({ documents }: { documents: Document[] }) {
         <Table>
           <TableContent aria-label="文档列表">
             <TableHeader>
-              <TableColumn>文档名称 / ID</TableColumn>
+              <TableColumn isRowHeader>文档名称 / ID</TableColumn>
               <TableColumn>文档状态</TableColumn>
               <TableColumn>处理面板</TableColumn>
               <TableColumn>切片数</TableColumn>
@@ -187,7 +194,7 @@ function DocumentsTabPanel({ documents }: { documents: Document[] }) {
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
-        <Button variant="primary">
+        <Button variant="primary" onPress={onOpenUpload}>
           <Upload className="w-4 h-4 mr-1" />
           上传文档
         </Button>
@@ -205,7 +212,7 @@ function DocumentsTabPanel({ documents }: { documents: Document[] }) {
       <Table>
         <TableContent aria-label="文档列表">
           <TableHeader>
-            <TableColumn>文档名称 / ID</TableColumn>
+            <TableColumn isRowHeader>文档名称 / ID</TableColumn>
             <TableColumn>文档状态</TableColumn>
             <TableColumn>处理面板</TableColumn>
             <TableColumn>切片数</TableColumn>
@@ -258,6 +265,7 @@ export default function KnowledgeBaseDetailPage({
 }) {
   const { kbId } = use(params);
   const kb = KNOWLEDGE_BASES.find((item) => item.id === kbId);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
     if (kb) {
@@ -282,7 +290,7 @@ export default function KnowledgeBaseDetailPage({
                   <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-xl font-bold text-foreground">{kb?.name ?? '知识库概览'}</h1>
                     <Chip color="success" variant="primary">
-                      <Chip.Label className="text-white">活跃</Chip.Label>
+                      <Chip.Label className="text-white" size="sm">活跃</Chip.Label>
                     </Chip>
                   </div>
                   {kb && (
@@ -346,7 +354,7 @@ export default function KnowledgeBaseDetailPage({
           </div>
           <Tabs className="w-full">
             <Tabs.ListContainer className="w-full max-w-md">
-              <Tabs.List aria-label="知识库标签" className="*:data-[selected=true]:bg-white">
+              <Tabs.List aria-label="知识库标签">
                 <Tab id="documents">原始文档</Tab>
                 <Tab id="chunks">切片详情</Tab>
                 <Tab id="search">知识检索</Tab>
@@ -354,7 +362,10 @@ export default function KnowledgeBaseDetailPage({
               </Tabs.List>
             </Tabs.ListContainer>
             <TabPanel id="documents">
-              <DocumentsTabPanel documents={EMPTY_DOCUMENTS} />
+              <DocumentsTabPanel
+                documents={EMPTY_DOCUMENTS}
+                onOpenUpload={() => setIsUploadOpen(true)}
+              />
             </TabPanel>
             <TabPanel id="chunks">
               <div className="mt-4 flex items-center justify-center py-20">
@@ -380,6 +391,10 @@ export default function KnowledgeBaseDetailPage({
           </Tabs>
         </Card.Content>
       </Card>
+      <UploadDocumentsModal
+        isOpen={isUploadOpen}
+        onOpenChange={setIsUploadOpen}
+      />
     </MainLayout>
   );
 }
