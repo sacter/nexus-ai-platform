@@ -7,7 +7,7 @@
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                       前端 (Frontend)                             │
-│                    Next.js + TypeScript                          │
+│              Vue 3 + Vite + Element Plus + Pinia                │
 │                                                                  │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐  │
 │  │Knowledge │ │Document  │ │Document  │ │Index Job │ │System  │  │
@@ -144,200 +144,173 @@
 
 | 层级 | 选型 | 说明 |
 |------|------|------|
-| 框架 | Next.js (App Router) | SSR + SSG, 文件路由 |
+| 框架 | Vue 3 (Composition API) | `<script setup lang="ts">` 语法 |
 | 语言 | TypeScript | 类型安全 |
-| 构建 | Turbopack (Next.js 内置) |
-| UI 组件 | heroui + Tailwind CSS | 快速构建管理后台 |
-| 状态管理 | TanStack Query (React Query) | 服务端状态 + 缓存 |
-| 表单 | React Hook Form + Zod | 表单验证 |
-| HTTP 客户端 | axios / fetch / ky | 数据请求、文件上传用axios，SSE打字机fetch / ky |
-| 表格 | TanStack Table | 文档列表、Job 列表 |
-| 聊天 | AI SDK (Vercel) | Streaming Chat UI |
-| 流程图 (V3) | React Flow (@xyflow/react) | Workflow Designer 拖拽编辑 |
+| 构建 | Vite 6 | 开发 HMR + 生产 Rollup |
+| UI 组件 | Element Plus + Tailwind CSS 4 | 企业级组件库 + 原子化 CSS |
+| 状态管理 | Pinia | 全局状态 (auth, theme) |
+| 服务端状态 | TanStack Query Vue 5 | 服务端缓存 + 自动刷新 |
+| 路由 | Vue Router 4 | SPA 路由 + 懒加载 |
+| HTTP 客户端 | Axios | 请求/响应拦截器, Bearer Token 注入 |
+| 表单验证 | Zod v4 | `safeParse()` 手动验证 |
+| 图标 | @element-plus/icons-vue | Element Plus 图标库 |
+| 工具函数 | VueUse | 组合式工具函数 |
+| 图表 | ECharts + vue-echarts | Dashboard 统计图表 |
+| 流程图 (V3) | Vue Flow (@vue-flow/core) | Workflow Designer 拖拽编辑 |
+| 代码编辑器 | Monaco Editor | JSON 配置编辑 |
+| 密码加密 | jsencrypt | RSA-2048 登录加密 |
 
 ### 2.2 目录结构
 
 ```
-frontend/
+apps/web-v2/                           # Vue 3 前端 (独立 app)
 ├── public/
 │   └── favicon.ico
 ├── src/
-│   ├── app/                          # App Router 页面
-│   │   ├── layout.tsx                # 根布局 (Sidebar + Header)
-│   │   ├── page.tsx                  # 首页 / Dashboard
-│   │   │
-│   │   ├── knowledge-bases/          # 知识库管理
-│   │   │   ├── page.tsx              #   知识库列表
-│   │   │   └── [kbId]/               #   进入某个知识库
-│   │   │       ├── page.tsx          #     知识库概览
-│   │   │       └── documents/        #     该知识库下的文档
-│   │   │           ├── page.tsx      #       文档列表
-│   │   │           └── [id]/         #       文档详情 + Chunks
-│   │   │               └── page.tsx
-│   │   │
-│   │   ├── jobs/                     # Index Job 监控
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── chat/                     # RAG 对话
-│   │   │   ├── page.tsx              #   新建对话 / 选择 AI 应用
-│   │   │   └── [sessionId]/          #   对话历史
-│   │   │       └── page.tsx
-│   │   │
-│   │   ├── ai-applications/          # ★ AI 应用中心 (V2)
-│   │   │   ├── page.tsx              #   应用列表 (财务助手, HR助手...)
-│   │   │   └── [appId]/
-│   │   │       └── page.tsx          #   应用详情 + 配置
-│   │   │
-│   │   ├── workflows/                # ★ Workflow 引擎 (V2-V3)
-│   │   │   ├── page.tsx              #   Workflow 列表
-│   │   │   ├── [id]/
-│   │   │   │   └── page.tsx          #   Workflow 详情 + JSON Config
-│   │   │   └── designer/             #   (V3) 可视化编辑器
-│   │   │       └── page.tsx
-│   │   │
-│   │   ├── models/                   # ★ Model Center (V2)
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── tools/                    # ★ Tool Center (V3)
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── settings/                 # 系统设置
-│   │   │   ├── page.tsx              #   Embedding / Chunk / Retriever
-│   │   │   ├── prompts/              #   Prompt Template 管理
-│   │   │   │   └── page.tsx
-│   │   │   └── api-keys/             #   API Key 管理
-│   │   │       └── page.tsx
-│   │   │
-│   │   └── audit-logs/               # 审计日志
-│   │       └── page.tsx
+│   ├── main.ts                        # 应用入口 (createPinia, router, ElementPlus, VueQueryPlugin)
+│   ├── App.vue                        # 根组件
 │   │
-│   ├── components/                   # 共享组件
-│   │   ├── ui/                       # heroui 基础组件
-│   │   │   ├── button.tsx
-│   │   │   ├── table.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── badge.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── select.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── progress.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   └── ...
+│   ├── views/                         # 页面组件 (Vue Router 懒加载)
+│   │   ├── Dashboard.vue              #   平台总览
+│   │   ├── Login.vue                  #   登录
+│   │   ├── Register.vue               #   注册
 │   │   │
-│   │   ├── layout/
-│   │   │   ├── sidebar.tsx           # 侧边导航
-│   │   │   ├── header.tsx            # 顶部栏
-│   │   │   └── main-layout.tsx       # 布局容器
+│   │   ├── KnowledgeBases.vue         #   知识库列表
+│   │   ├── KnowledgeBaseDetail.vue    #   知识库详情 (含文档 Tab)
+│   │   ├── Documents.vue              #   文档列表
+│   │   ├── DocumentDetail.vue         #   文档详情 + Chunks
+│   │   │
+│   │   ├── AiApplications.vue         # ★ AI 应用列表 (V2)
+│   │   ├── AiApplicationDetail.vue    # ★ 应用详情
+│   │   │
+│   │   ├── Chat.vue                   #   会话列表
+│   │   ├── ChatSession.vue            #   对话 (含 SSE 流式)
+│   │   │
+│   │   ├── Workflows.vue              # ★ Workflow 列表
+│   │   ├── WorkflowDetail.vue         # ★ Workflow 详情
+│   │   ├── WorkflowDesigner.vue       # ★ (V3) Vue Flow 可视化编辑器
+│   │   │
+│   │   ├── Models.vue                 # ★ Model Center (V2)
+│   │   ├── Tools.vue                  # ★ Tool Center (V3)
+│   │   ├── Jobs.vue                   #   Index Job 监控
+│   │   │
+│   │   ├── Settings.vue               #   系统设置
+│   │   ├── ApiKeys.vue                #   API Key 管理
+│   │   ├── Prompts.vue                #   Prompt Template 管理
+│   │   └── AuditLogs.vue              #   审计日志
+│   │
+│   ├── components/                    # 共享组件
+│   │   ├── layout/                    # 布局组件
+│   │   │   ├── AppSidebar.vue         #   侧边导航 (Element Plus icons)
+│   │   │   ├── AppHeader.vue          #   顶部栏 (面包屑 + 用户菜单)
+│   │   │   └── ThemeSwitcher.vue      #   主题切换 (配色 + 暗色)
+│   │   │
+│   │   ├── auth/                      # 认证组件
+│   │   │   └── AuthCard.vue           #   登录/注册卡片容器
 │   │   │
 │   │   ├── knowledge-bases/
-│   │   │   ├── kb-card.tsx           # 知识库卡片
-│   │   │   ├── kb-create-dialog.tsx  # 创建知识库对话框
-│   │   │   └── kb-permission.tsx     # 权限配置
+│   │   │   ├── KbCard.vue            #   知识库卡片
+│   │   │   └── KbCreateDialog.vue     #   创建知识库对话框
 │   │   │
 │   │   ├── documents/
-│   │   │   ├── document-table.tsx    # 文档列表表格
-│   │   │   ├── document-upload.tsx   # 上传对话框
-│   │   │   ├── document-actions.tsx  # 操作按钮组
-│   │   │   ├── version-history.tsx   # 版本历史
-│   │   │   └── chunk-list.tsx        # Chunk 列表
+│   │   │   ├── DocumentTable.vue      #   文档列表表格
+│   │   │   └── DocumentUpload.vue     #   上传组件 (el-upload)
 │   │   │
-│   │   ├── jobs/
-│   │   │   ├── job-table.tsx         # Job 列表表格
-│   │   │   └── job-progress.tsx      # 进度条组件
+│   │   ├── ai-applications/
+│   │   │   └── AppCard.vue            # ★ 应用卡片
 │   │   │
 │   │   ├── chat/
-│   │   │   ├── chat-input.tsx        # 输入框
-│   │   │   ├── chat-message.tsx      # 消息气泡 (含引用)
-│   │   │   ├── chat-session-list.tsx # 会话列表
-│   │   │   └── citation-card.tsx     # 引用卡片
+│   │   │   ├── ChatSessionList.vue    #   会话列表
+│   │   │   ├── ChatMessage.vue        #   消息气泡
+│   │   │   └── ChatInput.vue          #   输入框
 │   │   │
-│   │   ├── ai-applications/          # ★ AI 应用组件 (V2)
-│   │   │   ├── app-card.tsx          #   应用卡片
-│   │   │   ├── app-create-dialog.tsx #   创建应用对话框
-│   │   │   └── app-config.tsx        #   应用配置面板
+│   │   ├── workflows/
+│   │   │   ├── WorkflowCard.vue       # ★ Workflow 卡片
+│   │   │   └── ExecutionList.vue      # ★ 执行历史
 │   │   │
-│   │   ├── workflows/                # ★ Workflow 组件 (V2-V3)
-│   │   │   ├── workflow-card.tsx
-│   │   │   ├── workflow-config.tsx   #   JSON 配置编辑器
-│   │   │   └── execution-list.tsx    #   执行历史
+│   │   ├── models/
+│   │   │   ├── ModelCard.vue          # ★ Model 卡片
+│   │   │   └── ModelForm.vue          # ★ Model 表单
 │   │   │
-│   │   ├── models/                   # ★ Model 组件 (V2)
-│   │   │   ├── model-card.tsx
-│   │   │   └── model-form.tsx
+│   │   ├── tools/
+│   │   │   └── ToolCard.vue           # ★ Tool 卡片
 │   │   │
-│   │   ├── tools/                    # ★ Tool 组件 (V3)
-│   │   │   ├── tool-card.tsx
-│   │   │   └── tool-form.tsx
-│   │   │
-│   │   ├── prompts/
-│   │   │   ├── prompt-editor.tsx     # Prompt 编辑器
-│   │   │   └── prompt-version.tsx    # 版本对比
-│   │   │
-│   │   ├── audit/
-│   │   │   └── audit-log-table.tsx   # 审计日志表格
-│   │   │
-│   │   └── settings/
-│   │       ├── embedding-select.tsx
-│   │       ├── chunk-config.tsx
-│   │       ├── retriever-config.tsx
-│   │       └── api-key-form.tsx
+│   │   └── jobs/
+│   │       └── JobTable.vue           #   Job 表格
 │   │
-│   ├── lib/                          # 工具库
-│   │   ├── api/                      # API 请求层
-│   │   │   ├── client.ts
-│   │   │   ├── knowledge-bases.ts
-│   │   │   ├── documents.ts
-│   │   │   ├── chunks.ts
-│   │   │   ├── jobs.ts
-│   │   │   ├── chat.ts
-│   │   │   ├── prompts.ts
-│   │   │   ├── audit-logs.ts
-│   │   │   ├── api-keys.ts
-│   │   │   ├── settings.ts
-│   │   │   ├── ai-applications.ts    # ★
-│   │   │   ├── models.ts             # ★
-│   │   │   ├── tools.ts              # ★
-│   │   │   └── workflows.ts          # ★
-│   │   │
-│   │   ├── hooks/
-│   │   │   ├── use-knowledge-bases.ts
-│   │   │   ├── use-documents.ts
-│   │   │   ├── use-chunks.ts
-│   │   │   ├── use-jobs.ts
-│   │   │   ├── use-chat.ts
-│   │   │   ├── use-prompts.ts
-│   │   │   ├── use-settings.ts
-│   │   │   ├── use-ai-applications.ts # ★
-│   │   │   ├── use-models.ts          # ★
-│   │   │   ├── use-tools.ts           # ★
-│   │   │   └── use-workflows.ts       # ★
-│   │   │
-│   │   ├── types/
-│   │   │   ├── knowledge-base.ts
-│   │   │   ├── document.ts
-│   │   │   ├── chunk.ts
-│   │   │   ├── job.ts
-│   │   │   ├── chat.ts
-│   │   │   ├── prompt.ts
-│   │   │   ├── audit-log.ts
-│   │   │   ├── settings.ts
-│   │   │   ├── ai-application.ts     # ★
-│   │   │   ├── model.ts              # ★
-│   │   │   ├── tool.ts               # ★
-│   │   │   └── workflow.ts           # ★
-│   │   │
-│   │   └── utils/
-│   │       ├── format.ts
-│   │       └── constants.ts
+│   ├── api/                           # API 请求层 (Axios)
+│   │   ├── client.ts                  #   Axios 实例 (拦截器: Bearer Token, 401 跳转)
+│   │   ├── auth.ts                    #   登录/注册/用户信息
+│   │   ├── knowledge-bases.ts
+│   │   ├── documents.ts
+│   │   ├── chat.ts
+│   │   ├── workflows.ts               # ★
+│   │   ├── ai-applications.ts         # ★
+│   │   ├── models.ts                  # ★
+│   │   ├── tools.ts                   # ★
+│   │   ├── jobs.ts
+│   │   ├── prompts.ts
+│   │   ├── api-keys.ts
+│   │   ├── settings.ts
+│   │   └── audit-logs.ts
+│   │
+│   ├── stores/                        # Pinia 全局状态
+│   │   ├── auth.ts                    #   用户认证状态
+│   │   ├── theme.ts                   #   主题状态 (light/dark)
+│   │   └── breadcrumb.ts              #   面包屑标签映射
+│   │
+│   ├── composables/                   # TanStack Query Vue 封装
+│   │   ├── use-knowledge-bases.ts
+│   │   ├── use-documents.ts
+│   │   ├── use-chat.ts
+│   │   ├── use-workflows.ts           # ★
+│   │   ├── use-ai-applications.ts     # ★
+│   │   ├── use-models.ts              # ★
+│   │   ├── use-tools.ts               # ★
+│   │   └── use-jobs.ts
+│   │
+│   ├── router/
+│   │   └── index.ts                   # Vue Router 配置 (21 routes, beforeEach guard)
+│   │
+│   ├── layouts/
+│   │   └── MainLayout.vue             # 主布局 (Sidebar + Header + router-view)
+│   │
+│   ├── types/                         # TypeScript 接口 (12 files)
+│   │   ├── knowledge-base.ts
+│   │   ├── document.ts
+│   │   ├── chunk.ts
+│   │   ├── chat.ts
+│   │   ├── workflow.ts                # ★
+│   │   ├── ai-application.ts          # ★
+│   │   ├── model.ts                   # ★
+│   │   ├── tool.ts                    # ★
+│   │   ├── job.ts
+│   │   ├── prompt.ts
+│   │   ├── audit-log.ts
+│   │   └── settings.ts
+│   │
+│   ├── utils/                         # 工具函数
+│   │   ├── format.ts
+│   │   ├── constants.ts
+│   │   └── rsa-encrypt.ts
+│   │
+│   ├── validations/                   # Zod schemas
+│   │   └── auth.ts
 │   │
 │   └── styles/
-│       └── globals.css
+│       └── globals.css                # Tailwind CSS 4 + Element Plus 主题桥接
+│                                      #   3 配色主题: Uber / Coinbase / Rabbit
 │
-├── tailwind.config.ts
+├── index.html                         # HTML 入口 (含 anti-FOUC 脚本)
+├── vite.config.ts                     # Vite 配置 (plugins, alias, proxy, port 3034)
 ├── tsconfig.json
-├── next.config.ts
+├── eslint.config.mjs
+├── env.d.ts
+├── .env
+├── .gitignore
+├── nginx.conf                         # Docker SPA 部署配置
 ├── package.json
-└── .env.local
+└── README.md
 ```
 
 ### 2.3 页面设计
@@ -1959,14 +1932,12 @@ data: {"code": "RETRIEVAL_FAILED", "message": "知识库索引不可用"}
 
 ---
 
-前端消费 (Vercel AI SDK):
+前端消费 (Vue 3 + fetch + SSE):
 
-useChat({
-  api: '/api/v1/chat/sessions/:id/messages',
-  onStep: (step) => setThinkingStatus(step.message),
-  onCitations: (citations) => showSourcesFirst(citations),
-  // 用户点击 Stop → AbortController → 后端感知断开, 中止 LLM 调用
-})
+// Vue 3 composable: useChat() 
+// 使用 fetch + ReadableStream 消费 SSE
+// 解析 step/citations/delta/error/done 事件
+// 用户点击 Stop → AbortController.abort() → 后端感知断开
 ```
 
 ### 9.6 用户反馈
@@ -1984,7 +1955,7 @@ body: { rating: "like" | "dislike", comment: "..." }
 
 ```yaml
 services:
-  frontend:      # Next.js (port 3000)
+  frontend:      # Vue 3 + Vite (Nginx, port 80)
   backend:       # NestJS API (port 3001)
   worker:        # NestJS Worker (no port, 消费 BullMQ)
   workflow-exec:# ★ Workflow Execution Worker (no port, V2)
@@ -1998,7 +1969,8 @@ services:
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| Frontend | 3000 | Next.js |
+| Frontend (Dev) | 3034 | Vite dev server |
+| Frontend (Prod) | 80 | Nginx (SPA) |
 | Backend API | 3001 | NestJS HTTP |
 | PostgreSQL | 5432 | 数据库 |
 | Redis | 6379 | 队列 + 缓存 |
@@ -2015,7 +1987,7 @@ services:
 |------|------|---------|---------|
 | **V1: Knowledge Platform** | 知识资产管理 | Knowledge Base, Document/Version/Chunk, Index Pipeline, RAG Chat | Auth, KB, Document, Chunk, Embedding, Retrieval, Chat, Prompt, Audit, API Key |
 | **V2: AI Application Platform** | 应用编排层 | AI Application = KB + Workflow + Model + Prompt 绑定, Workflow Execution 追踪 | **AI Application, Model Center**, Workflow 增强 (Nodes+Edges+Execution) |
-| **V3: Agent Platform** | Agent 运行时 | Tool Center, Workflow Designer (React Flow), Multi-Agent, MCP | **Tool Center**, Workflow Designer, MCP Gateway |
+| **V3: Agent Platform** | Agent 运行时 | Tool Center, Workflow Designer (Vue Flow), Multi-Agent, MCP | **Tool Center**, Workflow Designer, MCP Gateway |
 | **V4: Enterprise AI Hub** | 企业 AI 中台 | 多租户, SSO, 计费, 监控, 高可用 | Tenant, SSO, Billing, Observability |
 
 ### 11.2 细粒度版本
@@ -2027,7 +1999,7 @@ services:
 | v2.0 | AI Application 编排, Model Center, Workflow 增强 | ai_applications, models, workflow_nodes/edges/executions |
 | v2.5 | Word/Excel/Markdown 支持, Workflow Execution 追踪 | 多格式 Loader, workflow_executions |
 | v3.0 | OCR / 图片 PDF, Tool Center (SQL/HTTP/Search) | Tesseract.js, tools 表, Tool Exec Worker |
-| v3.5 | Workflow Designer (拖拽可视化编辑) | React Flow, workflow_nodes/edges 前端编辑器 |
+| v3.5 | Workflow Designer (拖拽可视化编辑) | Vue Flow, workflow_nodes/edges 前端编辑器 |
 | v4.0 | Hybrid Search (BM25 + Vector), Rerank | PostgreSQL 全文搜索, BGE-Reranker / Cohere |
 | v4.5 | Multi-Agent, Reflection, ReWOO | LangGraph Multi-Agent Strategies |
 | v5.0 | Knowledge Graph | Neo4j / NebulaGraph |
@@ -2061,7 +2033,7 @@ V1 架构预留 (数据库建表, 代码不做):
 
 ```
                          ┌──────────────────┐
-                         │   Next.js 前端    │
+                         │  Vue 3 前端       │
                          │ Enterprise Console│
                          └────────┬─────────┘
                                   │

@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @nexus/web-v2
 
-## Getting Started
+Nexus AI Platform — Vue 3 前端项目。
 
-First, run the development server:
+## 技术栈
+
+- **框架**: Vue 3 + TypeScript + Vite 6
+- **UI**: Element Plus + Tailwind CSS 4
+- **状态**: Pinia + TanStack Query Vue 5
+- **路由**: Vue Router 4
+- **HTTP**: Axios
+- **校验**: Zod
+
+## 快速开始
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+开发服务器运行在 http://localhost:3034，API 代理到 http://localhost:3000。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 构建
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm build
+```
 
-## Learn More
+输出目录: `dist/`
 
-To learn more about Next.js, take a look at the following resources:
+## Docker
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+docker build -f docker/web.Dockerfile -t nexus-web-v2 .
+docker run -p 8080:80 nexus-web-v2
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 目录结构
 
-## Deploy on Vercel
+```
+src/
+├── api/          # Axios HTTP 客户端与 API 函数
+├── stores/       # Pinia 状态管理
+├── composables/  # VueUse + TanStack Query 可组合函数
+├── types/        # TypeScript 类型定义
+├── validations/  # Zod 校验 schema
+├── utils/        # 工具函数
+├── router/       # Vue Router 配置
+├── layouts/      # 布局组件
+├── components/   # 公共组件
+├── views/        # 页面组件
+└── styles/       # 全局样式
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 与原项目 (apps/web) 的关系
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+本项目是原 Next.js + HeroUI 前端 (`apps/web`) 的 Vue 3 重写版本。
+所有页面和功能 1:1 对应，API 接口完全兼容。
