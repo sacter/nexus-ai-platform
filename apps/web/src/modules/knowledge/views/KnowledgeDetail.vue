@@ -97,7 +97,7 @@ function getStatusLabel(status: DocType['status']) {
     </div>
 
     <template v-else-if="kb">
-      <el-card class="mb-6">
+      <el-card class="mb-2">
         <div class="flex items-start justify-between">
           <div class="flex items-start gap-4">
             <div class="w-12 h-14 rounded-xl flex items-center justify-center shrink-0"
@@ -113,17 +113,17 @@ function getStatusLabel(status: DocType['status']) {
                   {{ (kb as KnowledgeBase).isActive ? '开启中' : '未开启' }}
                 </el-tag>
               </div>
-              <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs" style="color: var(--foreground); opacity: 0.5">
+              <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs" style="color: var(--foreground); opacity: 0.4">
                 <span>创建人: <span style="opacity: 0.7; font-family: monospace">{{ (kb as KnowledgeBase)?.createdByUser?.username }}</span></span>
                 <span>创建时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).createdAt, 'yyyy-mm-dd') || '--' }}</span></span>
                 <span>更新时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).updatedAt) || '--' }}</span></span>
               </div>
-              <div v-if="(kb as KnowledgeBase).description" class="mt-3 text-sm" style="color: var(--foreground); opacity: 0.6">
+              <div v-if="(kb as KnowledgeBase).description" class="mt-3 text-sm" style="color: var(--foreground); opacity: 0.7">
                 {{ (kb as KnowledgeBase).description }}
               </div>
             </div>
           </div>
-          <el-dropdown trigger="click">
+          <el-dropdown trigger="click" v-if="canEdit || canManagePermissions || canDelete">
             <el-button :icon="MoreFilled" circle />
             <template #dropdown>
               <el-dropdown-menu>

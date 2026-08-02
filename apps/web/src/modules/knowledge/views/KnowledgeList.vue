@@ -69,7 +69,7 @@ function handleDelete(id: string, isActive: boolean) {
   </div>
 
   <!-- 加载骨架屏 -->
-  <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
     <el-skeleton v-for="i in 6" :key="i" animated>
       <template #template>
         <el-skeleton-item variant="rect" style="height: 120px; border-radius: 8px" />
@@ -79,7 +79,7 @@ function handleDelete(id: string, isActive: boolean) {
 
   <div
     v-else-if="kbs && Array.isArray(kbs) && kbs.length > 0"
-    class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 mt-4"
+    class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2 mt-4"
   >
     <KbCard
       v-for="kb in kbs"
