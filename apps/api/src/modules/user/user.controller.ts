@@ -33,8 +33,7 @@ export class UserController {
     if (!user) {
       throw new NotFoundException('用户不存在');
     }
-    const { passwordHash: _, ...safeUser } = user;
-    return safeUser;
+    return user;
   }
 
   @Post()

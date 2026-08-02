@@ -25,6 +25,14 @@ export function useCreateKnowledgeBase() {
   })
 }
 
+export function useUpdateKnowledgeBase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: unknown }) => knowledgeBasesApi.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge-base'] }),
+  })
+}
+
 export function useDeleteKnowledgeBase() {
   const queryClient = useQueryClient()
   return useMutation({

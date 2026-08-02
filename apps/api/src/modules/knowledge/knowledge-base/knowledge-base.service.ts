@@ -7,23 +7,52 @@ import { UpdateKnowledgeBaseDto } from './dto/update-knowledge-base.dto';
 export class KnowledgeBaseService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(createKnowledgeBaseDto: CreateKnowledgeBaseDto) {
-    return 'This action adds a new knowledgeBase';
+  create(createKnowledgeBaseDto: CreateKnowledgeBaseDto, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const kb = await tx.knowledgeBase.create({
+        data: {
+          ...createKnowledgeBaseDto,
+          createdBy: userId,
+        },
+      });
+      await tx.kbPermission.create({
+        data: { kbId: kb.id, userId, role: 'admin' },
+      });
+      return kb;
+    });
   }
 
   findAll() {
-    return this.prisma.knowledgeBase.findMany();
+    return this.prisma.knowledgeBase.findMany({
+      include: {
+        createdByUser: {
+          select: { username: true },
+        },
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} knowledgeBase`;
+  findOne(id: string) {
+    return this.prisma.knowledgeBase.findUnique({
+      where: { id },
+      include: {
+        createdByUser: {
+          select: { username: true },
+        },
+      },
+    });
   }
 
-  update(id: number, updateKnowledgeBaseDto: UpdateKnowledgeBaseDto) {
-    return `This action updates a #${id} knowledgeBase`;
+  update(id: string, updateKnowledgeBaseDto: UpdateKnowledgeBaseDto) {
+    return this.prisma.knowledgeBase.update({
+      where: { id },
+      data: updateKnowledgeBaseDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} knowledgeBase`;
+  remove(id: string) {
+    return this.prisma.knowledgeBase.delete({
+      where: { id },
+    });
   }
 }

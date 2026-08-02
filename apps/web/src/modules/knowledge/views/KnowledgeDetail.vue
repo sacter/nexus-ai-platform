@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Upload, Search, List, FolderOpened, MoreFilled, Document } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useKnowledgeBase, useDeleteKnowledgeBase } from '@/modules/knowledge/composables/useKnowledge'
 import { useDocuments, useDeleteDocument } from '@/modules/knowledge/composables/useDocuments'
+import { useMyPermission } from '@/modules/knowledge/composables/usePermissions'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 import DocumentUpload from '@/modules/knowledge/components/DocumentUpload.vue'
+import KnowledgeCreateDialog from '@/modules/knowledge/components/KnowledgeCreateDialog.vue'
+import PermissionDialog from '@/modules/knowledge/components/PermissionDialog.vue'
 import type { KnowledgeBase } from '@/modules/knowledge/types/knowledge'
 import type { Document as DocType } from '@/modules/knowledge/types/document'
+import type { KbPermission } from '@/modules/knowledge/types/permission'
+import { formatDate } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,18 +25,43 @@ const deleteDocMutation = useDeleteDocument()
 const breadcrumb = useBreadcrumbStore()
 
 const uploadDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const permissionDialogVisible = ref(false)
 const activeTab = ref('documents')
 const viewMode = ref<'list' | 'tree'>('list')
 const searchQuery = ref('')
+
+/* ---------- 当前用户对该 KB 的权限 ---------- */
+const { data: myPerm } = useMyPermission(kbId)
+const myRole = computed(() => (myPerm.value as KbPermission)?.role ?? null)
+const canEdit = computed(() => myRole.value === 'admin')
+const canDelete = computed(() => myRole.value === 'admin')
+const canManagePermissions = computed(() => myRole.value === 'admin')
+const canUpload = computed(() => myRole.value === 'admin' || myRole.value === 'editor')
 
 watch(() => (kb.value as KnowledgeBase)?.name, (name) => {
   if (name) breadcrumb.setLabels({ [kbId]: name })
 }, { immediate: true })
 
 function handleDeleteKb() {
-  deleteKbMutation.mutate(kbId, {
-    onSuccess: () => router.push('/knowledge-bases'),
+  // 知识库开启中不允许直接删除
+  if ((kb.value as KnowledgeBase)?.isActive) {
+    ElMessage.warning('知识库开启中，请先确认关闭再执行此操作！')
+    return
+  }
+  ElMessageBox.confirm('是否确定删除该知识库？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
   })
+    .then(() => {
+      deleteKbMutation.mutate(kbId, {
+        onSuccess: () => router.push('/knowledge-bases'),
+      })
+    })
+    .catch(() => {
+      // 用户取消删除
+    })
 }
 
 function handleDeleteDoc(id: string) {
@@ -78,12 +109,14 @@ function getStatusLabel(status: DocType['status']) {
                 <h1 class="text-xl font-bold" style="color: var(--foreground)">
                   {{ (kb as KnowledgeBase).name }}
                 </h1>
-                <el-tag type="success" size="small">活跃</el-tag>
+                <el-tag :type="(kb as KnowledgeBase).isActive ? 'success' : 'info'" size="small">
+                  {{ (kb as KnowledgeBase).isActive ? '开启中' : '未开启' }}
+                </el-tag>
               </div>
               <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs" style="color: var(--foreground); opacity: 0.5">
-                <span>ID: <span style="opacity: 0.7; font-family: monospace">{{ (kb as KnowledgeBase).id }}</span></span>
-                <span>创建时间: <span style="opacity: 0.7">{{ (kb as KnowledgeBase).createdAt }}</span></span>
-                <span>更新时间: <span style="opacity: 0.7">{{ (kb as KnowledgeBase).updatedAt }}</span></span>
+                <span>创建人: <span style="opacity: 0.7; font-family: monospace">{{ (kb as KnowledgeBase)?.createdByUser?.username }}</span></span>
+                <span>创建时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).createdAt, 'yyyy-mm-dd') || '--' }}</span></span>
+                <span>更新时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).updatedAt) || '--' }}</span></span>
               </div>
               <div v-if="(kb as KnowledgeBase).description" class="mt-3 text-sm" style="color: var(--foreground); opacity: 0.6">
                 {{ (kb as KnowledgeBase).description }}
@@ -94,8 +127,9 @@ function getStatusLabel(status: DocType['status']) {
             <el-button :icon="MoreFilled" circle />
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>编辑知识库</el-dropdown-item>
-                <el-dropdown-item style="color: var(--el-color-danger)" @click="handleDeleteKb">
+                <el-dropdown-item v-if="canEdit" @click="editDialogVisible = true">编辑知识库</el-dropdown-item>
+                <el-dropdown-item v-if="canManagePermissions" @click="permissionDialogVisible = true">权限管理</el-dropdown-item>
+                <el-dropdown-item v-if="canDelete" style="color: var(--el-color-danger)" @click="handleDeleteKb">
                   删除知识库
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -110,7 +144,7 @@ function getStatusLabel(status: DocType['status']) {
           <el-tab-pane label="原始文档" name="documents">
             <div class="mt-4">
               <div class="flex items-center justify-between mb-4">
-                <el-button type="primary" :icon="Upload" @click="uploadDialogVisible = true">
+                <el-button v-if="canUpload" type="primary" :icon="Upload" @click="uploadDialogVisible = true">
                   上传文档
                 </el-button>
                 <div class="flex items-center gap-2">
@@ -222,6 +256,12 @@ function getStatusLabel(status: DocType['status']) {
       <el-dialog v-model="uploadDialogVisible" title="上传文档" width="500px">
         <DocumentUpload :kb-id="kbId" />
       </el-dialog>
+
+      <!-- Edit Dialog -->
+      <KnowledgeCreateDialog v-model:visible="editDialogVisible" :kb="(kb as KnowledgeBase)" />
+
+      <!-- Permission Dialog -->
+      <PermissionDialog v-model:visible="permissionDialogVisible" :kb-id="kbId" />
     </template>
 
     <el-empty v-else description="知识库不存在" />

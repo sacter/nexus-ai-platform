@@ -21,10 +21,10 @@ app.use(VueQueryPlugin, {
       queries: {
         retry: 1, // 接口失败重试1次
         staleTime: 30_000, // 30秒内数据新鲜，不重复请求
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
         refetchOnWindowFocus: true, // 切页面自动刷新
         refetchOnReconnect: true, // 断网重连刷新
-        refetchOnMount: false, // 组件挂载不重复请求缓存数据
+        refetchOnMount: true, // 组件挂载不重复请求缓存数据
       },
     },
   },

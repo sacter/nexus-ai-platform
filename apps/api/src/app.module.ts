@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkerModule } from './worker/worker.module';
 import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledge-base.module';
+import { PermissionModule } from './modules/knowledge/permission/permission.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledg
     AuthModule,
     WorkerModule,
     KnowledgeBaseModule,
+    PermissionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
