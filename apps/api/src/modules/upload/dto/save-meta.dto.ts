@@ -6,13 +6,16 @@ import {
   IsOptional,
   MaxLength,
   Min,
-  IsIn,
 } from 'class-validator';
 
 /**
- * 保存文档元数据 DTO（上传完成后回写）
+ * 上传完成后回写元数据请求参数
  */
-export class CreateDocumentDto {
+export class SaveMetaDto {
+  @IsUUID('4', { message: '知识库 ID 格式不正确' })
+  @IsNotEmpty({ message: '知识库 ID 不能为空' })
+  kbId!: string;
+
   @IsString()
   @IsNotEmpty({ message: '文件名称不能为空' })
   @MaxLength(512, { message: '文件名称最长 512 字符' })

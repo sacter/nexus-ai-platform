@@ -1,14 +1,66 @@
 import http from '@/api/client'
+import type {
+  Document,
+  DocumentVersion,
+  StsCredentials,
+  SaveMetaRequest,
+  SaveMetaResponse,
+  DownloadUrlResponse,
+} from '@/modules/knowledge/types/document'
 
 export const documentsApi = {
-  list: (kbId: string, params?: Record<string, unknown>) =>
-    http.get(`/api/v1/knowledge-bases/${kbId}/documents`, { params }),
+  /** 获取文档列表 */
+  list: (kbId: string, params?: { status?: string }) =>
+    http.get<Document[]>(`/knowledge-bases/${kbId}/documents`, { params }),
+
+  /** 获取文档详情 */
   get: (kbId: string, id: string) =>
-    http.get(`/api/v1/knowledge-bases/${kbId}/documents/${id}`),
-  upload: (kbId: string, formData: FormData) =>
-    http.post(`/api/v1/knowledge-bases/${kbId}/documents/upload`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+    http.get<Document>(`/knowledge-bases/${kbId}/documents/${id}`),
+
+  /** 上传完成后回写元数据 */
+  saveMeta: (kbId: string, data: SaveMetaRequest) =>
+    http.post<SaveMetaResponse>(
+      `/knowledge-bases/${kbId}/documents/save-meta`,
+      data,
+    ),
+
+  /** 更新文档信息 */
+  update: (kbId: string, id: string, data: Partial<Document>) =>
+    http.patch<Document>(
+      `/knowledge-bases/${kbId}/documents/${id}`,
+      data,
+    ),
+
+  /** 软删除文档 */
   delete: (kbId: string, id: string) =>
-    http.delete(`/api/v1/knowledge-bases/${kbId}/documents/${id}`),
+    http.delete<void>(`/knowledge-bases/${kbId}/documents/${id}`),
+
+  /** 获取版本历史 */
+  getVersions: (kbId: string, docId: string) =>
+    http.get<DocumentVersion[]>(
+      `/knowledge-bases/${kbId}/documents/${docId}/versions`,
+    ),
+
+  /** 切换活跃版本 */
+  activateVersion: (kbId: string, docId: string, versionId: string) =>
+    http.patch<Document>(
+      `/knowledge-bases/${kbId}/documents/${docId}/activate-version`,
+      { versionId },
+    ),
+
+  /** 获取下载/预览预签名 URL */
+  getDownloadUrl: (kbId: string, docId: string, versionId?: string) =>
+    http.get<DownloadUrlResponse>(
+      `/knowledge-bases/${kbId}/documents/${docId}/download-url`,
+      { params: versionId ? { versionId } : {} },
+    ),
+}
+
+export const uploadApi = {
+  /** 获取 MinIO STS 临时凭证 */
+  getSts: (kbId: string) =>
+    http.get<StsCredentials & { allowedTypes: { mimeTypes: string[]; extensions: string[] } }>(
+      `/upload/get-minio-sts`,
+      { params: { kbId } },
+    ),
 }

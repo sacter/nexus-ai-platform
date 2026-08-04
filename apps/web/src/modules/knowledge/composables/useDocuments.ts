@@ -1,8 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { toValue, type MaybeRef } from 'vue'
+import { toValue, type MaybeRefOrGetter } from 'vue'
+import { ElMessage } from 'element-plus'
 import { documentsApi } from '@/modules/knowledge/api/document.api'
+import type { Document, DocumentVersion } from '@/modules/knowledge/types/document'
 
-export function useDocuments(kbId: MaybeRef<string>) {
+// ============================================
+// Queries
+// ============================================
+
+/** 获取知识库下的文档列表 */
+export function useDocuments(kbId: MaybeRefOrGetter<string>) {
   return useQuery({
     queryKey: ['documents', kbId],
     queryFn: () => documentsApi.list(toValue(kbId)),
@@ -10,24 +17,135 @@ export function useDocuments(kbId: MaybeRef<string>) {
   })
 }
 
-export function useUploadDocument() {
+/** 获取单个文档详情 */
+export function useDocument(kbId: MaybeRefOrGetter<string>, docId: MaybeRefOrGetter<string>) {
+  return useQuery({
+    queryKey: ['document', kbId, docId],
+    queryFn: () => documentsApi.get(toValue(kbId), toValue(docId)),
+    enabled: () => !!toValue(kbId) && !!toValue(docId),
+  })
+}
+
+/** 获取文档版本历史 */
+export function useDocumentVersions(
+  kbId: MaybeRefOrGetter<string>,
+  docId: MaybeRefOrGetter<string>,
+) {
+  return useQuery({
+    queryKey: ['documentVersions', kbId, docId],
+    queryFn: () => documentsApi.getVersions(toValue(kbId), toValue(docId)),
+    enabled: () => !!toValue(kbId) && !!toValue(docId),
+  })
+}
+
+/** 获取下载 URL */
+export function useDownloadUrl(
+  kbId: MaybeRefOrGetter<string>,
+  docId: MaybeRefOrGetter<string>,
+  versionId?: MaybeRefOrGetter<string | undefined>,
+) {
+  return useQuery({
+    queryKey: ['downloadUrl', kbId, docId, versionId],
+    queryFn: () =>
+      documentsApi.getDownloadUrl(
+        toValue(kbId),
+        toValue(docId),
+        toValue(versionId),
+      ),
+    enabled: () => !!toValue(kbId) && !!toValue(docId),
+  })
+}
+
+// ============================================
+// Mutations
+// ============================================
+
+/** 保存元数据（上传后回写） */
+export function useSaveMeta() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ kbId, formData }: { kbId: string; formData: FormData }) =>
-      documentsApi.upload(kbId, formData),
+    mutationFn: ({
+      kbId,
+      data,
+    }: {
+      kbId: string
+      data: Parameters<typeof documentsApi.saveMeta>[1]
+    }) => documentsApi.saveMeta(kbId, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['documents', variables.kbId] })
     },
   })
 }
 
+/** 更新文档 */
+export function useUpdateDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      kbId,
+      id,
+      data,
+    }: {
+      kbId: string
+      id: string
+      data: Partial<Document>
+    }) => documentsApi.update(kbId, id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['documents', variables.kbId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['document', variables.kbId, variables.id],
+      })
+    },
+  })
+}
+
+/** 软删除文档 */
 export function useDeleteDocument() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ kbId, id }: { kbId: string; id: string }) =>
       documentsApi.delete(kbId, id),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['documents', variables.kbId] })
+      ElMessage.success('文档已删除')
+      queryClient.invalidateQueries({
+        queryKey: ['documents', variables.kbId],
+      })
+    },
+    onError: (err: Error) => {
+      ElMessage.error(`删除失败: ${err.message}`)
+    },
+  })
+}
+
+/** 切换活跃版本 */
+export function useActivateVersion() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      kbId,
+      docId,
+      versionId,
+    }: {
+      kbId: string
+      docId: string
+      versionId: string
+    }) => documentsApi.activateVersion(kbId, docId, versionId),
+    onSuccess: (_data, variables) => {
+      ElMessage.success('已切换活跃版本')
+      queryClient.invalidateQueries({
+        queryKey: ['document', variables.kbId, variables.docId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['documentVersions', variables.kbId, variables.docId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['documents', variables.kbId],
+      })
+    },
+    onError: (err: Error) => {
+      ElMessage.error(`切换版本失败: ${err.message}`)
     },
   })
 }

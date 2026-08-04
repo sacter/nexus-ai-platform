@@ -4,11 +4,15 @@ import { resolve } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
+import { MinioModule } from './infrastructure/minio/minio.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkerModule } from './worker/worker.module';
 import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledge-base.module';
 import { PermissionModule } from './modules/knowledge/permission/permission.module';
+import { DocumentModule } from './modules/knowledge/document/document.module';
+import { VersionModule } from './modules/knowledge/version/version.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
   imports: [
@@ -18,11 +22,15 @@ import { PermissionModule } from './modules/knowledge/permission/permission.modu
       envFilePath: resolve(process.cwd(), '../../.env'),
     }),
     PrismaModule,
+    MinioModule,
     UserModule,
     AuthModule,
     WorkerModule,
     KnowledgeBaseModule,
     PermissionModule,
+    DocumentModule,
+    VersionModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],
