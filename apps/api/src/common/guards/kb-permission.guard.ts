@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import type { Request } from 'express';
-import type { JwtPayload } from '../decorators/current-user.decorator';
 
 /**
  * KB 权限守卫 — 校验当前用户对指定知识库是否拥有上传/编辑权限
@@ -30,12 +29,12 @@ export class KbPermissionGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const user = request.user as JwtPayload | undefined;
+    const user = request.user;
     // 从路由参数或查询参数中提取 kbId
     const kbId: string | undefined =
       (request.params as Record<string, string>)?.['kbId'] ??
       (typeof request.query?.kbId === 'string'
-        ? (request.query.kbId as string)
+        ? request.query.kbId
         : undefined);
 
     if (!user?.sub) {
