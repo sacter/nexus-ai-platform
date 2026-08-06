@@ -1,6 +1,6 @@
 import { ref, computed, readonly } from 'vue'
 import { ElMessage } from 'element-plus'
-import { S3Client, AbortMultipartUploadCommand } from '@aws-sdk/client-s3'
+import { S3Client } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
 import { uploadApi, documentsApi } from '@/modules/knowledge/api/document.api'
 import type {
@@ -112,8 +112,8 @@ export function useUpload(kbId: string) {
       stsCredentials.value = sts
       stsLoaded.value = true
       return sts
-    } catch (err: any) {
-      ElMessage.error(`获取上传凭证失败: ${err.message || '未知错误'}`)
+    } catch (err) {
+      ElMessage.error(`获取上传凭证失败: ${err instanceof Error ? err.message : '未知错误'}`)
       return null
     } finally {
       stsLoading.value = false
@@ -155,6 +155,12 @@ export function useUpload(kbId: string) {
   // 文件管理
   // ============================================
 
+  /** 去掉文件扩展名，仅保留文件名（用于文档名称/版本分组） */
+  function stripExtension(fileName: string): string {
+    const idx = fileName.lastIndexOf('.')
+    return idx > 0 ? fileName.slice(0, idx) : fileName
+  }
+
   function addFiles(files: FileList | File[]) {
     const fileArray = Array.from(files)
     const newItems: UploadFileItem[] = []
@@ -173,7 +179,8 @@ export function useUpload(kbId: string) {
       newItems.push({
         id: crypto.randomUUID(),
         file,
-        name: file.name,
+        // 默认只展示文件名（不带扩展名），用户可修改为版本分组名
+        name: stripExtension(file.name),
         status: 'pending',
         progress: 0,
       })
@@ -258,15 +265,16 @@ export function useUpload(kbId: string) {
 
       item.status = 'success'
       item.progress = 100
-    } catch (err: any) {
+    } catch (err) {
       activeUploads.delete(item.id)
       // 用户主动取消不算失败
-      if (err.name === 'AbortError' || err.$metadata?.httpStatusCode === 499) {
+      const cancelErr = err as { name?: string; $metadata?: { httpStatusCode?: number } }
+      if (cancelErr.name === 'AbortError' || cancelErr.$metadata?.httpStatusCode === 499) {
         item.status = 'paused'
         return
       }
       item.status = 'failed'
-      item.error = err.message || '上传失败'
+      item.error = err instanceof Error ? err.message : '上传失败'
       ElMessage.error(`上传 "${item.file.name}" 失败: ${item.error}`)
     }
   }
@@ -278,7 +286,8 @@ export function useUpload(kbId: string) {
     if (!item.objectKey) throw new Error('缺少文件 Object Key')
 
     const meta: SaveMetaRequest = {
-      name: item.name,
+      // 名称为空时回退为原始文件名（去扩展名）
+      name: item.name.trim() || stripExtension(item.file.name),
       originalName: item.file.name,
       url: item.objectKey,
       fileSize: item.file.size,

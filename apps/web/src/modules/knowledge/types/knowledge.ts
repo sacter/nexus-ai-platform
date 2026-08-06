@@ -10,3 +10,8 @@ export interface KnowledgeBase {
   createdAt: string;
   updatedAt: string;
 }
+
+export const EMBEDDING_MODEL_OPTIONS = [
+  { label: 'bge-m3', value: 'bge-m3' },
+  { label: 'openai/text-embedding-3-small', value: 'openai/text-embedding-3-small' },
+]

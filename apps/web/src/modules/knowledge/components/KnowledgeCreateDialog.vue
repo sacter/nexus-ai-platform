@@ -2,7 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useCreateKnowledgeBase, useUpdateKnowledgeBase } from '@/modules/knowledge/composables/useKnowledge'
-import type { KnowledgeBase } from '@/modules/knowledge/types/knowledge'
+import { EMBEDDING_MODEL_OPTIONS, type KnowledgeBase } from '@/modules/knowledge/types/knowledge'
 
 const visible = defineModel<boolean>('visible', { default: false })
 const props = defineProps<{ kb?: KnowledgeBase | null }>()
@@ -74,8 +74,12 @@ async function handleSubmit() {
       </el-form-item>
       <el-form-item label="Embedding" prop="embeddingModel" required>
         <el-select v-model="form.embeddingModel" style="width: 100%">
-          <el-option label="bge-m3" value="bge-m3" />
-          <el-option label="openai/text-embedding-3-small" value="openai/text-embedding-3-small" />
+          <el-option
+            v-for="opt in EMBEDDING_MODEL_OPTIONS"
+            :key="opt.value"
+            :label="opt.label"
+            :value="opt.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="检索方式" prop="retrievalStrategy" required>

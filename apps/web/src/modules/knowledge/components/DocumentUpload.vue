@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   Upload,
   Close,
@@ -7,9 +7,10 @@ import {
   CircleCheckFilled,
   CircleCloseFilled,
   RefreshRight,
-  Delete,
+  InfoFilled,
 } from '@element-plus/icons-vue'
 import { useUpload } from '@/modules/knowledge/composables/useUpload'
+import { useDocuments } from '@/modules/knowledge/composables/useDocuments'
 import type { UploadFileItem } from '@/modules/knowledge/types/document'
 
 const props = defineProps<{ kbId: string }>()
@@ -28,15 +29,28 @@ const {
   addFiles,
   removeFile,
   clearCompleted,
-  setFileName,
   startUpload,
   retryFailed,
 } = useUpload(props.kbId)
 
+// 知识库已有文档（名称作为版本分组选项）
+const { data: existingDocs } = useDocuments(props.kbId)
+
+// 文档名称选项：知识库已有文档名 + 本次文件列表中的名称（去重）
+const nameOptions = computed(() => {
+  const names = new Set<string>()
+  existingDocs.value?.forEach((doc) => {
+    if (doc.name) names.add(doc.name)
+  })
+  fileList.value.forEach((item) => {
+    const name = item.name.trim()
+    if (name) names.add(name)
+  })
+  return [...names]
+})
+
 const dragOver = ref(false)
 const fileInputRef = ref<HTMLInputElement>()
-const editingId = ref<string | null>(null)
-const editingName = ref('')
 
 // --- 拖拽事件 ---
 function onDragOver(e: DragEvent) {
@@ -62,18 +76,6 @@ function onFileInputChange(e: Event) {
     // 重置 input 以允许重新选择相同文件
     ;(e.target as HTMLInputElement).value = ''
   }
-}
-
-// --- 文件名编辑 ---
-function startEditName(item: UploadFileItem) {
-  editingId.value = item.id
-  editingName.value = item.name
-}
-function finishEditName(item: UploadFileItem) {
-  if (editingName.value.trim()) {
-    setFileName(item.id, editingName.value.trim())
-  }
-  editingId.value = null
 }
 
 // --- 上传 ---
@@ -117,8 +119,12 @@ watch(() => props.kbId, () => {
       @drop="onDrop"
       @click="fileInputRef?.click()"
     >
-      <el-icon :size="32"><Upload /></el-icon>
-      <p class="upload-text">拖拽文件到此处，或点击选择文件</p>
+      <el-icon :size="32">
+        <Upload />
+      </el-icon>
+      <p class="upload-text">
+        拖拽文件到此处，或点击选择文件
+      </p>
       <p class="upload-hint">
         支持 PDF、Word、Excel、PPT、Markdown、TXT | 单文件上限 500MB
       </p>
@@ -129,11 +135,14 @@ watch(() => props.kbId, () => {
         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.md,.txt"
         class="upload-input-hidden"
         @change="onFileInputChange"
-      />
+      >
     </div>
 
     <!-- 文件列表 -->
-    <div v-if="fileList.length > 0" class="upload-file-list">
+    <div
+      v-if="fileList.length > 0"
+      class="upload-file-list"
+    >
       <div class="upload-file-header">
         <span class="upload-count">
           共 {{ fileList.length }} 个文件
@@ -171,6 +180,16 @@ watch(() => props.kbId, () => {
         </span>
       </div>
 
+      <!-- 名称分组提示 -->
+      <div class="upload-name-tip">
+        <el-icon :size="14">
+          <InfoFilled />
+        </el-icon>
+        <span>
+          文档名称用于版本分组：同一文档的不同版本请保持名称一致（如《系统需求说明书》）。可下拉选择已有名称，也可直接输入新名称。
+        </span>
+      </div>
+
       <div
         v-for="item in fileList"
         :key="item.id"
@@ -187,31 +206,36 @@ watch(() => props.kbId, () => {
         <!-- 文件信息 -->
         <div class="upload-file-info">
           <div class="upload-file-name-row">
-            <!-- 可编辑文件名（用于版本分组） -->
-            <template v-if="editingId === item.id">
-              <el-input
-                v-model="editingName"
-                size="small"
-                class="upload-name-input"
-                @blur="finishEditName(item)"
-                @keyup.enter="finishEditName(item)"
+            <!-- 文档名称：选择+填写（用于版本分组） -->
+            <el-select
+              v-if="item.status === 'pending'"
+              v-model="item.name"
+              filterable
+              allow-create
+              default-first-option
+              size="small"
+              class="upload-name-select"
+              placeholder="选择已有名称或输入新名称"
+            >
+              <el-option
+                v-for="opt in nameOptions"
+                :key="opt"
+                :label="opt"
+                :value="opt"
               />
-            </template>
-            <template v-else>
-              <span
-                class="upload-file-name"
-                :class="{ 'is-editable': item.status === 'pending' }"
-                :title="'点击编辑文档名称（用于版本分组）'"
-                @click="item.status === 'pending' && startEditName(item)"
-              >
-                {{ item.name }}
-              </span>
-            </template>
+            </el-select>
+            <span
+              v-else
+              class="upload-file-name"
+            >{{ item.name }}</span>
             <span class="upload-file-original">({{ item.file.name }})</span>
           </div>
           <div class="upload-file-meta">
             <span>{{ (item.file.size / 1024 / 1024).toFixed(2) }} MB</span>
-            <span v-if="item.status === 'failed'" class="upload-error">
+            <span
+              v-if="item.status === 'failed'"
+              class="upload-error"
+            >
               {{ item.error }}
             </span>
           </div>
@@ -296,6 +320,18 @@ watch(() => props.kbId, () => {
   align-items: center;
 }
 
+.upload-name-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--foreground-secondary, #909399);
+  background: var(--bg-secondary, #f5f7fa);
+  border-bottom: 1px solid var(--border-color, #ebeef5);
+}
+
 .upload-file-item {
   display: flex;
   align-items: flex-start;
@@ -310,6 +346,9 @@ watch(() => props.kbId, () => {
   flex-shrink: 0;
   margin-top: 2px;
   font-size: 18px;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 10px;
 }
 .upload-file-info {
   flex: 1;
@@ -329,15 +368,8 @@ watch(() => props.kbId, () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.upload-file-name.is-editable {
-  cursor: pointer;
-  border-bottom: 1px dashed var(--info, #909399);
-}
-.upload-file-name.is-editable:hover {
-  color: var(--primary, #409eff);
-}
-.upload-name-input {
-  max-width: 260px;
+.upload-name-select {
+  max-width: 300px;
 }
 .upload-file-original {
   font-size: 12px;
