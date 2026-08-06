@@ -8,7 +8,7 @@ import { PrismaService } from '../../../infrastructure/database/prisma/prisma.se
 import { MinioService } from '../../../infrastructure/minio/minio.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
-import type { Prisma } from '@prisma/client';
+import type { DocumentStatus, Prisma } from '@prisma/client';
 
 /**
  * 文档服务
@@ -39,11 +39,7 @@ export class DocumentService {
    * - 事务包裹，防止文件上传成功但数据库写入失败
    * - 幂等键防重复创建版本
    */
-  async saveMeta(
-    kbId: string,
-    userId: string,
-    dto: CreateDocumentDto,
-  ) {
+  async saveMeta(kbId: string, userId: string, dto: CreateDocumentDto) {
     return this.prisma.$transaction(async (tx) => {
       // 幂等检查：如果提供了 idempotencyKey，检查是否已存在
       if (dto.idempotencyKey) {
@@ -57,9 +53,7 @@ export class DocumentService {
           this.logger.warn(
             `Duplicate upload detected: idempotencyKey=${dto.idempotencyKey}, url=${dto.url}`,
           );
-          throw new ConflictException(
-            '该文件已上传，请勿重复提交',
-          );
+          throw new ConflictException('该文件已上传，请勿重复提交');
         }
       }
 
@@ -76,8 +70,7 @@ export class DocumentService {
 
       if (existingDoc) {
         // --- 已有同 name 文档 → 新增版本 ---
-        const nextVersion =
-          (existingDoc.versions[0]?.versionNumber || 0) + 1;
+        const nextVersion = (existingDoc.versions[0]?.versionNumber || 0) + 1;
 
         const newVersion = await tx.documentVersion.create({
           data: {
@@ -148,9 +141,7 @@ export class DocumentService {
         data: { currentVersionId: newVersion.id },
       });
 
-      this.logger.log(
-        `New document created: ${dto.name}, docId=${newDoc.id}`,
-      );
+      this.logger.log(`New document created: ${dto.name}, docId=${newDoc.id}`);
 
       return {
         document: { ...newDoc, currentVersionId: newVersion.id },
@@ -163,11 +154,11 @@ export class DocumentService {
   /**
    * 查询知识库下的文档列表
    */
-  async findByKbId(kbId: string, params?: { status?: string }) {
+  async findByKbId(kbId: string, params?: { status?: DocumentStatus }) {
     const where: Prisma.DocumentWhereInput = {
       kbId,
       ...(params?.status
-        ? { status: params.status as any }
+        ? { status: params.status }
         : { status: { not: 'DELETED' } }),
     };
 
@@ -213,11 +204,7 @@ export class DocumentService {
   /**
    * 更新文档信息
    */
-  async update(
-    kbId: string,
-    docId: string,
-    dto: UpdateDocumentDto,
-  ) {
+  async update(kbId: string, docId: string, dto: UpdateDocumentDto) {
     const doc = await this.prisma.document.findFirst({
       where: { id: docId, kbId },
     });
@@ -228,7 +215,7 @@ export class DocumentService {
 
     return this.prisma.document.update({
       where: { id: docId },
-      data: dto as Prisma.DocumentUncheckedUpdateInput,
+      data: dto,
     });
   }
 
@@ -282,11 +269,7 @@ export class DocumentService {
    * 只替换 document.current_version_id 指向历史版本
    * 不重新上传文件
    */
-  async activateVersion(
-    kbId: string,
-    docId: string,
-    versionId: string,
-  ) {
+  async activateVersion(kbId: string, docId: string, versionId: string) {
     // 验证版本属于该文档
     const version = await this.prisma.documentVersion.findFirst({
       where: { id: versionId, documentId: docId },
@@ -351,11 +334,7 @@ export class DocumentService {
    * 安全要求：桶私有，所有访问通过临时签名 URL
    * 禁止直接返回 MinIO 原始地址给前端
    */
-  async getDownloadUrl(
-    kbId: string,
-    docId: string,
-    versionId?: string,
-  ) {
+  async getDownloadUrl(kbId: string, docId: string, versionId?: string) {
     let objectKey: string;
 
     if (versionId) {

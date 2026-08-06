@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
 import { CreateVersionDto } from './dto/create-version.dto';
 import { UpdateVersionDto } from './dto/update-version.dto';
-import type { Prisma } from '@prisma/client';
 
 /**
  * 版本服务
@@ -20,7 +19,7 @@ export class VersionService {
    */
   async create(dto: CreateVersionDto) {
     return this.prisma.documentVersion.create({
-      data: dto as Prisma.DocumentVersionUncheckedCreateInput,
+      data: dto,
     });
   }
 
@@ -70,7 +69,7 @@ export class VersionService {
 
     return this.prisma.documentVersion.update({
       where: { id },
-      data: dto as Prisma.DocumentVersionUncheckedUpdateInput,
+      data: dto,
     });
   }
 

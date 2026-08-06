@@ -16,6 +16,7 @@ import { ActivateVersionDto } from './dto/document.dto';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import type { JwtPayload } from '../../../common/decorators/current-user.decorator';
 import { KbPermissionGuard } from '../../../common/guards/kb-permission.guard';
+import { DocumentStatus } from '@prisma/client';
 
 /**
  * 文档控制器
@@ -59,7 +60,12 @@ export class DocumentController {
     @Param('kbId') kbId: string,
     @Query('status') status?: string,
   ) {
-    return this.documentService.findByKbId(kbId, { status });
+    // 仅接受合法的 DocumentStatus 枚举值，非法值忽略（不传即排除已删除）
+    const validStatuses = Object.values(DocumentStatus) as string[];
+    const parsedStatus = validStatuses.includes(status ?? '')
+      ? (status as DocumentStatus)
+      : undefined;
+    return this.documentService.findByKbId(kbId, { status: parsedStatus });
   }
 
   /**
@@ -68,10 +74,7 @@ export class DocumentController {
    * 获取文档详情
    */
   @Get(':id')
-  async findOne(
-    @Param('kbId') kbId: string,
-    @Param('id') id: string,
-  ) {
+  async findOne(@Param('kbId') kbId: string, @Param('id') id: string) {
     return this.documentService.findOne(kbId, id);
   }
 
@@ -101,10 +104,7 @@ export class DocumentController {
    */
   @Delete(':id')
   @UseGuards(KbPermissionGuard)
-  async remove(
-    @Param('kbId') kbId: string,
-    @Param('id') id: string,
-  ) {
+  async remove(@Param('kbId') kbId: string, @Param('id') id: string) {
     return this.documentService.softDelete(kbId, id);
   }
 

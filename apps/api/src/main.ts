@@ -5,6 +5,14 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
+  // ── BigInt 序列化：JSON 不支持 BigInt，转为字符串避免精度丢失 ──
+  // Prisma 的 BigInt 字段（如 Document.fileSize）序列化时需要此补丁
+  (BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function (
+    this: bigint,
+  ) {
+    return this.toString();
+  };
+
   const app = await NestFactory.create(AppModule);
 
   // ── CORS ──

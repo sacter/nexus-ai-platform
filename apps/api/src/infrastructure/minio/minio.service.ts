@@ -113,16 +113,16 @@ export class MinioService {
     const durationSeconds = 3600; // 1 小时
 
     // 构建 STS Policy：限定只能 PutObject 到指定前缀
-    const policy = {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Action: ['s3:PutObject'],
-          Resource: [`arn:aws:s3:::${this.bucket}/${prefix}*`],
-        },
-      ],
-    };
+    // const policy = {
+    //   Version: '2012-10-17',
+    //   Statement: [
+    //     {
+    //       Effect: 'Allow',
+    //       Action: ['s3:PutObject'],
+    //       Resource: [`arn:aws:s3:::${this.bucket}/${prefix}*`],
+    //     },
+    //   ],
+    // };
 
     try {
       // MinIO 通过 AssumeRole 或直接使用 getPresignedPostPolicy 来模拟 STS

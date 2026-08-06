@@ -40,10 +40,7 @@ export class VersionController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateVersionDto: UpdateVersionDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateVersionDto: UpdateVersionDto) {
     return this.versionService.update(id, updateVersionDto);
   }
 

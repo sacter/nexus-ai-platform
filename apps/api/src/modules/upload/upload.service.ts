@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MinioService } from '../../infrastructure/minio/minio.service';
 import type { StsCredentials } from '../../infrastructure/minio/minio.service';
+import {
+  ALLOWED_MIME_TYPES,
+  ALLOWED_EXTENSIONS,
+} from '../../infrastructure/minio/minio.service';
 
 /**
  * 上传服务
@@ -32,10 +36,10 @@ export class UploadService {
    * 获取允许上传的文件类型白名单
    */
   getAllowedTypes(): { mimeTypes: string[]; extensions: string[] } {
-    const {
-      ALLOWED_MIME_TYPES,
-      ALLOWED_EXTENSIONS,
-    } = require('../../../infrastructure/minio/minio.service');
+    // const {
+    //   ALLOWED_MIME_TYPES,
+    //   ALLOWED_EXTENSIONS,
+    // } = require('../../../infrastructure/minio/minio.service');
 
     return {
       mimeTypes: ALLOWED_MIME_TYPES,

@@ -1,12 +1,10 @@
 import {
-  IsUUID,
   IsNotEmpty,
   IsString,
   IsInt,
   IsOptional,
   MaxLength,
   Min,
-  IsIn,
 } from 'class-validator';
 
 /**
