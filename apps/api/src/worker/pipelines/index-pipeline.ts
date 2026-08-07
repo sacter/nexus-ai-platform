@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import { MinioService } from '../../infrastructure/minio/minio.service';
 import { PersistService } from './persist/persist.service';
@@ -34,7 +35,12 @@ export class IndexPipeline {
     private readonly modelProvider: ModelProviderService,
   ) {}
 
-  async run(documentId: string, versionId: string, kbId: string, opts?: { reindex?: boolean }): Promise<IndexRunResult> {
+  async run(
+    documentId: string,
+    versionId: string,
+    kbId: string,
+    opts?: { reindex?: boolean },
+  ): Promise<IndexRunResult> {
     // 1. 文档 → PROCESSING
     await this.prisma.document.update({
       where: { id: documentId },
@@ -55,62 +61,77 @@ export class IndexPipeline {
         startedAt: new Date(),
       },
     });
-    const updateJob = (step: number, progress: number, desc: string) =>
-      this.prisma.indexJob.update({
+    const updateJob = (
+      step: number,
+      progress: number,
+      desc: string,
+      client: PrismaService | Prisma.TransactionClient = this.prisma,
+    ) =>
+      client.indexJob.update({
         where: { id: job.id },
         data: { currentStep: step, progress, stepDescription: desc },
       });
 
     try {
       // 3. MinIO 下载
-      const version = await this.prisma.documentVersion.findUnique({ where: { id: versionId } });
+      const version = await this.prisma.documentVersion.findUnique({
+        where: { id: versionId },
+      });
       if (!version) throw new Error(`version ${versionId} not found`);
       const buffer = await this.minio.downloadObject(version.fileUrl);
-      await updateJob(2, 10, '下载文件完成');
+      await updateJob(2, 10, `下载文件完成`);
 
       // 4. Loader 策略选择 —— mimeType 取自 Document（DocumentVersion 无 mimeType 字段）
-      const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+      const doc = await this.prisma.document.findUnique({
+        where: { id: documentId },
+      });
       const mimeType = doc?.mimeType ?? '';
-      const loader = this.loaders.find((l) => l.supports(mimeType, version.fileUrl));
+      const loader = this.loaders.find((l) =>
+        l.supports(mimeType, version.fileUrl),
+      );
       if (!loader) throw new Error(`no loader for mimeType=${mimeType}`);
       const rawPages = await loader.load(buffer, mimeType, version.fileUrl);
       await updateJob(3, 20, `Loader: ${loader.constructor.name}`);
 
-      // 5. Parser
+      // 5. Parser (提取纯文本 + 元数据)
       const parsed = await this.parser.parse(rawPages);
       await updateJob(4, 30, '解析完成');
 
-      // 6. Splitter
+      // 6. Splitter (分 chunk)
       const chunks = this.splitter.split(parsed.pages);
       await updateJob(5, 50, `分割为 ${chunks.length} 个 chunk`);
 
-      // 7. Persist chunks
-      const { count, ids } = await this.persist.saveChunks(versionId, chunks);
-      await this.prisma.documentVersion.update({
-        where: { id: versionId },
-        data: { chunkCount: count, status: 'PROCESSING' },
+      // 7. Persist chunks (落库) —— ★ 事务：chunks + chunkCount + progress 同生共死
+      const { count, ids } = await this.prisma.$transaction(async (tx) => {
+        const saved = await this.persist.saveChunks(versionId, chunks, tx);
+        await tx.documentVersion.update({
+          where: { id: versionId },
+          data: { chunkCount: saved.count, status: 'PROCESSING' },
+        });
+        await updateJob(6, 60, `已落库 ${saved.count} 个 chunk`, tx);
+        return saved;
       });
-      await updateJob(6, 60, `已落库 ${count} 个 chunk`);
 
       // 8. Enqueue → embedding Queue（★ 独立 Queue）
-      const kb = await this.prisma.knowledgeBase.findUnique({ where: { id: kbId } });
+      const kb = await this.prisma.knowledgeBase.findUnique({
+        where: { id: kbId },
+      });
       const modelName = kb?.embeddingModel || undefined;
-      const { dimension } = this.modelProvider.resolveEmbeddingConfig(modelName);
+      const { dimension } =
+        this.modelProvider.resolveEmbeddingConfig(modelName);
 
-      await this.queueService.add(
-        QUEUE_NAMES.EMBEDDING,
-        'embed-chunks',
-        {
-          documentId,
-          versionId,
-          kbId,
-          chunkIds: ids,
-          model: modelName,
-          dimension,
-          indexJobId: job.id,
-        },
+      await this.queueService.add(QUEUE_NAMES.EMBEDDING, 'embed-chunks', {
+        documentId,
+        versionId,
+        kbId,
+        chunkIds: ids,
+        model: modelName,
+        dimension,
+        indexJobId: job.id,
+      });
+      this.logger.log(
+        `IndexPipeline done: doc=${documentId}, chunks=${count}, enqueued embedding`,
       );
-      this.logger.log(`IndexPipeline done: doc=${documentId}, chunks=${count}, enqueued embedding`);
       return { chunkIds: ids, chunkCount: count, jobId: job.id };
     } catch (error) {
       await this.prisma.indexJob.update({
@@ -119,7 +140,11 @@ export class IndexPipeline {
       });
       await this.prisma.document.update({
         where: { id: documentId },
-        data: { status: 'FAILED', errorMessage: (error as Error).message, updatedAt: new Date() },
+        data: {
+          status: 'FAILED',
+          errorMessage: (error as Error).message,
+          updatedAt: new Date(),
+        },
       });
       throw error;
     }
