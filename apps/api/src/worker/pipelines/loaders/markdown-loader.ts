@@ -6,12 +6,17 @@ import { Loader, LoadedPage } from './loader.interface';
  */
 export class MarkdownLoader implements Loader {
   supports(mimeType: string, fileName?: string): boolean {
-    return mimeType.includes('markdown') || (fileName ?? '').toLowerCase().endsWith('.md');
+    return (
+      mimeType.includes('markdown') ||
+      (fileName ?? '').toLowerCase().endsWith('.md')
+    );
   }
 
   async load(buffer: Buffer): Promise<LoadedPage[]> {
     const raw = buffer.toString('utf-8');
-    const sections = raw.split(/(?=^#{1,2} )/m).filter((s) => s.trim().length > 0);
+    const sections = raw
+      .split(/(?=^#{1,2} )/m)
+      .filter((s) => s.trim().length > 0);
     const chunks = sections.length > 0 ? sections : [raw];
     return chunks.map((content, i) => ({
       pageNumber: i + 1,

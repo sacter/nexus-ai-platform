@@ -6,7 +6,11 @@ const TEXT_MIME = ['text/plain', 'text/markdown', 'text/x-markdown'];
 export class TextLoader implements Loader {
   supports(mimeType: string, fileName?: string): boolean {
     const ext = (fileName ?? '').toLowerCase();
-    return TEXT_MIME.includes(mimeType) || ext.endsWith('.txt') || ext.endsWith('.md');
+    return (
+      TEXT_MIME.includes(mimeType) ||
+      ext.endsWith('.txt') ||
+      ext.endsWith('.md')
+    );
   }
 
   async load(buffer: Buffer): Promise<LoadedPage[]> {
