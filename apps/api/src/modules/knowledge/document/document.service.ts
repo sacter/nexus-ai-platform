@@ -6,6 +6,19 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
 import { MinioService } from '../../../infrastructure/minio/minio.service';
+import { EventBusService } from '../../../infrastructure/event-bus/event-bus.service';
+import {
+  DOCUMENT_UPLOADED,
+  DocumentUploadedEvent,
+} from '../../../infrastructure/event-bus/events/document-uploaded.event';
+import {
+  DOCUMENT_DELETED,
+  DocumentDeletedEvent,
+} from '../../../infrastructure/event-bus/events/document-deleted.event';
+import {
+  INDEX_REQUESTED,
+  IndexRequestedEvent,
+} from '../../../infrastructure/event-bus/events/index-requested.event';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import type { DocumentStatus, Prisma } from '@prisma/client';
@@ -28,6 +41,7 @@ export class DocumentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly minioService: MinioService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   /**
@@ -40,7 +54,7 @@ export class DocumentService {
    * - 幂等键防重复创建版本
    */
   async saveMeta(kbId: string, userId: string, dto: CreateDocumentDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // 幂等检查：如果提供了 idempotencyKey，检查是否已存在
       if (dto.idempotencyKey) {
         const existingVersion = await tx.documentVersion.findFirst({
@@ -149,6 +163,17 @@ export class DocumentService {
         isNew: true,
       };
     });
+
+    // ★ 功能1：发布 document.uploaded → Index Worker
+    const event: DocumentUploadedEvent = {
+      documentId: result.document.id,
+      versionId: result.version.id,
+      kbId,
+    };
+    await this.eventBus.emit(DOCUMENT_UPLOADED, event);
+    this.logger.log(`Emitted ${DOCUMENT_UPLOADED}: doc=${result.document.id}`);
+
+    return result;
   }
 
   /**
@@ -234,10 +259,17 @@ export class DocumentService {
       throw new NotFoundException('文档不存在');
     }
 
-    return this.prisma.document.update({
+    const updated = await this.prisma.document.update({
       where: { id: docId },
       data: { status: 'DELETED', updatedAt: new Date() },
     });
+
+    // ★ 功能4：发布 document.deleted → 异步 GC
+    await this.eventBus.emit(
+      DOCUMENT_DELETED,
+      { documentId: doc.id, kbId: doc.kbId } satisfies DocumentDeletedEvent,
+    );
+    return updated;
   }
 
   /**
@@ -359,5 +391,24 @@ export class DocumentService {
       await this.minioService.generatePresignedDownloadUrl(objectKey);
 
     return { url: presignedUrl, objectKey, expiresIn: 3600 };
+  }
+
+  /**
+   * 重新索引（重新 embedding）：发布 index.requested → Reindex Worker
+   */
+  async requestReindex(kbId: string, docId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id: docId, kbId, status: { not: 'DELETED' } },
+    });
+    if (!doc) throw new NotFoundException('文档不存在或已删除');
+    if (!doc.currentVersionId) throw new ConflictException('文档没有活跃版本，无法重新索引');
+
+    const event: IndexRequestedEvent = {
+      documentId: docId,
+      versionId: doc.currentVersionId,
+      kbId,
+    };
+    await this.eventBus.emit(INDEX_REQUESTED, event);
+    return { reindexed: true, versionId: doc.currentVersionId };
   }
 }

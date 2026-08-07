@@ -151,4 +151,14 @@ export class DocumentController {
   ) {
     return this.documentService.getDownloadUrl(kbId, id, versionId);
   }
+
+  /**
+   * POST /api/v1/knowledge-bases/:kbId/documents/:id/reindex
+   * 重新 embedding
+   */
+  @Post(':id/reindex')
+  @UseGuards(KbPermissionGuard)
+  async reindex(@Param('kbId') kbId: string, @Param('id') id: string) {
+    return this.documentService.requestReindex(kbId, id);
+  }
 }
