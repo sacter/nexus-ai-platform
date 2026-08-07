@@ -5,6 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
+import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
+import { RedisModule } from './infrastructure/redis/redis.module';
+import { QueueModule } from './infrastructure/queue/queue.module';
+import { ModelProviderModule } from './modules/model-provider/model-provider.module';
+import { EmbeddingModule } from './modules/embedding/embedding.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkerModule } from './worker/worker.module';
@@ -23,6 +28,11 @@ import { UploadModule } from './modules/upload/upload.module';
     }),
     PrismaModule,
     MinioModule,
+    EventBusModule,
+    RedisModule,
+    QueueModule,
+    ModelProviderModule,
+    EmbeddingModule,
     UserModule,
     AuthModule,
     WorkerModule,

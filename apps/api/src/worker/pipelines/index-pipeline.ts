@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import { MinioService } from '../../infrastructure/minio/minio.service';
 import { PersistService } from './persist/persist.service';
@@ -27,9 +27,9 @@ export class IndexPipeline {
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
     private readonly persist: PersistService,
-    private readonly loaders: Loader[],
-    private readonly splitter: TextSplitterPort,
-    private readonly parser: DocumentParser,
+    @Inject('LOADERS') private readonly loaders: Loader[],
+    @Inject('TEXT_SPLITTER') private readonly splitter: TextSplitterPort,
+    @Inject('TEXT_PARSER') private readonly parser: DocumentParser,
     private readonly queueService: QueueService,
     private readonly modelProvider: ModelProviderService,
   ) {}
