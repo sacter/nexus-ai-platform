@@ -1,9 +1,17 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { EventBusService } from './event-bus.service';
-import { EventBusController } from './event-bus.controller';
 
+@Global()
 @Module({
-  controllers: [EventBusController],
+  imports: [
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+      maxListeners: 20,
+    }),
+  ],
   providers: [EventBusService],
+  exports: [EventBusService],
 })
 export class EventBusModule {}

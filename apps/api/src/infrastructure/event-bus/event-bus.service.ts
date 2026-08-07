@@ -1,26 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { CreateEventBusDto } from './dto/create-event-bus.dto';
-import { UpdateEventBusDto } from './dto/update-event-bus.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
+/**
+ * 事件总线 —— 主进程发布事件，Worker 消费者订阅
+ *
+ * - emit：异步发布并聚合各 listener 返回值（Worker 内 await）
+ * - emitSync：同步发布（同一事件循环内触发）
+ */
 @Injectable()
 export class EventBusService {
-  create(createEventBusDto: CreateEventBusDto) {
-    return 'This action adds a new eventBus';
+  constructor(private readonly eventEmitter: EventEmitter2) {}
+
+  async emit(event: string, payload: unknown): Promise<boolean> {
+    const results = await this.eventEmitter.emitAsync(event, payload);
+    return results.every((r) => r !== false);
   }
 
-  findAll() {
-    return `This action returns all eventBus`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} eventBus`;
-  }
-
-  update(id: number, updateEventBusDto: UpdateEventBusDto) {
-    return `This action updates a #${id} eventBus`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} eventBus`;
+  emitSync(event: string, payload: unknown): boolean {
+    return this.eventEmitter.emit(event, payload);
   }
 }
