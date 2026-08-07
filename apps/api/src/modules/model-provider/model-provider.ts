@@ -16,7 +16,10 @@ export interface EmbeddingModelConfig {
 }
 
 /** 内置已知模型注册表（可扩展，DB models 表为 V2 增强） */
-const KNOWN_MODELS: Record<string, { provider: EmbeddingProviderName; dimension: number }> = {
+const KNOWN_MODELS: Record<
+  string,
+  { provider: EmbeddingProviderName; dimension: number }
+> = {
   'bge-m3': { provider: 'ollama', dimension: 1024 },
   'nomic-embed-text': { provider: 'ollama', dimension: 768 },
   'text-embedding-3-small': { provider: 'openai', dimension: 1536 },
@@ -24,7 +27,9 @@ const KNOWN_MODELS: Record<string, { provider: EmbeddingProviderName; dimension:
 
 const VALID_PROVIDERS: EmbeddingProviderName[] = ['ollama', 'openai'];
 
-export function isEmbeddingProviderName(value: string | undefined): value is EmbeddingProviderName {
+export function isEmbeddingProviderName(
+  value: string | undefined,
+): value is EmbeddingProviderName {
   return !!value && (VALID_PROVIDERS as string[]).includes(value);
 }
 
@@ -42,6 +47,8 @@ export function parseModelName(model: string): {
   return { name: model };
 }
 
-export function resolveKnownModel(name: string): { provider: EmbeddingProviderName; dimension: number } | undefined {
+export function resolveKnownModel(
+  name: string,
+): { provider: EmbeddingProviderName; dimension: number } | undefined {
   return KNOWN_MODELS[name];
 }

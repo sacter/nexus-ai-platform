@@ -5,7 +5,7 @@ import { DocumentParser, ParsedDocument } from './parser.interface';
  * 文本解析器 —— 空白归一化、去空页、生成摘要
  */
 export class TextParser implements DocumentParser {
-  async parse(pages: LoadedPage[]): Promise<ParsedDocument> {
+  parse(pages: LoadedPage[]): Promise<ParsedDocument> {
     const cleaned = pages
       .map((p) => ({
         pageNumber: p.pageNumber,

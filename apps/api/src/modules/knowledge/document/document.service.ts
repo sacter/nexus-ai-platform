@@ -265,10 +265,10 @@ export class DocumentService {
     });
 
     // ★ 功能4：发布 document.deleted → 异步 GC
-    await this.eventBus.emit(
-      DOCUMENT_DELETED,
-      { documentId: doc.id, kbId: doc.kbId } satisfies DocumentDeletedEvent,
-    );
+    await this.eventBus.emit(DOCUMENT_DELETED, {
+      documentId: doc.id,
+      kbId: doc.kbId,
+    } satisfies DocumentDeletedEvent);
     return updated;
   }
 
@@ -401,7 +401,8 @@ export class DocumentService {
       where: { id: docId, kbId, status: { not: 'DELETED' } },
     });
     if (!doc) throw new NotFoundException('文档不存在或已删除');
-    if (!doc.currentVersionId) throw new ConflictException('文档没有活跃版本，无法重新索引');
+    if (!doc.currentVersionId)
+      throw new ConflictException('文档没有活跃版本，无法重新索引');
 
     const event: IndexRequestedEvent = {
       documentId: docId,

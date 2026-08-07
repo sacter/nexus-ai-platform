@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 /**
@@ -54,7 +59,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
    * 返回 true 表示获取成功，false 表示已被持有
    */
   async acquireLock(key: string, ttlMs = 30000): Promise<boolean> {
-    const result = await this.client.set(key, '1', 'EX', Math.floor(ttlMs / 1000), 'NX');
+    const result = await this.client.set(
+      key,
+      '1',
+      'EX',
+      Math.floor(ttlMs / 1000),
+      'NX',
+    );
     return result === 'OK';
   }
 

@@ -15,15 +15,20 @@ import {
 @Injectable()
 export class ModelProviderService {
   resolveEmbeddingConfig(modelName?: string): EmbeddingModelConfig {
-    const effectiveModel = modelName?.trim() || process.env.EMBEDDING_DEFAULT_MODEL || 'bge-m3';
+    const effectiveModel =
+      modelName?.trim() || process.env.EMBEDDING_DEFAULT_MODEL || 'bge-m3';
     const { provider: providerHint, name } = parseModelName(effectiveModel);
     const known = resolveKnownModel(name);
 
-    const envProvider = isEmbeddingProviderName(process.env.EMBEDDING_DEFAULT_PROVIDER)
+    const envProvider = isEmbeddingProviderName(
+      process.env.EMBEDDING_DEFAULT_PROVIDER,
+    )
       ? process.env.EMBEDDING_DEFAULT_PROVIDER
       : undefined;
     const provider = providerHint ?? known?.provider ?? envProvider ?? 'ollama';
-    const dimension = known?.dimension ?? parseInt(process.env.EMBEDDING_DIMENSION || '1024', 10);
+    const dimension =
+      known?.dimension ??
+      parseInt(process.env.EMBEDDING_DIMENSION || '1024', 10);
 
     const baseUrl =
       provider === 'openai'

@@ -14,7 +14,10 @@ describe('DocumentService 事件接线', () => {
       $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb(txMock)),
       document: { findFirst: jest.fn(), update: jest.fn() },
     };
-    const minioMock = { deleteObjects: jest.fn(), generatePresignedDownloadUrl: jest.fn() };
+    const minioMock = {
+      deleteObjects: jest.fn(),
+      generatePresignedDownloadUrl: jest.fn(),
+    };
     const eventBusMock = { emit: jest.fn().mockResolvedValue(true) };
 
     const service = new DocumentService(
@@ -53,8 +56,15 @@ describe('DocumentService 事件接线', () => {
   it('softDelete 置 DELETED 后发布 document.deleted', async () => {
     const { prismaMock, eventBusMock, service } = setup();
 
-    prismaMock.document.findFirst.mockResolvedValue({ id: 'doc1', kbId: 'kb1', status: 'READY' });
-    prismaMock.document.update.mockResolvedValue({ id: 'doc1', status: 'DELETED' });
+    prismaMock.document.findFirst.mockResolvedValue({
+      id: 'doc1',
+      kbId: 'kb1',
+      status: 'READY',
+    });
+    prismaMock.document.update.mockResolvedValue({
+      id: 'doc1',
+      status: 'DELETED',
+    });
 
     const updated = await service.softDelete('kb1', 'doc1');
 
@@ -88,7 +98,9 @@ describe('DocumentService 事件接线', () => {
   it('requestReindex 文档不存在/已删除 → NotFoundException', async () => {
     const { prismaMock, service } = setup();
     prismaMock.document.findFirst.mockResolvedValue(null);
-    await expect(service.requestReindex('kb1', 'doc1')).rejects.toThrow(NotFoundException);
+    await expect(service.requestReindex('kb1', 'doc1')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('requestReindex 无活跃版本 → ConflictException', async () => {
@@ -99,6 +111,8 @@ describe('DocumentService 事件接线', () => {
       currentVersionId: null,
       status: 'READY',
     });
-    await expect(service.requestReindex('kb1', 'doc1')).rejects.toThrow(ConflictException);
+    await expect(service.requestReindex('kb1', 'doc1')).rejects.toThrow(
+      ConflictException,
+    );
   });
 });

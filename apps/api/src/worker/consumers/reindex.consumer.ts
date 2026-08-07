@@ -1,9 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { QueueService } from '../../infrastructure/queue/queue.service';
-import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
+import {
+  QUEUE_NAMES,
+  QUEUE_CONCURRENCY,
+} from '../../infrastructure/queue/queue.constants';
 import { INDEX_REQUESTED } from '../../infrastructure/event-bus/events/index-requested.event';
 import type { IndexRequestedEvent } from '../../infrastructure/event-bus/events/index-requested.event';
 import { ReindexPipeline } from '../pipelines/reindex-pipeline';
@@ -20,9 +28,14 @@ export class ReindexConsumer implements OnModuleInit, OnModuleDestroy {
 
   @OnEvent(INDEX_REQUESTED)
   async handleIndexRequested(payload: IndexRequestedEvent) {
-    await this.queueService.add(QUEUE_NAMES.REINDEX, 'reindex-document', payload);
+    await this.queueService.add(
+      QUEUE_NAMES.REINDEX,
+      'reindex-document',
+      payload,
+    );
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
     const connection = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
@@ -38,7 +51,9 @@ export class ReindexConsumer implements OnModuleInit, OnModuleDestroy {
       },
       { connection, concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.REINDEX] },
     );
-    this.worker.on('failed', (job, err) => this.logger.error(`reindex job failed: ${job?.id}`, err));
+    this.worker.on('failed', (job, err) =>
+      this.logger.error(`reindex job failed: ${job?.id}`, err),
+    );
   }
 
   async onModuleDestroy() {

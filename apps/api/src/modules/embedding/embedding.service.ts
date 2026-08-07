@@ -13,7 +13,7 @@ export interface QueryEmbedResult {
   cached: boolean;
 }
 
-/** Embedding 缓存 TTL：24h（设计文档 2bis.3） */
+/** Embedding 缓存 TTL：24h */
 const EMBEDDING_CACHE_TTL = 60 * 60 * 24;
 
 @Injectable()
@@ -47,18 +47,21 @@ export class EmbeddingService {
    * 批量向量化（文档 chunks 索引用）
    */
   async embedChunks(texts: string[], modelName?: string): Promise<number[][]> {
-    const { config, provider } = this.buildProvider(modelName);
+    const { provider } = this.buildProvider(modelName);
     return new BatchEmbedder(provider).embed(texts);
   }
 
   /**
-   * ★ 客户提问 Embedding + 缓存流程（功能6）
+   * ★ 客户提问 Embedding + 缓存流程
    *
    * 1. hash = SHA256(query)
    * 2. key = embed:{hash}:{model_name}
    * 3. Redis GET → HIT 直接返回；MISS → 调 provider → SETEX 24h
    */
-  async embedQuery(query: string, opts?: { modelName?: string }): Promise<QueryEmbedResult> {
+  async embedQuery(
+    query: string,
+    opts?: { modelName?: string },
+  ): Promise<QueryEmbedResult> {
     const { config, provider } = this.buildProvider(opts?.modelName);
     const hash = createHash('sha256').update(query).digest('hex');
     const key = `embed:${hash}:${config.model}`;

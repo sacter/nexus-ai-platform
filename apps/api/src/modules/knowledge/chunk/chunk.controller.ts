@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { ChunkService } from './chunk.service';
 import { CreateChunkDto } from './dto/create-chunk.dto';
 import { UpdateChunkDto } from './dto/update-chunk.dto';

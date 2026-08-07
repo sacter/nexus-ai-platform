@@ -14,5 +14,12 @@ export interface SplitOptions {
 }
 
 export interface TextSplitterPort {
-  split(pages: Array<{ pageNumber: number; content: string; metadata?: Record<string, unknown> }>, opts?: SplitOptions): SplitChunk[];
+  split(
+    pages: Array<{
+      pageNumber: number;
+      content: string;
+      metadata?: Record<string, unknown>;
+    }>,
+    opts?: SplitOptions,
+  ): SplitChunk[];
 }

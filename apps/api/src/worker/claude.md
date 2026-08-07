@@ -327,3 +327,6 @@ enum ToolEvent {
 ## 5. 数据结构/类型定义（Schema / Type）
 
 数据库设计文档：DATABASE.md
+
+## 6. 问题
+1、src/worker/pipelines/index-pipeline.ts 中 const mimeType = doc?.mimeType ?? ''; pdf文件数据库中存放的是：application/msword

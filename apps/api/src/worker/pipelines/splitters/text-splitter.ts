@@ -1,5 +1,9 @@
 import { createHash } from 'crypto';
-import { SplitChunk, SplitOptions, TextSplitterPort } from './splitter.interface';
+import {
+  SplitChunk,
+  SplitOptions,
+  TextSplitterPort,
+} from './splitter.interface';
 
 /**
  * 文本分割器 —— 字符级近似切分
@@ -10,7 +14,11 @@ export class TextSplitter implements TextSplitterPort {
   private readonly defaultOverlap = 80;
 
   split(
-    pages: Array<{ pageNumber: number; content: string; metadata?: Record<string, unknown> }>,
+    pages: Array<{
+      pageNumber: number;
+      content: string;
+      metadata?: Record<string, unknown>;
+    }>,
     opts?: SplitOptions,
   ): SplitChunk[] {
     const chunkSize = opts?.chunkSize ?? this.defaultChunkSize;

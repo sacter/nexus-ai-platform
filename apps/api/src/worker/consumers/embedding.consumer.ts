@@ -1,8 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { QueueService } from '../../infrastructure/queue/queue.service';
-import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
+import {
+  QUEUE_NAMES,
+  QUEUE_CONCURRENCY,
+} from '../../infrastructure/queue/queue.constants';
 import { EmbeddingService } from '../../modules/embedding/embedding.service';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import { PersistService } from '../pipelines/persist/persist.service';
@@ -33,6 +41,7 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly persist: PersistService,
   ) {}
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
     const connection = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
@@ -52,7 +61,9 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
     this.worker.on('failed', (job, err) => {
       this.logger.error(`embedding job failed: ${job?.id}`, err);
     });
-    this.logger.log(`EmbeddingConsumer started (concurrency=${QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING]})`);
+    this.logger.log(
+      `EmbeddingConsumer started (concurrency=${QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING]})`,
+    );
   }
 
   async onModuleDestroy() {
@@ -60,7 +71,15 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   private async handle(data: EmbedChunksJob) {
-    const { documentId, versionId, kbId, chunkIds, model, dimension, indexJobId } = data;
+    const {
+      documentId,
+      versionId,
+      kbId,
+      chunkIds,
+      model,
+      dimension,
+      indexJobId,
+    } = data;
 
     // 9. 取 chunks → embed（60→95）
     const chunks = await this.prisma.documentChunk.findMany({
@@ -68,7 +87,15 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       select: { id: true, content: true },
     });
     if (chunks.length === 0) {
-      await this.completeJob(indexJobId, documentId, versionId, kbId, 0, model, dimension);
+      await this.completeJob(
+        indexJobId,
+        documentId,
+        versionId,
+        kbId,
+        0,
+        model,
+        dimension,
+      );
       return;
     }
 
@@ -97,7 +124,15 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       })),
     );
 
-    await this.completeJob(indexJobId, documentId, versionId, kbId, chunks.length, model, dimension);
+    await this.completeJob(
+      indexJobId,
+      documentId,
+      versionId,
+      kbId,
+      chunks.length,
+      model,
+      dimension,
+    );
   }
 
   private async completeJob(
@@ -135,7 +170,12 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
     // 12. job → DONE
     await this.prisma.indexJob.update({
       where: { id: indexJobId },
-      data: { status: 'DONE', progress: 100, completedAt: new Date(), stepDescription: '索引完成' },
+      data: {
+        status: 'DONE',
+        progress: 100,
+        completedAt: new Date(),
+        stepDescription: '索引完成',
+      },
     });
     // 13. audit_log
     await this.prisma.auditLog.create({

@@ -40,3 +40,5 @@ yarn-error.log*
 *.pem
 
 apps/web-next
+
+claude-template.md

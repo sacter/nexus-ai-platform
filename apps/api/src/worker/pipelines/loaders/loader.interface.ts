@@ -10,5 +10,9 @@ export interface LoadedPage {
  */
 export interface Loader {
   supports(mimeType: string, fileName?: string): boolean;
-  load(buffer: Buffer, mimeType: string, fileName?: string): Promise<LoadedPage[]>;
+  load(
+    buffer: Buffer,
+    mimeType: string,
+    fileName?: string,
+  ): Promise<LoadedPage[]>;
 }

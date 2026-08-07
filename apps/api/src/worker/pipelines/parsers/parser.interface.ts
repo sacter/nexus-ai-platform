@@ -2,7 +2,11 @@ import { LoadedPage } from '../loaders/loader.interface';
 
 /** 解析结果：结构化文本 + 元数据 */
 export interface ParsedDocument {
-  pages: Array<{ pageNumber: number; content: string; metadata?: Record<string, unknown> }>;
+  pages: Array<{
+    pageNumber: number;
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>;
   totalPages: number;
   summary?: string;
 }

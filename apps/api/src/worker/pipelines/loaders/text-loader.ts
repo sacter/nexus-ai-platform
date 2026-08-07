@@ -13,7 +13,7 @@ export class TextLoader implements Loader {
     );
   }
 
-  async load(buffer: Buffer): Promise<LoadedPage[]> {
+  load(buffer: Buffer): Promise<LoadedPage[]> {
     return [{ pageNumber: 1, content: buffer.toString('utf-8') }];
   }
 }

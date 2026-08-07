@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { Queue } from 'bullmq';
 import Redis from 'ioredis';
 import { QUEUE_CONCURRENCY, QueueName } from './queue.constants';
@@ -16,7 +21,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   private connection!: Redis;
   private readonly queues = new Map<string, Queue>();
 
-  async onModuleInit() {
+  onModuleInit() {
     this.connection = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
       port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
@@ -44,7 +49,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
         },
       });
       this.queues.set(name, queue);
-      this.logger.log(`Queue "${name}" created (concurrency=${QUEUE_CONCURRENCY[name]})`);
+      this.logger.log(
+        `Queue "${name}" created (concurrency=${QUEUE_CONCURRENCY[name]})`,
+      );
     }
     return queue;
   }

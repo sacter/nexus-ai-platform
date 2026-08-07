@@ -24,8 +24,12 @@ export class ReindexPipeline {
       data: { chunkCount: 0, status: 'PROCESSING' },
     });
     // 复用 Index Pipeline（reindex=true → job_type=REINDEX）
-    const result = await this.indexPipeline.run(documentId, versionId, kbId, { reindex: true });
-    this.logger.log(`Reindex done: doc=${documentId}, chunks=${result.chunkCount}`);
+    const result = await this.indexPipeline.run(documentId, versionId, kbId, {
+      reindex: true,
+    });
+    this.logger.log(
+      `Reindex done: doc=${documentId}, chunks=${result.chunkCount}`,
+    );
     return result;
   }
 }

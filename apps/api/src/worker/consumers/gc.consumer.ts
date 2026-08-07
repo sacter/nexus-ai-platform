@@ -1,9 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { QueueService } from '../../infrastructure/queue/queue.service';
-import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
+import {
+  QUEUE_NAMES,
+  QUEUE_CONCURRENCY,
+} from '../../infrastructure/queue/queue.constants';
 import { DOCUMENT_DELETED } from '../../infrastructure/event-bus/events/document-deleted.event';
 import type { DocumentDeletedEvent } from '../../infrastructure/event-bus/events/document-deleted.event';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
@@ -31,8 +39,16 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
 
   @OnEvent(DOCUMENT_DELETED)
   async handleDeleted(payload: DocumentDeletedEvent) {
-    await this.queueService.add(QUEUE_NAMES.DELETE_CHUNKS, 'delete-chunks', payload);
-    await this.queueService.add(QUEUE_NAMES.CLEANUP, 'cleanup-document', payload);
+    await this.queueService.add(
+      QUEUE_NAMES.DELETE_CHUNKS,
+      'delete-chunks',
+      payload,
+    );
+    await this.queueService.add(
+      QUEUE_NAMES.CLEANUP,
+      'cleanup-document',
+      payload,
+    );
     this.logger.log(`enqueued GC jobs: doc=${payload.documentId}`);
   }
 
@@ -59,9 +75,14 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
             stepDescription: `清理 ${count.count} 个 chunk`,
           },
         });
-        this.logger.log(`delete-chunks done: doc=${p.documentId}, count=${count.count}`);
+        this.logger.log(
+          `delete-chunks done: doc=${p.documentId}, count=${count.count}`,
+        );
       },
-      { connection: mkConnection(), concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.DELETE_CHUNKS] },
+      {
+        connection: mkConnection(),
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.DELETE_CHUNKS],
+      },
     );
 
     this.cleanupWorker = new Worker(
@@ -84,13 +105,22 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
             details: { cleanedVersions: versions.length },
           },
         });
-        this.logger.log(`cleanup done: doc=${p.documentId}, versions=${versions.length}`);
+        this.logger.log(
+          `cleanup done: doc=${p.documentId}, versions=${versions.length}`,
+        );
       },
-      { connection: mkConnection(), concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.CLEANUP] },
+      {
+        connection: mkConnection(),
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.CLEANUP],
+      },
     );
 
-    this.deleteChunksWorker.on('failed', (job, err) => this.logger.error(`delete-chunks failed: ${job?.id}`, err));
-    this.cleanupWorker.on('failed', (job, err) => this.logger.error(`cleanup failed: ${job?.id}`, err));
+    this.deleteChunksWorker.on('failed', (job, err) =>
+      this.logger.error(`delete-chunks failed: ${job?.id}`, err),
+    );
+    this.cleanupWorker.on('failed', (job, err) =>
+      this.logger.error(`cleanup failed: ${job?.id}`, err),
+    );
     this.logger.log('GcConsumer started (delete-chunks + cleanup)');
   }
 

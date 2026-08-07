@@ -18,14 +18,19 @@ import { ReindexConsumer } from './consumers/reindex.consumer';
   providers: [
     WorkerService,
     SessionLockService,
-    // Pipelines
     IndexPipeline,
     ReindexPipeline,
     PersistService,
-    { provide: 'LOADERS', useFactory: () => [new PdfLoader(), new MarkdownLoader(), new TextLoader()] },
+    {
+      provide: 'LOADERS',
+      useFactory: () => [
+        new PdfLoader(),
+        new MarkdownLoader(),
+        new TextLoader(),
+      ],
+    },
     { provide: 'TEXT_SPLITTER', useClass: TextSplitter },
     { provide: 'TEXT_PARSER', useClass: TextParser },
-    // Consumers
     IndexConsumer,
     EmbeddingConsumer,
     GcConsumer,
