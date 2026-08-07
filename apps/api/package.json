@@ -33,6 +33,7 @@
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.81.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "ioredis": "^5.4.1",
