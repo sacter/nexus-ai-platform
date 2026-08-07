@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { EmbeddingService } from './embedding.service';
-import { EmbeddingController } from './embedding.controller';
 
+@Global()
 @Module({
-  controllers: [EmbeddingController],
   providers: [EmbeddingService],
+  exports: [EmbeddingService],
 })
 export class EmbeddingModule {}
