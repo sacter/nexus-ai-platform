@@ -212,6 +212,23 @@ export class MinioService {
   }
 
   /**
+   * 下载 MinIO 对象为 Buffer（Worker 解析用）
+   */
+  async downloadObject(objectKey: string): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      this.client
+        .getObject(this.bucket, objectKey)
+        .then((stream) => {
+          stream.on('data', (chunk) => chunks.push(chunk as Buffer));
+          stream.on('end', () => resolve(Buffer.concat(chunks)));
+          stream.on('error', reject);
+        })
+        .catch(reject);
+    });
+  }
+
+  /**
    * 规范化文件名：特殊字符、中文转义，避免 MinIO 路径报错
    */
   static sanitizeFileName(fileName: string): string {
