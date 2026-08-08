@@ -119,6 +119,7 @@ async function handleReindex(doc: Document) {
 }
 
 function handleUploaded() {
+  page.value = 1
   refetch()
 }
 
