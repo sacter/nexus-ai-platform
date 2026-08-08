@@ -51,6 +51,14 @@ export const CHUNK_THRESHOLD = 20 * 1024 * 1024
 /** 分片大小 5MB */
 export const CHUNK_SIZE = 5 * 1024 * 1024
 
+/** 文档列表分页响应 */
+export interface DocumentListResponse {
+  items: Document[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 /** 文档版本 */
 export interface DocumentVersion {
   id: string

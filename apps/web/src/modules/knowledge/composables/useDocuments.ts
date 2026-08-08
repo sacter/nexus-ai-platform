@@ -17,6 +17,23 @@ export function useDocuments(kbId: MaybeRefOrGetter<string>) {
   })
 }
 
+/** 分页查询知识库下的文档列表（列表页用；选择器/上传仍走全量 useDocuments） */
+export function usePagedDocuments(
+  kbId: MaybeRefOrGetter<string>,
+  page: MaybeRefOrGetter<number>,
+  pageSize: MaybeRefOrGetter<number>,
+) {
+  return useQuery({
+    queryKey: ['documents', kbId, 'paged', page, pageSize],
+    queryFn: () =>
+      documentsApi.listPaged(toValue(kbId), {
+        page: toValue(page),
+        pageSize: toValue(pageSize),
+      }),
+    enabled: () => !!toValue(kbId),
+  })
+}
+
 /** 获取单个文档详情 */
 export function useDocument(kbId: MaybeRefOrGetter<string>, docId: MaybeRefOrGetter<string>) {
   return useQuery({

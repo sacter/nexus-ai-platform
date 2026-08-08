@@ -7,12 +7,17 @@ import type {
   SaveMetaResponse,
   DownloadUrlResponse,
   ReindexResponse,
+  DocumentListResponse,
 } from '@/modules/knowledge/types/document'
 
 export const documentsApi = {
   /** 获取文档列表 */
   list: (kbId: string, params?: { status?: string }) =>
     http.get<Document[]>(`/knowledge-bases/${kbId}/documents`, { params }),
+
+  /** 分页查询文档列表 */
+  listPaged: (kbId: string, params: { page: number; pageSize: number }) =>
+    http.get<DocumentListResponse>(`/knowledge-bases/${kbId}/documents`, { params }),
 
   /** 获取文档详情 */
   get: (kbId: string, id: string) =>
