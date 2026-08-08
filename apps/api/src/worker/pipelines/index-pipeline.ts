@@ -101,12 +101,21 @@ export class IndexPipeline {
       const chunks = this.splitter.split(parsed.pages);
       await updateJob(5, 50, `分割为 ${chunks.length} 个 chunk`);
 
-      // 7. Persist chunks (落库) —— ★ 事务：chunks + chunkCount + progress 同生共死
+      // 7. Persist chunks (落库) —— ★ 事务：chunks + chunkCount + pageCount + progress 同生共死
       const { count, ids } = await this.prisma.$transaction(async (tx) => {
         const saved = await this.persist.saveChunks(versionId, chunks, tx);
         await tx.documentVersion.update({
           where: { id: versionId },
-          data: { chunkCount: saved.count, status: 'PROCESSING' },
+          data: {
+            chunkCount: saved.count,
+            status: 'PROCESSING',
+            // 真实页数：前端上传时 pageCount=0，解析完成后此处回写
+            pageCount: parsed.totalPages,
+          },
+        });
+        await tx.document.update({
+          where: { id: documentId },
+          data: { pageCount: parsed.totalPages },
         });
         await updateJob(6, 60, `已落库 ${saved.count} 个 chunk`, tx);
         return saved;

@@ -22,6 +22,26 @@ export const ALLOWED_EXTENSIONS = [
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.md', '.txt',
 ] as const
 
+/**
+ * 扩展名 → 规范 MIME 映射
+ *
+ * 浏览器 File.type 由 OS/来源程序决定，不可靠（例如 PDF 拖入时可能被报成
+ * application/msword），因此上传一律以扩展名为准推导 MIME，file.type 仅作兜底。
+ */
+export const EXTENSION_MIME_MAP: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx':
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx':
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.md': 'text/markdown',
+  '.txt': 'text/plain',
+}
+
 /** 文件大小上限 500MB */
 export const MAX_FILE_SIZE = 500 * 1024 * 1024
 

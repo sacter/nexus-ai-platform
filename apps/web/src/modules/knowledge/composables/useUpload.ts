@@ -11,6 +11,7 @@ import type {
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS,
+  EXTENSION_MIME_MAP,
   MAX_FILE_SIZE,
 } from '@/modules/knowledge/types/document'
 
@@ -56,18 +57,28 @@ export function useUpload(kbId: string) {
   // 文件校验
   // ============================================
 
+  /**
+   * 推导规范 MIME：优先按扩展名映射。
+   * 浏览器 File.type 由 OS/来源程序决定，不可靠（PDF 拖入可能报成 application/msword），
+   * 未知扩展名才回退 file.type。
+   */
+  function resolveMimeType(file: File): string {
+    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase()
+    return EXTENSION_MIME_MAP[ext] ?? file.type ?? 'application/octet-stream'
+  }
+
   function validateFileType(file: File): boolean {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
     if (!ALLOWED_EXTENSIONS.includes(ext as typeof ALLOWED_EXTENSIONS[number])) {
       ElMessage.error(`不支持的文件类型: ${ext}`)
       return false
     }
+    const mime = resolveMimeType(file)
     if (
-      file.type &&
-      file.type !== 'application/octet-stream' &&
-      !ALLOWED_MIME_TYPES.includes(file.type as typeof ALLOWED_MIME_TYPES[number])
+      mime !== 'application/octet-stream' &&
+      !ALLOWED_MIME_TYPES.includes(mime as typeof ALLOWED_MIME_TYPES[number])
     ) {
-      ElMessage.error(`不支持的文件格式: ${file.type}`)
+      ElMessage.error(`不支持的文件格式: ${mime}`)
       return false
     }
     return true
@@ -234,7 +245,7 @@ export function useUpload(kbId: string) {
           Bucket: sts.bucket,
           Key: objectKey,
           Body: item.file,
-          ContentType: item.file.type || 'application/octet-stream',
+          ContentType: resolveMimeType(item.file),
         },
         // 分片配置
         partSize: 5 * 1024 * 1024, // 5MB 分片（最小 5MB）
@@ -291,7 +302,8 @@ export function useUpload(kbId: string) {
       originalName: item.file.name,
       url: item.objectKey,
       fileSize: item.file.size,
-      mimeType: item.file.type || 'application/octet-stream',
+      mimeType: resolveMimeType(item.file),
+      // pageCount 上传时未知（前端无法统计各格式页数），由后端索引流水线解析后回写
       pageCount: 0,
       idempotencyKey: item.id,
     }
