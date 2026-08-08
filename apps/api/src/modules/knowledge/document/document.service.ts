@@ -185,13 +185,20 @@ export class DocumentService {
    */
   async findByKbId(
     kbId: string,
-    params?: { status?: DocumentStatus; page?: number; pageSize?: number },
+    params?: {
+      status?: DocumentStatus;
+      page?: number;
+      pageSize?: number;
+      keyword?: string;
+    },
   ) {
+    const keyword = params?.keyword?.trim();
     const where: Prisma.DocumentWhereInput = {
       kbId,
       ...(params?.status
         ? { status: params.status }
         : { status: { not: 'DELETED' } }),
+      ...(keyword ? { name: { contains: keyword, mode: 'insensitive' } } : {}),
     };
 
     const include = {
