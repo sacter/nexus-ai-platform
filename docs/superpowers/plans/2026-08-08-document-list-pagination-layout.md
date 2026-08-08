@@ -410,7 +410,7 @@ git commit -m "feat(web): DocumentList 接入分页（el-pagination + usePagedDo
 .document-list-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 84px); /* 页头56 + main顶部padding16 + 底部间隙12 */
+  height: 100%; /* 填满 main 内容区；底部间隙由 main 的 padding-bottom 提供（py-4=16px / py-3=12px） */
   overflow: hidden;
 }
 .document-list-page.is-embedded {
@@ -598,11 +598,11 @@ git commit -m "style(web): ChunkDetail 表格 flex 填满 + 内部滚动"
 
 ```html
 <style scoped>
-/* 页面 flex 列布局：卡片高度到页面底部上方 12px */
+/* 页面 flex 列布局：卡片填满 main 内容区到底部，超出内容表格内部滚动 */
 .knowledge-detail-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 84px); /* 页头56 + main顶部padding16 + 底部间隙12 */
+  height: 100%; /* 填满 main 内容区；底部间隙由 main 的 padding-bottom 提供（py-4=16px / py-3=12px） */
   overflow: hidden;
 }
 .kb-header-card {

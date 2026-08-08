@@ -97,9 +97,8 @@ export function usePagedDocuments(kbId, page, pageSize) {
 
 ### 高度计算
 
-- `MainLayout`：`main` 为 `flex-1 overflow-y-auto px-5 py-4`；页头 `h-14` = 56px，main 顶部 padding 16px。
-- 页面根节点高度：`height: calc(100vh - 84px)`（56 + 16 + 12 底部间隙）+ `overflow: hidden`。
-- 卡片底部距视口底部 12px；main 底部 padding 16px 富余 4px，不产生滚动条。
+- `MainLayout`：`main` 为 `flex-1 overflow-y-auto px-5 py-4`（未提交的进行中改动为 `px-3 py-3`）。
+- 页面根节点高度：`height: 100%`（填满 `main` 内容区）+ `overflow: hidden`；卡片底部间隙由 `main` 的 padding-bottom 提供（py-4=16px / py-3=12px）。不硬编码页头/padding 常量，对 `MainLayout` 改动健壮。
 
 ### KnowledgeDetail.vue
 
