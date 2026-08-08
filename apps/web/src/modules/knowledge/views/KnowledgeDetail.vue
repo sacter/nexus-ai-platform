@@ -7,6 +7,7 @@ import { useKnowledgeBase, useDeleteKnowledgeBase, useUpdateKnowledgeBase } from
 import { useMyPermission } from '@/modules/knowledge/composables/usePermissions'
 import { useBreadcrumbStore } from '@/stores/breadcrumb'
 import DocumentList from '@/modules/knowledge/views/DocumentList.vue'
+import ChunkDetail from '@/modules/knowledge/components/ChunkDetail.vue'
 import DocumentUpload from '@/modules/knowledge/components/DocumentUpload.vue'
 import KnowledgeCreateDialog from '@/modules/knowledge/components/KnowledgeCreateDialog.vue'
 import PermissionDialog from '@/modules/knowledge/components/PermissionDialog.vue'
@@ -30,9 +31,18 @@ const permissionDialogVisible = ref(false)
 const embeddingDialogVisible = ref(false)
 const embeddingSubmitting = ref(false)
 const embeddingModel = ref('bge-m3')
-const selectedDocId = ref('')
-const selectedDocName = ref('')
 const activeTab = ref('documents')
+// 切片 tab 文档选择（受控）：'' = 全部
+const chunkDocId = ref('')
+// 区分「切片详情」触发 vs 直接点 tab：前者不重置选择
+const suppressReset = ref(false)
+
+watch(activeTab, (tab) => {
+  if (tab === 'chunks' && !suppressReset.value) {
+    chunkDocId.value = ''
+  }
+  suppressReset.value = false
+})
 const searchQuery = ref('')
 
 /* ---------- 当前用户对该 KB 的权限 ---------- */
@@ -69,8 +79,8 @@ function handleDeleteKb() {
 }
 
 function handleViewChunks(row: DocType) {
-  selectedDocId.value = row.id
-  selectedDocName.value = row.name
+  suppressReset.value = true
+  chunkDocId.value = row.id
   activeTab.value = 'chunks'
 }
 
@@ -174,19 +184,11 @@ async function handleSaveEmbedding() {
           </el-tab-pane>
 
           <el-tab-pane label="切片详情" name="chunks">
-            <div class="flex items-center justify-center py-20">
-              <div class="text-center">
-                <template v-if="selectedDocName">
-                  <p class="text-sm" style="color: var(--foreground); opacity: 0.6">
-                    文档「{{ selectedDocName }}」暂无切片数据
-                  </p>
-                  <p class="mt-1 text-xs" style="color: var(--foreground); opacity: 0.4">
-                    文档 ID: {{ selectedDocId }}
-                  </p>
-                </template>
-                <p v-else class="text-sm" style="color: var(--foreground); opacity: 0.6">暂无切片数据</p>
-              </div>
-            </div>
+            <ChunkDetail
+              :kb-id="kbId"
+              :document-id="chunkDocId"
+              @update:document-id="chunkDocId = $event"
+            />
           </el-tab-pane>
 
           <el-tab-pane label="知识检索" name="search">
