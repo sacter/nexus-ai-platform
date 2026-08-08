@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ChunkService } from './chunk.service';
 
 /**
@@ -19,13 +19,9 @@ export class ChunkController {
   list(
     @Param('kbId') kbId: string,
     @Query('documentId') documentId?: string,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
   ) {
-    return this.chunkService.listChunks(kbId, {
-      documentId,
-      page: page ? Number(page) : undefined,
-      pageSize: pageSize ? Number(pageSize) : undefined,
-    });
+    return this.chunkService.listChunks(kbId, { documentId, page, pageSize });
   }
 }
