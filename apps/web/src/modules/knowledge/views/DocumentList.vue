@@ -180,6 +180,7 @@ function formatSize(bytes: number): string {
         :data="docsList"
         v-loading="isLoading"
         stripe
+        height="100%"
         empty-text="请先导入文档"
       >
         <!-- 文档名称 / ID -->
@@ -363,13 +364,19 @@ function formatSize(bytes: number): string {
 
 <style scoped>
 .document-list-page {
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 填满 main 内容区；底部间隙由 main 的 padding-bottom 提供（py-4=16px / py-3=12px） */
+  overflow: hidden;
 }
-.is-embedded {
-  padding: 0;
+.document-list-page.is-embedded {
+  height: auto;
+  flex: 1;
+  min-height: 0;
 }
 .page-header {
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 .page-title {
   font-size: 24px;
@@ -379,8 +386,14 @@ function formatSize(bytes: number): string {
 }
 .upload-section {
   margin-bottom: 24px;
+  flex-shrink: 0;
 }
 .table-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg-primary, #fff);
   border-radius: 8px;
   padding: 16px;
@@ -391,6 +404,13 @@ function formatSize(bytes: number): string {
   border: none;
   border-radius: 0;
   padding: 0;
+}
+.table-section :deep(.el-table) {
+  flex: 1;
+  min-height: 0;
+}
+.table-pagination {
+  flex-shrink: 0;
 }
 .doc-type-tag {
   font-size: 12px;
