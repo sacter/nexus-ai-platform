@@ -178,8 +178,15 @@ export class DocumentService {
 
   /**
    * 查询知识库下的文档列表
+   *
+   * 提供 page/pageSize 时返回分页 envelope { items, total, page, pageSize }
+   * （对齐 ChunkService.listChunks 口径）；未提供时返回全量数组（向后兼容：
+   * ChunkDetail 文档选择器 / DocumentUpload 版本分组依赖全量数据）。
    */
-  async findByKbId(kbId: string, params?: { status?: DocumentStatus }) {
+  async findByKbId(
+    kbId: string,
+    params?: { status?: DocumentStatus; page?: number; pageSize?: number },
+  ) {
     const where: Prisma.DocumentWhereInput = {
       kbId,
       ...(params?.status
@@ -187,22 +194,37 @@ export class DocumentService {
         : { status: { not: 'DELETED' } }),
     };
 
-    return this.prisma.document.findMany({
-      where,
-      include: {
-        currentVersion: {
-          select: {
-            id: true,
-            versionNumber: true,
-            status: true,
-          },
-        },
-        user: {
-          select: { id: true, username: true },
-        },
+    const include = {
+      currentVersion: {
+        select: { id: true, versionNumber: true, status: true },
       },
-      orderBy: { createdAt: 'desc' },
-    });
+      user: { select: { id: true, username: true } },
+    } satisfies Prisma.DocumentInclude;
+
+    // 分页参数缺失 → 返回全量数组（向后兼容）
+    if (!Number.isFinite(params?.page) || !Number.isFinite(params?.pageSize)) {
+      return this.prisma.document.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    const page = Math.max(1, Math.floor(params!.page!));
+    const pageSize = Math.min(100, Math.max(1, Math.floor(params!.pageSize!)));
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.document.count({ where }),
+      this.prisma.document.findMany({
+        where,
+        include,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { items, total, page, pageSize };
   }
 
   /**

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
@@ -59,13 +60,19 @@ export class DocumentController {
   async findByKbId(
     @Param('kbId') kbId: string,
     @Query('status') status?: string,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
   ) {
     // 仅接受合法的 DocumentStatus 枚举值，非法值忽略（不传即排除已删除）
     const validStatuses = Object.values(DocumentStatus) as string[];
     const parsedStatus = validStatuses.includes(status ?? '')
       ? (status as DocumentStatus)
       : undefined;
-    return this.documentService.findByKbId(kbId, { status: parsedStatus });
+    return this.documentService.findByKbId(kbId, {
+      status: parsedStatus,
+      page,
+      pageSize,
+    });
   }
 
   /**
