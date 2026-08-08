@@ -15,8 +15,8 @@ export const documentsApi = {
   list: (kbId: string, params?: { status?: string }) =>
     http.get<Document[]>(`/knowledge-bases/${kbId}/documents`, { params }),
 
-  /** 分页查询文档列表 */
-  listPaged: (kbId: string, params: { page: number; pageSize: number }) =>
+  /** 分页查询文档列表（可选 keyword 按文档名模糊过滤） */
+  listPaged: (kbId: string, params: { page: number; pageSize: number; keyword?: string }) =>
     http.get<DocumentListResponse>(`/knowledge-bases/${kbId}/documents`, { params }),
 
   /** 获取文档详情 */

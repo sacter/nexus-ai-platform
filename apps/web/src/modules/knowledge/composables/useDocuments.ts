@@ -22,13 +22,15 @@ export function usePagedDocuments(
   kbId: MaybeRefOrGetter<string>,
   page: MaybeRefOrGetter<number>,
   pageSize: MaybeRefOrGetter<number>,
+  keyword: MaybeRefOrGetter<string> = '',
 ) {
   return useQuery({
-    queryKey: ['documents', kbId, 'paged', page, pageSize],
+    queryKey: ['documents', kbId, 'paged', page, pageSize, keyword],
     queryFn: () =>
       documentsApi.listPaged(toValue(kbId), {
         page: toValue(page),
         pageSize: toValue(pageSize),
+        ...(toValue(keyword) ? { keyword: toValue(keyword) } : {}),
       }),
     enabled: () => !!toValue(kbId),
     placeholderData: (prev) => prev,
