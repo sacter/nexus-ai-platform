@@ -21,10 +21,9 @@
 `DocumentService.findByKbId(kbId, params)`：
 
 - `params` 扩展为 `{ status?: DocumentStatus; page?: number; pageSize?: number }`。
-- **提供 `page`/`pageSize` 时**：在事务内 `count` + `findMany`（`skip`/`take`），返回
-  `{ items, total, page, pageSize }`。
-  - page 默认 1；pageSize 默认 20、上限 100（与 `ChunkService.listChunks` 口径一致）。
-- **不提供分页参数时**：保持返回完整数组（向后兼容，供 `ChunkDetail` 文档选择器与 `DocumentUpload` 版本分组使用全量数据）。
+- **同时提供 `page` 与 `pageSize` 时**：在事务内 `count` + `findMany`（`skip`/`take`），返回
+  `{ items, total, page, pageSize }`。归一化：page `Math.max(1, floor(page))`；pageSize `min(100, max(1, floor(pageSize)))`。
+- **缺任一/全缺分页参数时**：保持返回完整数组（向后兼容，供 `ChunkDetail` 文档选择器与 `DocumentUpload` 版本分组使用全量数据）。注意：与 `ChunkService.listChunks` 不同，这里不是"总有默认值"，而是"全有才分页"的双模式契约。
 
 `DocumentController.findByKbId` 增加 query 参数：
 
