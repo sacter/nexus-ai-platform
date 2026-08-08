@@ -44,6 +44,15 @@ watch(activeTab, (tab) => {
   suppressReset.value = false
 })
 const searchQuery = ref('')
+// 文档名称搜索：300ms 防抖 + trim，避免每敲一个字符都发请求
+const debouncedQuery = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(searchQuery, (val) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    debouncedQuery.value = val.trim()
+  }, 300)
+})
 
 /* ---------- 当前用户对该 KB 的权限 ---------- */
 const { data: myPerm } = useMyPermission(kbId)
@@ -168,6 +177,7 @@ async function handleSaveEmbedding() {
                     v-model="searchQuery"
                     placeholder="文档名称搜索"
                     :prefix-icon="Search"
+                    clearable
                     style="width: 220px"
                   />
                 </div>
@@ -177,6 +187,7 @@ async function handleSaveEmbedding() {
                 :kb-id="kbId"
                 embedded
                 :can-edit="canEdit"
+                :keyword="debouncedQuery"
                 @view-chunks="handleViewChunks"
                 @embedding="openEmbeddingDialog"
               />
