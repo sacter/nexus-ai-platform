@@ -31,6 +31,7 @@ export function usePagedDocuments(
         pageSize: toValue(pageSize),
       }),
     enabled: () => !!toValue(kbId),
+    placeholderData: (prev) => prev,
   })
 }
 
