@@ -1,42 +1,31 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ChunkService } from './chunk.service';
-import { CreateChunkDto } from './dto/create-chunk.dto';
-import { UpdateChunkDto } from './dto/update-chunk.dto';
 
-@Controller('chunk')
+/**
+ * 切片控制器
+ *
+ * 路由前缀：/api/v1/knowledge-bases/:kbId/chunks
+ * 安全：读接口沿用全局 AuthGuard（与 GET documents 一致），viewer 可查看
+ */
+@Controller('knowledge-bases/:kbId/chunks')
 export class ChunkController {
   constructor(private readonly chunkService: ChunkService) {}
 
-  @Post()
-  create(@Body() createChunkDto: CreateChunkDto) {
-    return this.chunkService.create(createChunkDto);
-  }
-
+  /**
+   * GET /api/v1/knowledge-bases/:kbId/chunks?documentId=&page=&pageSize=
+   * 分页查询切片；documentId 缺省 = 全部文档
+   */
   @Get()
-  findAll() {
-    return this.chunkService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.chunkService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateChunkDto: UpdateChunkDto) {
-    return this.chunkService.update(+id, updateChunkDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.chunkService.remove(+id);
+  list(
+    @Param('kbId') kbId: string,
+    @Query('documentId') documentId?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.chunkService.listChunks(kbId, {
+      documentId,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
   }
 }

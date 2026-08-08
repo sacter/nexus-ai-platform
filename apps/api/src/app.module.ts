@@ -17,6 +17,7 @@ import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledg
 import { PermissionModule } from './modules/knowledge/permission/permission.module';
 import { DocumentModule } from './modules/knowledge/document/document.module';
 import { VersionModule } from './modules/knowledge/version/version.module';
+import { ChunkModule } from './modules/knowledge/chunk/chunk.module';
 import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
@@ -40,6 +41,7 @@ import { UploadModule } from './modules/upload/upload.module';
     PermissionModule,
     DocumentModule,
     VersionModule,
+    ChunkModule,
     UploadModule,
   ],
   controllers: [AppController],
