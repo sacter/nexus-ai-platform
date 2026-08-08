@@ -61,57 +61,117 @@ const emptyText = computed(() =>
 <template>
   <div>
     <div class="mb-4">
-      <el-select v-model="selectedDocId" style="width: 260px">
-        <el-option label="全部文档" value="" />
-        <el-option v-for="d in docs || []" :key="d.id" :label="d.name" :value="d.id" />
+      <el-select
+        v-model="selectedDocId"
+        style="width: 260px"
+      >
+        <el-option
+          label="全部文档"
+          value=""
+        />
+        <el-option
+          v-for="d in docs || []"
+          :key="d.id"
+          :label="d.name"
+          :value="d.id"
+        />
       </el-select>
     </div>
-    <div class="table-box" :style="{ height: 'calc(100vh - 400px)' }">
+    <div
+      class="table-box"
+      :style="{ height: 'calc(100vh - 400px)' }"
+    >
       <el-table
-        :data="items"
         v-loading="isLoading"
+        :data="items"
         border
         height="100%"
         :empty-text="emptyText"
       >
         <el-table-column type="expand">
           <template #default="{ row }">
-            <div class="px-4 py-2 text-sm leading-6 whitespace-pre-wrap" style="color: var(--foreground, #303133)">
+            <div
+              class="px-4 py-2 text-sm leading-6 whitespace-pre-wrap"
+              style="color: var(--foreground, #303133)"
+            >
               {{ row.content }}
             </div>
           </template>
         </el-table-column>
   
-        <el-table-column v-if="!props.documentId" label="文档" min-width="180" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.documentName }}</template>
-        </el-table-column>
-  
-        <el-table-column label="页码 · 序号" width="110" align="center">
-          <template #default="{ row }">P{{ row.page }} · #{{ row.chunkIndex }}</template>
-        </el-table-column>
-  
-        <el-table-column label="内容" min-width="320">
+        <el-table-column
+          v-if="!props.documentId"
+          label="文档"
+          min-width="180"
+          show-overflow-tooltip
+        >
           <template #default="{ row }">
-            <div class="chunk-preview">{{ row.content }}</div>
+            {{ row.documentName }}
           </template>
         </el-table-column>
   
-        <el-table-column label="Token" width="90" align="right">
-          <template #default="{ row }">{{ row.tokenCount }}</template>
+        <el-table-column
+          label="页码 · 序号"
+          width="110"
+          align="center"
+        >
+          <template #default="{ row }">
+            P{{ row.page }} · #{{ row.chunkIndex }}
+          </template>
         </el-table-column>
   
-        <el-table-column label="向量化状态" width="160" align="center">
+        <el-table-column
+          label="内容"
+          min-width="320"
+        >
           <template #default="{ row }">
-            <el-tag v-if="row.isEmbedded" type="success" size="small">
-              已向量化<template v-if="row.embeddingModels.length"> · {{ row.embeddingModels.join(', ') }}</template>
+            <div class="chunk-preview">
+              {{ row.content }}
+            </div>
+          </template>
+        </el-table-column>
+  
+        <el-table-column
+          label="Token"
+          width="90"
+          align="right"
+        >
+          <template #default="{ row }">
+            {{ row.tokenCount }}
+          </template>
+        </el-table-column>
+  
+        <el-table-column
+          label="向量化状态"
+          width="160"
+          align="center"
+        >
+          <template #default="{ row }">
+            <el-tag
+              v-if="row.isEmbedded"
+              type="success"
+              size="small"
+            >
+              已向量化<template v-if="row.embeddingModels.length">
+                · {{ row.embeddingModels.join(', ') }}
+              </template>
             </el-tag>
-            <el-tag v-else type="warning" size="small">未向量化</el-tag>
+            <el-tag
+              v-else
+              type="warning"
+              size="small"
+            >
+              未向量化
+            </el-tag>
           </template>
         </el-table-column>
       </el-table>
     </div>
 
-    <div v-if="total > 0" class="flex justify-end mt-4">
+    <div
+      v-if="total > 0"
+      class="flex justify-end mt-4"
+    >
       <el-pagination
         v-model:current-page="page"
         v-model:page-size="pageSize"

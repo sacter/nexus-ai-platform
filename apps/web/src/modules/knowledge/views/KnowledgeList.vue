@@ -64,15 +64,36 @@ function handleDelete(id: string, isActive: boolean) {
 
 <template>
   <div class="flex items-center justify-between">
-    <h3 class="text-xl font-semibold" style="color: var(--foreground)">知识库</h3>
-    <el-button type="primary" :icon="Plus" @click="createDialogVisible = true">创建知识库</el-button>
+    <h3
+      class="text-xl font-semibold"
+      style="color: var(--foreground)"
+    >
+      知识库
+    </h3>
+    <el-button
+      type="primary"
+      :icon="Plus"
+      @click="createDialogVisible = true"
+    >
+      创建知识库
+    </el-button>
   </div>
 
   <!-- 加载骨架屏 -->
-  <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-    <el-skeleton v-for="i in 6" :key="i" animated>
+  <div
+    v-if="isLoading"
+    class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2"
+  >
+    <el-skeleton
+      v-for="i in 6"
+      :key="i"
+      animated
+    >
       <template #template>
-        <el-skeleton-item variant="rect" style="height: 120px; border-radius: 8px" />
+        <el-skeleton-item
+          variant="rect"
+          style="height: 120px; border-radius: 8px"
+        />
       </template>
     </el-skeleton>
   </div>
@@ -96,7 +117,10 @@ function handleDelete(id: string, isActive: boolean) {
     />
   </div>
 
-  <el-empty v-else description="暂无知识库" />
+  <el-empty
+    v-else
+    description="暂无知识库"
+  />
 
   <KbCreateDialog v-model:visible="createDialogVisible" />
 </template>

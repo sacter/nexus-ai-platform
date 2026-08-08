@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import {
   Delete,
   Download,
   View,
   Clock,
-  SwitchButton,
   Refresh,
-  MoreFilled,
 } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import type { Document } from '@/modules/knowledge/types/document'
 
-const props = defineProps<{
+defineProps<{
   documents: Document[]
   loading?: boolean
   kbId: string
@@ -26,15 +23,6 @@ const emit = defineEmits<{
   activateVersion: [doc: Document]
   reindex: [doc: Document]
 }>()
-
-// 版本切换弹窗
-const versionDialogVisible = ref(false)
-const selectedDoc = ref<Document | null>(null)
-
-function openVersionDialog(doc: Document) {
-  selectedDoc.value = doc
-  versionDialogVisible.value = true
-}
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
@@ -78,18 +66,25 @@ function mimeTypeLabel(mime: string): string {
 <template>
   <div class="document-table-wrap">
     <el-table
-      :data="documents"
       v-loading="loading"
+      :data="documents"
       stripe
       empty-text="暂无文档，请上传文件"
       table-layout="auto"
     >
       <!-- 文档名称 -->
-      <el-table-column label="文档名称" min-width="220" show-overflow-tooltip>
+      <el-table-column
+        label="文档名称"
+        min-width="220"
+        show-overflow-tooltip
+      >
         <template #default="{ row }">
           <div class="doc-name-cell">
             <span class="doc-name">{{ (row as Document).name }}</span>
-            <span v-if="(row as Document).currentVersion" class="doc-version-tag">
+            <span
+              v-if="(row as Document).currentVersion"
+              class="doc-version-tag"
+            >
               v{{ (row as Document).currentVersion!.versionNumber }}
             </span>
           </div>
@@ -97,7 +92,11 @@ function mimeTypeLabel(mime: string): string {
       </el-table-column>
 
       <!-- 类型 -->
-      <el-table-column label="类型" width="80" align="center">
+      <el-table-column
+        label="类型"
+        width="80"
+        align="center"
+      >
         <template #default="{ row }">
           <span class="doc-type-tag">
             {{ mimeTypeLabel((row as Document).mimeType) }}
@@ -106,14 +105,22 @@ function mimeTypeLabel(mime: string): string {
       </el-table-column>
 
       <!-- 大小 -->
-      <el-table-column label="大小" width="100" align="right">
+      <el-table-column
+        label="大小"
+        width="100"
+        align="right"
+      >
         <template #default="{ row }">
           {{ formatSize(Number((row as Document).fileSize)) }}
         </template>
       </el-table-column>
 
       <!-- 状态 -->
-      <el-table-column label="状态" width="100" align="center">
+      <el-table-column
+        label="状态"
+        width="100"
+        align="center"
+      >
         <template #default="{ row }">
           <el-tag
             :type="statusTagType((row as Document).status)"
@@ -126,28 +133,42 @@ function mimeTypeLabel(mime: string): string {
       </el-table-column>
 
       <!-- 分块数 -->
-      <el-table-column label="分块" width="70" align="center">
+      <el-table-column
+        label="分块"
+        width="70"
+        align="center"
+      >
         <template #default="{ row }">
           {{ (row as Document).chunkCount }}
         </template>
       </el-table-column>
 
       <!-- 上传者 -->
-      <el-table-column label="上传者" width="100">
+      <el-table-column
+        label="上传者"
+        width="100"
+      >
         <template #default="{ row }">
           {{ (row as Document).user?.username || '-' }}
         </template>
       </el-table-column>
 
       <!-- 时间 -->
-      <el-table-column label="上传时间" width="160">
+      <el-table-column
+        label="上传时间"
+        width="160"
+      >
         <template #default="{ row }">
           {{ dayjs((row as Document).createdAt).format('YYYY-MM-DD HH:mm') }}
         </template>
       </el-table-column>
 
       <!-- 操作 -->
-      <el-table-column label="操作" width="240" fixed="right">
+      <el-table-column
+        label="操作"
+        width="240"
+        fixed="right"
+      >
         <template #default="{ row }">
           <div class="doc-actions">
             <el-tooltip content="预览">

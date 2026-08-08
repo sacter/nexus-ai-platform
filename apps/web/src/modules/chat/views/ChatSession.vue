@@ -6,6 +6,8 @@ import ChatSessionList from '@/modules/chat/components/ChatSessionList.vue'
 import ChatMessage from '@/modules/chat/components/ChatMessage.vue'
 import ChatInput from '@/modules/chat/components/ChatInput.vue'
 
+type ChatMsg = { role: 'user' | 'assistant'; content: string }
+
 const route = useRoute()
 const sessionId = ref(route.params.sessionId as string)
 const { data: messages } = useChatMessages(sessionId)
@@ -25,11 +27,14 @@ function handleSend(content: string) {
           <ChatMessage
             v-for="(msg, i) in messages"
             :key="i"
-            :role="(msg as Record<string,string>).role as 'user' | 'assistant'"
-            :content="(msg as Record<string,string>).content"
+            :role="(msg as ChatMsg).role"
+            :content="(msg as ChatMsg).content"
           />
         </div>
-        <el-empty v-else description="开始对话吧" />
+        <el-empty
+          v-else
+          description="开始对话吧"
+        />
       </div>
       <ChatInput @send="handleSend" />
     </div>

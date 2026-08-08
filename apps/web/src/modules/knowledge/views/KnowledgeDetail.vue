@@ -117,44 +117,92 @@ async function handleSaveEmbedding() {
 <template>
   <div>
     <!-- Header -->
-    <div v-if="kbLoading" class="flex justify-center py-12">
-      <el-icon class="is-loading" :size="24"><Document /></el-icon>
+    <div
+      v-if="kbLoading"
+      class="flex justify-center py-12"
+    >
+      <el-icon
+        class="is-loading"
+        :size="24"
+      >
+        <Document />
+      </el-icon>
     </div>
 
     <template v-else-if="kb">
       <el-card class="mb-2">
         <div class="flex items-start justify-between">
           <div class="flex items-start gap-4">
-            <div class="w-12 h-14 rounded-xl flex items-center justify-center shrink-0"
-              style="background: linear-gradient(135deg, var(--el-color-primary-light-5), var(--el-color-primary))">
-              <el-icon :size="28" color="#fff"><Document /></el-icon>
+            <div
+              class="w-12 h-14 rounded-xl flex items-center justify-center shrink-0"
+              style="background: linear-gradient(135deg, var(--el-color-primary-light-5), var(--el-color-primary))"
+            >
+              <el-icon
+                :size="28"
+                color="#fff"
+              >
+                <Document />
+              </el-icon>
             </div>
             <div>
               <div class="flex items-center gap-3 mb-1">
-                <h1 class="text-xl font-bold" style="color: var(--foreground)">
+                <h1
+                  class="text-xl font-bold"
+                  style="color: var(--foreground)"
+                >
                   {{ (kb as KnowledgeBase).name }}
                 </h1>
-                <el-tag :type="(kb as KnowledgeBase).isActive ? 'success' : 'info'" size="small">
+                <el-tag
+                  :type="(kb as KnowledgeBase).isActive ? 'success' : 'info'"
+                  size="small"
+                >
                   {{ (kb as KnowledgeBase).isActive ? '开启中' : '未开启' }}
                 </el-tag>
               </div>
-              <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs" style="color: var(--foreground); opacity: 0.4">
+              <div
+                class="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs"
+                style="color: var(--foreground); opacity: 0.4"
+              >
                 <span>创建人: <span style="opacity: 0.7; font-family: monospace">{{ (kb as KnowledgeBase)?.createdByUser?.username }}</span></span>
                 <span>创建时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).createdAt, 'yyyy-mm-dd') || '--' }}</span></span>
                 <span>更新时间: <span style="opacity: 0.7">{{ formatDate((kb as KnowledgeBase).updatedAt) || '--' }}</span></span>
               </div>
-              <div v-if="(kb as KnowledgeBase).description" class="mt-3 text-sm" style="color: var(--foreground); opacity: 0.7">
+              <div
+                v-if="(kb as KnowledgeBase).description"
+                class="mt-3 text-sm"
+                style="color: var(--foreground); opacity: 0.7"
+              >
                 {{ (kb as KnowledgeBase).description }}
               </div>
             </div>
           </div>
-          <el-dropdown trigger="click" v-if="canEdit || canManagePermissions || canDelete">
-            <el-button :icon="MoreFilled" text />
+          <el-dropdown
+            v-if="canEdit || canManagePermissions || canDelete"
+            trigger="click"
+          >
+            <el-button
+              :icon="MoreFilled"
+              text
+            />
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item v-if="canEdit" @click="editDialogVisible = true">编辑知识库</el-dropdown-item>
-                <el-dropdown-item v-if="canManagePermissions" @click="permissionDialogVisible = true">权限管理</el-dropdown-item>
-                <el-dropdown-item v-if="canDelete" style="color: var(--el-color-danger)" @click="handleDeleteKb">
+                <el-dropdown-item
+                  v-if="canEdit"
+                  @click="editDialogVisible = true"
+                >
+                  编辑知识库
+                </el-dropdown-item>
+                <el-dropdown-item
+                  v-if="canManagePermissions"
+                  @click="permissionDialogVisible = true"
+                >
+                  权限管理
+                </el-dropdown-item>
+                <el-dropdown-item
+                  v-if="canDelete"
+                  style="color: var(--el-color-danger)"
+                  @click="handleDeleteKb"
+                >
                   删除知识库
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -166,10 +214,18 @@ async function handleSaveEmbedding() {
       <!-- Tabs -->
       <el-card>
         <el-tabs v-model="activeTab">
-          <el-tab-pane label="原始文档" name="documents">
+          <el-tab-pane
+            label="原始文档"
+            name="documents"
+          >
             <div class="mt-2">
               <div class="flex items-center justify-between mb-4">
-                <el-button v-if="canUpload" type="primary" :icon="Upload" @click="uploadDialogVisible = true">
+                <el-button
+                  v-if="canUpload"
+                  type="primary"
+                  :icon="Upload"
+                  @click="uploadDialogVisible = true"
+                >
                   上传文档
                 </el-button>
                 <div class="flex items-center gap-2">
@@ -194,7 +250,10 @@ async function handleSaveEmbedding() {
             </div>
           </el-tab-pane>
 
-          <el-tab-pane label="切片详情" name="chunks">
+          <el-tab-pane
+            label="切片详情"
+            name="chunks"
+          >
             <ChunkDetail
               :kb-id="kbId"
               :document-id="chunkDocId"
@@ -202,18 +261,34 @@ async function handleSaveEmbedding() {
             />
           </el-tab-pane>
 
-          <el-tab-pane label="知识检索" name="search">
+          <el-tab-pane
+            label="知识检索"
+            name="search"
+          >
             <div class="flex items-center justify-center py-20">
               <div class="text-center">
-                <p class="text-sm" style="color: var(--foreground); opacity: 0.6">请先导入文档以启用知识检索</p>
+                <p
+                  class="text-sm"
+                  style="color: var(--foreground); opacity: 0.6"
+                >
+                  请先导入文档以启用知识检索
+                </p>
               </div>
             </div>
           </el-tab-pane>
 
-          <el-tab-pane label="知识问答" name="qa">
+          <el-tab-pane
+            label="知识问答"
+            name="qa"
+          >
             <div class="flex items-center justify-center py-20">
               <div class="text-center">
-                <p class="text-sm" style="color: var(--foreground); opacity: 0.6">请先导入文档以启用知识问答</p>
+                <p
+                  class="text-sm"
+                  style="color: var(--foreground); opacity: 0.6"
+                >
+                  请先导入文档以启用知识问答
+                </p>
               </div>
             </div>
           </el-tab-pane>
@@ -221,18 +296,35 @@ async function handleSaveEmbedding() {
       </el-card>
 
       <!-- Upload Dialog -->
-      <el-dialog v-model="uploadDialogVisible" title="上传文档" width="800px">
+      <el-dialog
+        v-model="uploadDialogVisible"
+        title="上传文档"
+        width="800px"
+      >
         <DocumentUpload :kb-id="kbId" />
       </el-dialog>
 
       <!-- Edit Dialog -->
-      <KnowledgeCreateDialog v-model:visible="editDialogVisible" :kb="(kb as KnowledgeBase)" />
+      <KnowledgeCreateDialog
+        v-model:visible="editDialogVisible"
+        :kb="(kb as KnowledgeBase)"
+      />
 
       <!-- Embedding Dialog -->
-      <el-dialog v-model="embeddingDialogVisible" title="Embedding 配置" width="480px">
+      <el-dialog
+        v-model="embeddingDialogVisible"
+        title="Embedding 配置"
+        width="480px"
+      >
         <el-form @submit.prevent="handleSaveEmbedding">
-          <el-form-item label="Embedding" required>
-            <el-select v-model="embeddingModel" style="width: 100%">
+          <el-form-item
+            label="Embedding"
+            required
+          >
+            <el-select
+              v-model="embeddingModel"
+              style="width: 100%"
+            >
               <el-option
                 v-for="opt in EMBEDDING_MODEL_OPTIONS"
                 :key="opt.value"
@@ -241,21 +333,38 @@ async function handleSaveEmbedding() {
               />
             </el-select>
           </el-form-item>
-          <div class="text-xs" style="color: var(--foreground); opacity: 0.5">
+          <div
+            class="text-xs"
+            style="color: var(--foreground); opacity: 0.5"
+          >
             修改 Embedding 模型后，知识库内的文档需要重新向量化处理。
           </div>
         </el-form>
         <template #footer>
-          <el-button @click="embeddingDialogVisible = false">取消</el-button>
-          <el-button type="primary" :loading="embeddingSubmitting" @click="handleSaveEmbedding">保存</el-button>
+          <el-button @click="embeddingDialogVisible = false">
+            取消
+          </el-button>
+          <el-button
+            type="primary"
+            :loading="embeddingSubmitting"
+            @click="handleSaveEmbedding"
+          >
+            保存
+          </el-button>
         </template>
       </el-dialog>
 
       <!-- Permission Dialog -->
-      <PermissionDialog v-model:visible="permissionDialogVisible" :kb-id="kbId" />
+      <PermissionDialog
+        v-model:visible="permissionDialogVisible"
+        :kb-id="kbId"
+      />
     </template>
 
-    <el-empty v-else description="知识库不存在" />
+    <el-empty
+      v-else
+      description="知识库不存在"
+    />
   </div>
 </template>
 

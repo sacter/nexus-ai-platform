@@ -67,13 +67,36 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑知识库' : '创建知识库'" width="480px">
-    <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleSubmit">
-      <el-form-item label="名&nbsp;&nbsp;称" prop="name" required>
-        <el-input v-model="form.name" placeholder="知识库名称" />
+  <el-dialog
+    v-model="visible"
+    :title="isEdit ? '编辑知识库' : '创建知识库'"
+    width="480px"
+  >
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      @submit.prevent="handleSubmit"
+    >
+      <el-form-item
+        label="名&nbsp;&nbsp;称"
+        prop="name"
+        required
+      >
+        <el-input
+          v-model="form.name"
+          placeholder="知识库名称"
+        />
       </el-form-item>
-      <el-form-item label="Embedding" prop="embeddingModel" required>
-        <el-select v-model="form.embeddingModel" style="width: 100%">
+      <el-form-item
+        label="Embedding"
+        prop="embeddingModel"
+        required
+      >
+        <el-select
+          v-model="form.embeddingModel"
+          style="width: 100%"
+        >
           <el-option
             v-for="opt in EMBEDDING_MODEL_OPTIONS"
             :key="opt.value"
@@ -82,22 +105,46 @@ async function handleSubmit() {
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="检索方式" prop="retrievalStrategy" required>
+      <el-form-item
+        label="检索方式"
+        prop="retrievalStrategy"
+        required
+      >
         <el-radio-group v-model="form.retrievalStrategy">
-          <el-radio value="vector">vector</el-radio>
-          <el-radio value="hybrid">hybrid</el-radio>
+          <el-radio value="vector">
+            vector
+          </el-radio>
+          <el-radio value="hybrid">
+            hybrid
+          </el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item v-if="isEdit" label="是否启用">
+      <el-form-item
+        v-if="isEdit"
+        label="是否启用"
+      >
         <el-switch v-model="form.isActive" />
       </el-form-item>
       <el-form-item label="描&nbsp;&nbsp;述">
-        <el-input v-model="form.description" type="textarea" placeholder="知识库描述（可选）" :autosize="{ minRows: 4 }" />
+        <el-input
+          v-model="form.description"
+          type="textarea"
+          placeholder="知识库描述（可选）"
+          :autosize="{ minRows: 4 }"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ isEdit ? '保存' : '创建' }}</el-button>
+      <el-button @click="visible = false">
+        取消
+      </el-button>
+      <el-button
+        type="primary"
+        :loading="submitting"
+        @click="handleSubmit"
+      >
+        {{ isEdit ? '保存' : '创建' }}
+      </el-button>
     </template>
   </el-dialog>
 </template>

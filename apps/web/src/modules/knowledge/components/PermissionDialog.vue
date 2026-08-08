@@ -136,7 +136,11 @@ async function handleRemove(perm: KbPermission) {
 </script>
 
 <template>
-  <el-dialog v-model="visible" title="权限管理" width="720px">
+  <el-dialog
+    v-model="visible"
+    title="权限管理"
+    width="720px"
+  >
     <!-- 搜索与批量操作 -->
     <div class="flex items-center gap-3 mb-4">
       <el-input
@@ -145,43 +149,91 @@ async function handleRemove(perm: KbPermission) {
         clearable
         style="width: 220px"
       />
-      <el-select v-model="selectedRole" placeholder="选择角色" style="width: 180px" clearable>
-        <el-option label="管理" value="admin" />
-        <el-option label="上传&编辑" value="editor" />
-        <el-option label="只读" value="viewer" />
+      <el-select
+        v-model="selectedRole"
+        placeholder="选择角色"
+        style="width: 180px"
+        clearable
+      >
+        <el-option
+          label="管理"
+          value="admin"
+        />
+        <el-option
+          label="上传&编辑"
+          value="editor"
+        />
+        <el-option
+          label="只读"
+          value="viewer"
+        />
       </el-select>
-      <el-button type="primary" :disabled="batchDisabled" :loading="batchAssignLoading" @click="handleBatchAdd">
+      <el-button
+        type="primary"
+        :disabled="batchDisabled"
+        :loading="batchAssignLoading"
+        @click="handleBatchAdd"
+      >
         批量添加
       </el-button>
     </div>
 
     <!-- 已授权用户 -->
-    <h4 class="text-sm font-semibold mb-2" style="color: var(--foreground)">已授权用户</h4>
+    <h4
+      class="text-sm font-semibold mb-2"
+      style="color: var(--foreground)"
+    >
+      已授权用户
+    </h4>
     <el-table
-      :data="filteredPermissions"
       v-loading="permsLoading"
+      :data="filteredPermissions"
       stripe
       empty-text="暂无授权用户"
       class="mb-6"
       max-height="240"
     >
-      <el-table-column label="用户名" min-width="120">
+      <el-table-column
+        label="用户名"
+        min-width="120"
+      >
         <template #default="{ row }">
           <span>{{ row.user?.username ?? row.userId }}</span>
-          <el-tag v-if="isCurrentUser(row)" size="small" type="primary" class="ml-1">我</el-tag>
+          <el-tag
+            v-if="isCurrentUser(row)"
+            size="small"
+            type="primary"
+            class="ml-1"
+          >
+            我
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="邮箱" min-width="160">
-        <template #default="{ row }">{{ row.user?.email ?? '--' }}</template>
-      </el-table-column>
-      <el-table-column label="角色" width="140">
+      <el-table-column
+        label="邮箱"
+        min-width="160"
+      >
         <template #default="{ row }">
-          <el-tag :type="roleTagType[row.role as KbRole]" size="small">
+          {{ row.user?.email ?? '--' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="角色"
+        width="140"
+      >
+        <template #default="{ row }">
+          <el-tag
+            :type="roleTagType[row.role as KbRole]"
+            size="small"
+          >
             {{ roleLabel[row.role as KbRole] }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180">
+      <el-table-column
+        label="操作"
+        width="180"
+      >
         <template #default="{ row }">
           <el-select
             :model-value="row.role"
@@ -189,9 +241,18 @@ async function handleRemove(perm: KbPermission) {
             style="width: 110px"
             @change="(val: KbRole) => handleRoleChange(row.id, val)"
           >
-            <el-option label="管理" value="admin" />
-            <el-option label="上传&编辑" value="editor" />
-            <el-option label="只读" value="viewer" />
+            <el-option
+              label="管理"
+              value="admin"
+            />
+            <el-option
+              label="上传&编辑"
+              value="editor"
+            />
+            <el-option
+              label="只读"
+              value="viewer"
+            />
           </el-select>
           <el-button
             size="small"
@@ -207,21 +268,39 @@ async function handleRemove(perm: KbPermission) {
     </el-table>
 
     <!-- 添加用户 -->
-    <h4 class="text-sm font-semibold mb-2" style="color: var(--foreground)">添加用户</h4>
+    <h4
+      class="text-sm font-semibold mb-2"
+      style="color: var(--foreground)"
+    >
+      添加用户
+    </h4>
     <el-table
-      :data="filteredAvailableUsers"
       v-loading="usersLoading"
+      :data="filteredAvailableUsers"
       stripe
       empty-text="没有可添加的用户"
       max-height="240"
       @selection-change="onSelectionChange"
     >
-      <el-table-column type="selection" width="50" />
-      <el-table-column label="用户名" min-width="120">
-        <template #default="{ row }">{{ row.username }}</template>
+      <el-table-column
+        type="selection"
+        width="50"
+      />
+      <el-table-column
+        label="用户名"
+        min-width="120"
+      >
+        <template #default="{ row }">
+          {{ row.username }}
+        </template>
       </el-table-column>
-      <el-table-column label="邮箱" min-width="160">
-        <template #default="{ row }">{{ row.email }}</template>
+      <el-table-column
+        label="邮箱"
+        min-width="160"
+      >
+        <template #default="{ row }">
+          {{ row.email }}
+        </template>
       </el-table-column>
     </el-table>
   </el-dialog>

@@ -27,15 +27,39 @@ onMounted(() => {
 
 <template>
   <!-- Show placeholder while not mounted to prevent layout shift -->
-  <div v-if="!mounted" class="flex items-center">
-    <el-button disabled circle link :icon="Brush" />
-    <el-button disabled circle link :icon="Sunny" />
+  <div
+    v-if="!mounted"
+    class="flex items-center"
+  >
+    <el-button
+      disabled
+      circle
+      link
+      :icon="Brush"
+    />
+    <el-button
+      disabled
+      circle
+      link
+      :icon="Sunny"
+    />
   </div>
 
-  <div v-else class="flex items-center">
+  <div
+    v-else
+    class="flex items-center"
+  >
     <!-- Color theme selector -->
-    <el-dropdown trigger="click" @command="applyColorTheme">
-      <el-button circle :icon="Brush" link aria-label="配色主题" />
+    <el-dropdown
+      trigger="click"
+      @command="applyColorTheme"
+    >
+      <el-button
+        circle
+        :icon="Brush"
+        link
+        aria-label="配色主题"
+      />
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item
@@ -45,14 +69,24 @@ onMounted(() => {
             :class="{ 'is-active': colorTheme === t.key }"
           >
             {{ t.label }}
-            <el-icon v-if="colorTheme === t.key" class="ml-2" :size="14"><Check /></el-icon>
+            <el-icon
+              v-if="colorTheme === t.key"
+              class="ml-2"
+              :size="14"
+            >
+              <Check />
+            </el-icon>
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>
 
     <!-- Dark / Light toggle -->
-    <el-button circle link @click="themeStore.toggle()">
+    <el-button
+      circle
+      link
+      @click="themeStore.toggle()"
+    >
       <el-icon :size="16">
         <Sunny v-if="themeStore.theme === 'light'" />
         <Moon v-else />

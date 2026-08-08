@@ -11,8 +11,15 @@ const edges = ref([])
 </script>
 <template>
   <div class="h-full -m-6">
-    <div class="h-full" style="min-height: calc(100vh - 3.5rem)">
-      <VueFlow :nodes="nodes" :edges="edges" class="h-full w-full">
+    <div
+      class="h-full"
+      style="min-height: calc(100vh - 3.5rem)"
+    >
+      <VueFlow
+        :nodes="nodes"
+        :edges="edges"
+        class="h-full w-full"
+      >
         <Background />
         <Controls />
       </VueFlow>

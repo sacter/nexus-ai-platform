@@ -101,17 +101,27 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
   <div class="document-detail-page">
     <!-- 返回 -->
     <div class="back-row">
-      <el-button :icon="ArrowLeft" text size="default" @click="goBack">
+      <el-button
+        :icon="ArrowLeft"
+        text
+        size="default"
+        @click="goBack"
+      >
         返回文档列表
       </el-button>
     </div>
 
-    <div v-if="doc" class="detail-content">
+    <div
+      v-if="doc"
+      class="detail-content"
+    >
       <div v-loading="isLoading">
         <!-- 基本信息 -->
         <div class="detail-card">
           <div class="detail-header">
-            <h2 class="detail-title">{{ (doc as Document).name }}</h2>
+            <h2 class="detail-title">
+              {{ (doc as Document).name }}
+            </h2>
             <div class="detail-actions">
               <el-button
                 :icon="Download"
@@ -120,16 +130,27 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
               >
                 下载
               </el-button>
-              <el-button :icon="Refresh" @click="handleReindex">
+              <el-button
+                :icon="Refresh"
+                @click="handleReindex"
+              >
                 重新索引
               </el-button>
-              <el-button :icon="Delete" type="danger" @click="handleDelete">
+              <el-button
+                :icon="Delete"
+                type="danger"
+                @click="handleDelete"
+              >
                 删除
               </el-button>
             </div>
           </div>
 
-          <el-descriptions :column="3" border size="small">
+          <el-descriptions
+            :column="3"
+            border
+            size="small"
+          >
             <el-descriptions-item label="原始文件名">
               {{ (doc as Document).originalName }}
             </el-descriptions-item>
@@ -184,7 +205,10 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
       </div>
 
       <!-- 空状态 -->
-      <el-empty v-if="!isLoading && !doc" description="文档不存在" />
+      <el-empty
+        v-if="!isLoading && !doc"
+        description="文档不存在"
+      />
     </div>
 
     <!-- 版本历史弹窗 -->

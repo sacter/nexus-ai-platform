@@ -10,7 +10,10 @@ function handleNew() { router.push('/chat/new') }
 
 <template>
   <div class="flex h-full -m-6">
-    <ChatSessionList @select="handleSelect" @new="handleNew" />
+    <ChatSessionList
+      @select="handleSelect"
+      @new="handleNew"
+    />
     <div class="flex-1 flex items-center justify-center">
       <el-empty description="选择一个对话或新建" />
     </div>

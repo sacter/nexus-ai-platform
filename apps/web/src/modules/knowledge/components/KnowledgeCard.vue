@@ -50,12 +50,24 @@ const canDelete = computed(() => props.userRole === 'admin')
 </script>
 
 <template>
-  <el-card shadow="hover" class="cursor-pointer brrounded-lg" @click="emit('view', id)">
+  <el-card
+    shadow="hover"
+    class="cursor-pointer brrounded-lg"
+    @click="emit('view', id)"
+  >
     <div class="flex items-center gap-4">
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-1">
-          <h3 class="text-base font-semibold truncate" style="color: var(--foreground)">{{ name }}</h3>
-          <el-tag :type="isActive ? 'success' : 'info'" size="small">
+          <h3
+            class="text-base font-semibold truncate"
+            style="color: var(--foreground)"
+          >
+            {{ name }}
+          </h3>
+          <el-tag
+            :type="isActive ? 'success' : 'info'"
+            size="small"
+          >
             {{ isActive ? '开启中' : '未开启' }}
           </el-tag>
         </div>
@@ -65,24 +77,50 @@ const canDelete = computed(() => props.userRole === 'admin')
         >
           {{ description || '暂无描述' }}
         </p>
-        <div class="flex items-center gap-4 text-xs" style="color: var(--foreground); opacity: 0.55">
+        <div
+          class="flex items-center gap-4 text-xs"
+          style="color: var(--foreground); opacity: 0.55"
+        >
           <span v-if="creatorName">创建人：{{ creatorName }}</span>
           <span>创建日期：{{ createdText }}</span>
         </div>
       </div>
 
       <!-- 右侧渐变方块图 -->
-      <div class="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center" :style="squareStyle">
-        <el-icon :size="26" color="#fff"><Document /></el-icon>
+      <div
+        class="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center"
+        :style="squareStyle"
+      >
+        <el-icon
+          :size="26"
+          color="#fff"
+        >
+          <Document />
+        </el-icon>
       </div>
     </div>
 
     <div class="flex justify-end mt-3">
-      <el-button size="small" text type="primary" @click.stop="emit('view', id)">
-        <el-icon class="mr-1"><View /></el-icon>查看
+      <el-button
+        size="small"
+        text
+        type="primary"
+        @click.stop="emit('view', id)"
+      >
+        <el-icon class="mr-1">
+          <View />
+        </el-icon>查看
       </el-button>
-      <el-button v-if="canDelete" size="small" text type="danger" @click.stop="emit('delete', id, isActive ?? false)">
-        <el-icon class="mr-1"><Delete /></el-icon>删除
+      <el-button
+        v-if="canDelete"
+        size="small"
+        text
+        type="danger"
+        @click.stop="emit('delete', id, isActive ?? false)"
+      >
+        <el-icon class="mr-1">
+          <Delete />
+        </el-icon>删除
       </el-button>
     </div>
   </el-card>

@@ -18,32 +18,147 @@ defineProps<{
         <div class="auth-logo-row">
           <div class="auth-logo-icon">
             <svg
-              width="24" height="24" viewBox="0 0 24 24" fill="none"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <!-- Central node -->
-              <rect x="9" y="9" width="6" height="6" rx="2" stroke="white" stroke-width="2" />
+              <rect
+                x="9"
+                y="9"
+                width="6"
+                height="6"
+                rx="2"
+                stroke="white"
+                stroke-width="2"
+              />
               <!-- Top -->
-              <line x1="12" y1="9" x2="12" y2="3" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="12" cy="2" r="1.5" fill="white" />
+              <line
+                x1="12"
+                y1="9"
+                x2="12"
+                y2="3"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="12"
+                cy="2"
+                r="1.5"
+                fill="white"
+              />
               <!-- Bottom -->
-              <line x1="12" y1="15" x2="12" y2="21" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="12" cy="22" r="1.5" fill="white" />
+              <line
+                x1="12"
+                y1="15"
+                x2="12"
+                y2="21"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="12"
+                cy="22"
+                r="1.5"
+                fill="white"
+              />
               <!-- Left -->
-              <line x1="9" y1="12" x2="3" y2="12" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="2" cy="12" r="1.5" fill="white" />
+              <line
+                x1="9"
+                y1="12"
+                x2="3"
+                y2="12"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="2"
+                cy="12"
+                r="1.5"
+                fill="white"
+              />
               <!-- Right -->
-              <line x1="15" y1="12" x2="21" y2="12" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="22" cy="12" r="1.5" fill="white" />
+              <line
+                x1="15"
+                y1="12"
+                x2="21"
+                y2="12"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="22"
+                cy="12"
+                r="1.5"
+                fill="white"
+              />
               <!-- Diagonals -->
-              <line x1="10.5" y1="10.5" x2="5.5" y2="5.5" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="4.5" cy="4.5" r="1.5" fill="white" />
-              <line x1="13.5" y1="10.5" x2="18.5" y2="5.5" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="19.5" cy="4.5" r="1.5" fill="white" />
-              <line x1="10.5" y1="13.5" x2="5.5" y2="18.5" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="4.5" cy="19.5" r="1.5" fill="white" />
-              <line x1="13.5" y1="13.5" x2="18.5" y2="18.5" stroke="white" stroke-width="2" stroke-linecap="round" />
-              <circle cx="19.5" cy="19.5" r="1.5" fill="white" />
+              <line
+                x1="10.5"
+                y1="10.5"
+                x2="5.5"
+                y2="5.5"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="4.5"
+                cy="4.5"
+                r="1.5"
+                fill="white"
+              />
+              <line
+                x1="13.5"
+                y1="10.5"
+                x2="18.5"
+                y2="5.5"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="19.5"
+                cy="4.5"
+                r="1.5"
+                fill="white"
+              />
+              <line
+                x1="10.5"
+                y1="13.5"
+                x2="5.5"
+                y2="18.5"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="4.5"
+                cy="19.5"
+                r="1.5"
+                fill="white"
+              />
+              <line
+                x1="13.5"
+                y1="13.5"
+                x2="18.5"
+                y2="18.5"
+                stroke="white"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="19.5"
+                cy="19.5"
+                r="1.5"
+                fill="white"
+              />
             </svg>
           </div>
           <span class="auth-logo-text">Nexus AI</span>
@@ -51,8 +166,12 @@ defineProps<{
 
         <!-- Headline -->
         <div class="auth-headline">
-          <p class="auth-headline__line">企业级AI</p>
-          <p class="auth-headline__line">智能工作平台</p>
+          <p class="auth-headline__line">
+            企业级AI
+          </p>
+          <p class="auth-headline__line">
+            智能工作平台
+          </p>
         </div>
 
         <!-- Description -->
@@ -83,8 +202,12 @@ defineProps<{
     <div class="auth-right">
       <div class="auth-card">
         <div class="auth-card__header">
-          <h2 class="auth-card__title">{{ title }}</h2>
-          <p class="auth-card__subtitle">{{ subtitle }}</p>
+          <h2 class="auth-card__title">
+            {{ title }}
+          </h2>
+          <p class="auth-card__subtitle">
+            {{ subtitle }}
+          </p>
         </div>
         <div class="auth-card__divider" />
         <slot />

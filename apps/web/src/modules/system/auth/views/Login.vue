@@ -80,7 +80,10 @@ onMounted(() => {
     title="欢迎回来"
     subtitle="登录您的企业AI账户，开始智能工作"
   >
-    <form class="auth-form" @submit.prevent="handleSubmit">
+    <form
+      class="auth-form"
+      @submit.prevent="handleSubmit"
+    >
       <!-- Username -->
       <div class="auth-field">
         <label class="auth-label">用户名</label>
@@ -92,18 +95,28 @@ onMounted(() => {
             class="auth-input"
           >
             <template #prefix>
-              <el-icon class="auth-input-icon"><Message /></el-icon>
+              <el-icon class="auth-input-icon">
+                <Message />
+              </el-icon>
             </template>
           </el-input>
         </div>
-        <p v-if="errors.username" class="auth-error">{{ errors.username }}</p>
+        <p
+          v-if="errors.username"
+          class="auth-error"
+        >
+          {{ errors.username }}
+        </p>
       </div>
 
       <!-- Password -->
       <div class="auth-field">
         <div class="auth-label-row">
           <label class="auth-label">登录密码</label>
-          <a class="auth-forgot" href="#">忘记密码？</a>
+          <a
+            class="auth-forgot"
+            href="#"
+          >忘记密码？</a>
         </div>
         <div class="auth-input-wrap">
           <el-input
@@ -114,20 +127,56 @@ onMounted(() => {
             class="auth-input"
           >
             <template #prefix>
-              <el-icon class="auth-input-icon"><Lock /></el-icon>
+              <el-icon class="auth-input-icon">
+                <Lock />
+              </el-icon>
             </template>
             <template #suffix>
               <el-icon
                 class="auth-input-icon auth-input-icon--clickable"
                 @click="passwordVisible = !passwordVisible"
               >
-                <svg v-if="passwordVisible" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <svg
+                  v-if="passwordVisible"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
+                  cx="12"
+                  cy="12"
+                  r="3"
+                /></svg>
+                <svg
+                  v-else
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line
+                  x1="1"
+                  y1="1"
+                  x2="23"
+                  y2="23"
+                /></svg>
               </el-icon>
             </template>
           </el-input>
         </div>
-        <p v-if="errors.password" class="auth-error">{{ errors.password }}</p>
+        <p
+          v-if="errors.password"
+          class="auth-error"
+        >
+          {{ errors.password }}
+        </p>
       </div>
 
       <!-- Captcha -->
@@ -144,22 +193,46 @@ onMounted(() => {
             class="auth-captcha-img"
             @click="fetchCaptcha"
           >
-            <span v-if="captchaLoading" class="text-xs" style="color: #64748b">加载中...</span>
-            <div v-else-if="captcha" v-html="captcha.svg" class="flex items-center justify-center" />
+            <span
+              v-if="captchaLoading"
+              class="text-xs"
+              style="color: #64748b"
+            >加载中...</span>
+            <!-- 验证码 SVG 由服务端生成，内容可信 -->
+            <!-- eslint-disable vue/no-v-html -->
+            <div
+              v-else-if="captcha"
+              class="flex items-center justify-center"
+              v-html="captcha.svg"
+            />
+            <!-- eslint-enable vue/no-v-html -->
           </div>
         </div>
-        <p v-if="errors.captchaCode" class="auth-error">{{ errors.captchaCode }}</p>
+        <p
+          v-if="errors.captchaCode"
+          class="auth-error"
+        >
+          {{ errors.captchaCode }}
+        </p>
       </div>
 
       <!-- Remember me -->
       <div class="auth-remember">
-        <el-checkbox v-model="rememberMe" class="auth-checkbox">
+        <el-checkbox
+          v-model="rememberMe"
+          class="auth-checkbox"
+        >
           <span class="auth-checkbox__label">记住我的登录状态</span>
         </el-checkbox>
       </div>
 
       <!-- Server error -->
-      <p v-if="serverError" class="auth-error auth-error--center">{{ serverError }}</p>
+      <p
+        v-if="serverError"
+        class="auth-error auth-error--center"
+      >
+        {{ serverError }}
+      </p>
 
       <!-- Submit -->
       <button
@@ -171,7 +244,10 @@ onMounted(() => {
           <span class="auth-submit__loading" />
           <span>登录中...</span>
         </template>
-        <span v-else class="auth-submit__content">
+        <span
+          v-else
+          class="auth-submit__content"
+        >
           立即登录
           <el-icon><ArrowRight /></el-icon>
         </span>
@@ -179,7 +255,12 @@ onMounted(() => {
 
       <!-- Footer link -->
       <p class="auth-footer">
-        还没有账号？<router-link to="/register" class="auth-footer__link">立即注册</router-link>
+        还没有账号？<router-link
+          to="/register"
+          class="auth-footer__link"
+        >
+          立即注册
+        </router-link>
       </p>
     </form>
 
@@ -191,7 +272,9 @@ onMounted(() => {
         <span class="auth-sso__divider-line" />
       </div>
       <button class="auth-sso__btn">
-        <el-icon class="auth-sso__btn-icon"><OfficeBuilding /></el-icon>
+        <el-icon class="auth-sso__btn-icon">
+          <OfficeBuilding />
+        </el-icon>
         <span>使用企业 SSO 单点登录</span>
       </button>
     </div>

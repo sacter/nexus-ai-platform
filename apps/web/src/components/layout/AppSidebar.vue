@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Monitor,
@@ -49,10 +48,16 @@ function navigate(href: string) {
       class="flex items-center gap-2 h-14 px-4"
       style="border-bottom: 1px solid var(--border)"
     >
-      <el-icon :size="20" color="var(--accent)">
+      <el-icon
+        :size="20"
+        color="var(--accent)"
+      >
         <Monitor />
       </el-icon>
-      <span class="font-semibold text-sm" style="color: var(--foreground)">Nexus AI</span>
+      <span
+        class="font-semibold text-sm"
+        style="color: var(--foreground)"
+      >Nexus AI</span>
     </div>
     <nav class="p-3 flex flex-col gap-0.5">
       <button

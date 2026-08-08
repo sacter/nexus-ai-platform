@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toValue, type MaybeRefOrGetter } from 'vue'
 import { ElMessage } from 'element-plus'
 import { documentsApi } from '@/modules/knowledge/api/document.api'
-import type { Document, DocumentVersion } from '@/modules/knowledge/types/document'
+import type { Document } from '@/modules/knowledge/types/document'
 
 // ============================================
 // Queries

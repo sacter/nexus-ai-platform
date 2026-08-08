@@ -181,27 +181,45 @@ function formatSize(bytes: number): string {
 </script>
 
 <template>
-  <div class="document-list-page" :class="{ 'is-embedded': embedded }">
+  <div
+    class="document-list-page"
+    :class="{ 'is-embedded': embedded }"
+  >
     <template v-if="!embedded">
       <div class="page-header">
-        <h1 class="page-title">文档管理</h1>
+        <h1 class="page-title">
+          文档管理
+        </h1>
       </div>
       <div class="upload-section">
-        <DocumentUpload :kb-id="kbId" @uploaded="handleUploaded" />
+        <DocumentUpload
+          :kb-id="kbId"
+          @uploaded="handleUploaded"
+        />
       </div>
     </template>
 
-    <div class="table-section" :class="{ 'table-section--embedded': embedded }">
-      <div class="table-box" :style="{ height: 'calc(100vh - 410px)' }">
+    <div
+      class="table-section"
+      :class="{ 'table-section--embedded': embedded }"
+    >
+      <div
+        class="table-box"
+        :style="{ height: 'calc(100vh - 410px)' }"
+      >
         <el-table
-          :data="docsList"
           v-loading="isLoading"
+          :data="docsList"
           stripe
           height="100%"
           :empty-text="emptyText"
         >
           <!-- 文档名称 / ID -->
-          <el-table-column label="文档名称 / ID" min-width="240" fixed>
+          <el-table-column
+            label="文档名称 / ID"
+            min-width="240"
+            fixed
+          >
             <template #default="{ row }">
               <div>
                 <el-tooltip
@@ -209,11 +227,23 @@ function formatSize(bytes: number): string {
                   placement="top"
                   :show-after="200"
                 >
-                  <div class="font-medium overflow-hidden whitespace-nowrap text-ellipsis" style="color: var(--foreground)">{{ row.name }}</div>
+                  <div
+                    class="font-medium overflow-hidden whitespace-nowrap text-ellipsis"
+                    style="color: var(--foreground)"
+                  >
+                    {{ row.name }}
+                  </div>
                 </el-tooltip>
-                <div class="flex items-center gap-1 text-xs" style="color: var(--foreground); opacity: 0.4">
+                <div
+                  class="flex items-center gap-1 text-xs"
+                  style="color: var(--foreground); opacity: 0.4"
+                >
                   <span class="overflow-hidden whitespace-nowrap text-ellipsis">文档 ID</span>
-                  <el-tooltip content="复制文档 ID" placement="top" :show-after="200">
+                  <el-tooltip
+                    content="复制文档 ID"
+                    placement="top"
+                    :show-after="200"
+                  >
                     <el-icon
                       class="cursor-pointer shrink-0 hover:text-primary"
                       :size="13"
@@ -228,65 +258,101 @@ function formatSize(bytes: number): string {
           </el-table-column>
   
           <!-- 类型 -->
-          <el-table-column label="类型" width="80" align="center">
+          <el-table-column
+            label="类型"
+            width="80"
+            align="center"
+          >
             <template #default="{ row }">
               <span class="doc-type-tag">{{ mimeTypeLabel(row.mimeType) }}</span>
             </template>
           </el-table-column>
   
           <!-- 大小 -->
-          <el-table-column label="大小" width="90" align="right">
+          <el-table-column
+            label="大小"
+            width="90"
+            align="right"
+          >
             <template #default="{ row }">
               {{ formatSize(Number(row.fileSize)) }}
             </template>
           </el-table-column>
   
           <!-- 状态 -->
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column
+            label="状态"
+            width="100"
+            align="center"
+          >
             <template #default="{ row }">
-              <el-tag :type="statusTagType(row.status)" size="small">
+              <el-tag
+                :type="statusTagType(row.status)"
+                size="small"
+              >
                 {{ statusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
   
           <!-- 切片数 -->
-          <el-table-column label="切片数" width="80" align="center">
+          <el-table-column
+            label="切片数"
+            width="80"
+            align="center"
+          >
             <template #default="{ row }">
               {{ row.chunkCount }}
             </template>
           </el-table-column>
   
           <!-- 版本 -->
-          <el-table-column label="版本" width="70" align="center">
+          <el-table-column
+            label="版本"
+            width="70"
+            align="center"
+          >
             <template #default="{ row }">
               v{{ row.version }}
             </template>
           </el-table-column>
   
           <!-- 上传者 -->
-          <el-table-column label="上传者" width="100">
+          <el-table-column
+            label="上传者"
+            width="100"
+          >
             <template #default="{ row }">
               {{ row.user?.username || '-' }}
             </template>
           </el-table-column>
   
           <!-- 上传时间 -->
-          <el-table-column label="上传时间" width="170">
+          <el-table-column
+            label="上传时间"
+            width="170"
+          >
             <template #default="{ row }">
               {{ row.createdAt }}
             </template>
           </el-table-column>
   
           <!-- 更新时间 -->
-          <el-table-column label="更新时间" width="170">
+          <el-table-column
+            label="更新时间"
+            width="170"
+          >
             <template #default="{ row }">
               {{ row.updatedAt }}
             </template>
           </el-table-column>
   
           <!-- 操作 -->
-          <el-table-column label="操作" :width="embedded ? 360 : 240" fixed="right">
+          <el-table-column
+            label="操作"
+            :width="embedded ? 360 : 240"
+            fixed="right"
+          >
             <template #default="{ row }">
               <div class="operation-cell flex items-center gap-1">
                 <el-button
@@ -308,16 +374,36 @@ function formatSize(bytes: number): string {
                   Embedding
                 </el-button> -->
                 <el-tooltip content="预览">
-                  <el-button :icon="View" size="small" text @click="handleView(row)" />
+                  <el-button
+                    :icon="View"
+                    size="small"
+                    text
+                    @click="handleView(row)"
+                  />
                 </el-tooltip>
                 <el-tooltip content="下载">
-                  <el-button :icon="Download" size="small" text @click="handleDownload(row)" />
+                  <el-button
+                    :icon="Download"
+                    size="small"
+                    text
+                    @click="handleDownload(row)"
+                  />
                 </el-tooltip>
                 <el-tooltip content="版本历史">
-                  <el-button :icon="Clock" size="small" text @click="handleVersionHistory(row)" />
+                  <el-button
+                    :icon="Clock"
+                    size="small"
+                    text
+                    @click="handleVersionHistory(row)"
+                  />
                 </el-tooltip>
                 <el-tooltip content="重新索引">
-                  <el-button :icon="Refresh" size="small" text @click="handleReindex(row)" />
+                  <el-button
+                    :icon="Refresh"
+                    size="small"
+                    text
+                    @click="handleReindex(row)"
+                  />
                 </el-tooltip>
                 <el-popover
                   :visible="popoverVisibleRow === row.id"
@@ -337,19 +423,39 @@ function formatSize(bytes: number): string {
                   </template>
                   <div class="px-1">
                     <div class="flex items-center gap-1.5 mb-2">
-                      <el-icon :size="15" color="#f90">
+                      <el-icon
+                        :size="15"
+                        color="#f90"
+                      >
                         <WarningFilled />
                       </el-icon>
-                      <span class="font-medium text-sm" style="color: var(--el-text-color-primary)">
+                      <span
+                        class="font-medium text-sm"
+                        style="color: var(--el-text-color-primary)"
+                      >
                         确定删除所选文档？
                       </span>
                     </div>
-                    <p class="text-xs leading-5" style="color: var(--el-text-color-regular)">
+                    <p
+                      class="text-xs leading-5"
+                      style="color: var(--el-text-color-regular)"
+                    >
                       确定删除文档【{{ row.name }}】？删除不可恢复，请谨慎操作
                     </p>
                     <div class="flex justify-end mt-3">
-                      <el-button size="small" @click="popoverVisibleRow = ''">取消</el-button>
-                      <el-button size="small" type="primary" @click="handleConfirmDelete(row.id)">确定</el-button>
+                      <el-button
+                        size="small"
+                        @click="popoverVisibleRow = ''"
+                      >
+                        取消
+                      </el-button>
+                      <el-button
+                        size="small"
+                        type="primary"
+                        @click="handleConfirmDelete(row.id)"
+                      >
+                        确定
+                      </el-button>
                     </div>
                   </div>
                 </el-popover>
@@ -358,7 +464,10 @@ function formatSize(bytes: number): string {
           </el-table-column>
         </el-table>
       </div>
-      <div v-if="total > 0" class="table-pagination flex justify-end mt-4">
+      <div
+        v-if="total > 0"
+        class="table-pagination flex justify-end mt-4"
+      >
         <el-pagination
           v-model:current-page="page"
           v-model:page-size="pageSize"

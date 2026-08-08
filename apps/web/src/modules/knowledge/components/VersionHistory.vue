@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Check, CircleCheck } from '@element-plus/icons-vue'
+import { CircleCheck } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import {
   useDocumentVersions,
@@ -57,7 +57,10 @@ function formatFileUrl(url: string): string {
     width="700px"
     @close="emit('close')"
   >
-    <div v-loading="isLoading" class="version-history">
+    <div
+      v-loading="isLoading"
+      class="version-history"
+    >
       <el-timeline v-if="versions && versions.length > 0">
         <el-timeline-item
           v-for="version in (versions as DocumentVersion[])"
@@ -94,7 +97,10 @@ function formatFileUrl(url: string): string {
             </div>
 
             <div class="version-details">
-              <p v-if="version.changeSummary" class="version-summary">
+              <p
+                v-if="version.changeSummary"
+                class="version-summary"
+              >
                 {{ version.changeSummary }}
               </p>
               <div class="version-meta">
@@ -107,7 +113,10 @@ function formatFileUrl(url: string): string {
               </div>
             </div>
 
-            <div v-if="!isCurrentVersion(version)" class="version-action">
+            <div
+              v-if="!isCurrentVersion(version)"
+              class="version-action"
+            >
               <el-button
                 type="primary"
                 size="small"
@@ -121,7 +130,10 @@ function formatFileUrl(url: string): string {
         </el-timeline-item>
       </el-timeline>
 
-      <el-empty v-else description="暂无版本记录" />
+      <el-empty
+        v-else
+        description="暂无版本记录"
+      />
     </div>
   </el-dialog>
 </template>

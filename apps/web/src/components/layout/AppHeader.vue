@@ -74,7 +74,10 @@ async function handleLogout() {
     style="border-bottom: 1px solid var(--border); background-color: var(--surface)"
   >
     <div class="flex items-center gap-4">
-      <el-breadcrumb v-if="showBreadcrumbs" separator="/">
+      <el-breadcrumb
+        v-if="showBreadcrumbs"
+        separator="/"
+      >
         <el-breadcrumb-item
           v-for="(item, index) in breadcrumbs"
           :key="item.href"
@@ -89,12 +92,18 @@ async function handleLogout() {
       <ThemeSwitcher />
 
       <template v-if="auth.isLoading">
-        <div class="h-5 w-20 rounded animate-pulse" style="background-color: var(--surface-secondary)" />
+        <div
+          class="h-5 w-20 rounded animate-pulse"
+          style="background-color: var(--surface-secondary)"
+        />
       </template>
       <template v-else-if="auth.isAuthenticated && auth.user">
-        <el-dropdown trigger="click" @command="(cmd: string) => {
-          if (cmd === 'logout') handleLogout()
-        }">
+        <el-dropdown
+          trigger="click"
+          @command="(cmd: string) => {
+            if (cmd === 'logout') handleLogout()
+          }"
+        >
           <span
             class="flex items-center gap-1.5 text-sm cursor-pointer outline-none"
             style="color: var(--foreground)"
@@ -107,11 +116,18 @@ async function handleLogout() {
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="edit">
-                <el-icon :size="14"><Edit /></el-icon>
+                <el-icon :size="14">
+                  <Edit />
+                </el-icon>
                 <span>编辑信息</span>
               </el-dropdown-item>
-              <el-dropdown-item command="logout" divided>
-                <el-icon :size="14"><SwitchButton /></el-icon>
+              <el-dropdown-item
+                command="logout"
+                divided
+              >
+                <el-icon :size="14">
+                  <SwitchButton />
+                </el-icon>
                 <span style="color: var(--el-color-danger)">退出登录</span>
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -124,7 +140,9 @@ async function handleLogout() {
           class="flex items-center gap-2 text-sm transition-colors"
           style="color: var(--foreground)"
         >
-          <el-icon :size="20"><UserFilled /></el-icon>
+          <el-icon :size="20">
+            <UserFilled />
+          </el-icon>
           <span>登录</span>
         </router-link>
       </template>

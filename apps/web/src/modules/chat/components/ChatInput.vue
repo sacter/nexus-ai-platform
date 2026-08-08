@@ -15,13 +15,21 @@ function handleSend() {
 </script>
 
 <template>
-  <div class="border-t p-4 flex gap-2" style="border-color: var(--border); background-color: var(--surface)">
+  <div
+    class="border-t p-4 flex gap-2"
+    style="border-color: var(--border); background-color: var(--surface)"
+  >
     <el-input
       v-model="content"
       placeholder="输入消息..."
       class="flex-1"
       @keyup.enter="handleSend"
     />
-    <el-button type="primary" @click="handleSend">发送</el-button>
+    <el-button
+      type="primary"
+      @click="handleSend"
+    >
+      发送
+    </el-button>
   </div>
 </template>
