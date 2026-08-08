@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import {
   QUEUE_NAMES,
@@ -39,16 +39,11 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly embeddingService: EmbeddingService,
     private readonly prisma: PrismaService,
     private readonly persist: PersistService,
+    private readonly redis: RedisService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
-    const connection = new Redis({
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-    });
     this.worker = new Worker(
       QUEUE_NAMES.EMBEDDING,
       async (job) => {
@@ -56,7 +51,10 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
         await this.handle(data);
         return { documentId: data.documentId };
       },
-      { connection, concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING] },
+      {
+        connection: this.redis.getClient(),
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING],
+      },
     );
     this.worker.on('failed', (job, err) => {
       this.logger.error(`embedding job failed: ${job?.id}`, err);

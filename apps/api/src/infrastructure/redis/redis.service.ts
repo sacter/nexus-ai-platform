@@ -1,7 +1,7 @@
 import {
   Injectable,
   Logger,
-  OnModuleDestroy,
+  OnApplicationShutdown,
   OnModuleInit,
 } from '@nestjs/common';
 import Redis from 'ioredis';
@@ -9,12 +9,13 @@ import Redis from 'ioredis';
 /**
  * Redis 服务（缓存 + 分布式锁）
  *
+ * - 唯一 Redis 连接持有者：QueueService 与全部 BullMQ Worker 通过 getClient() 复用
  * - get/set：带 TTL 的通用缓存（embedding 缓存、检索缓存）
  * - acquireLock/releaseLock：SET NX EX 实现分布式锁（Session 锁）
- * - 供 BullMQ 共享同一个连接配置
+ * - maxRetriesPerRequest: null 为 BullMQ 必需
  */
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
+export class RedisService implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger(RedisService.name);
   private client!: Redis;
 
@@ -30,7 +31,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Redis connected');
   }
 
-  async onModuleDestroy() {
+  /** 在所有 onModuleDestroy（Worker/Queue 关闭）之后才 quit 共享连接 */
+  async onApplicationShutdown() {
     await this.client?.quit();
   }
 

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import {
   QUEUE_NAMES,
@@ -29,6 +29,7 @@ export class IndexConsumer implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly queueService: QueueService,
     private readonly pipeline: IndexPipeline,
+    private readonly redis: RedisService,
   ) {}
 
   @OnEvent(DOCUMENT_UPLOADED)
@@ -39,12 +40,6 @@ export class IndexConsumer implements OnModuleInit, OnModuleDestroy {
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
-    const connection = new Redis({
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-    });
     this.worker = new Worker(
       QUEUE_NAMES.INDEX,
       async (job) => {
@@ -56,7 +51,10 @@ export class IndexConsumer implements OnModuleInit, OnModuleDestroy {
         );
         return { documentId: payload.documentId };
       },
-      { connection, concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.INDEX] },
+      {
+        connection: this.redis.getClient(),
+        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.INDEX],
+      },
     );
     this.worker.on('failed', (job, err) => {
       this.logger.error(`index job failed: ${job?.id}`, err);

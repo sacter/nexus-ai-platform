@@ -1,46 +1,31 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import Redis from 'ioredis';
+import { RedisService } from '../redis/redis.service';
 import { QUEUE_CONCURRENCY, QueueName } from './queue.constants';
 
 /**
  * BullMQ 队列生产者管理
  *
- * - 共享一个 Redis 连接（maxRetriesPerRequest: null 为 BullMQ 必需）
+ * - 复用 RedisService 的共享连接（单例，maxRetriesPerRequest: null 为 BullMQ 必需）
  * - getQueue(name) 懒创建并缓存 Queue 实例
  * - 默认重试策略：指数退避，最多 3 次
  */
 @Injectable()
-export class QueueService implements OnModuleInit, OnModuleDestroy {
+export class QueueService implements OnModuleDestroy {
   private readonly logger = new Logger(QueueService.name);
-  private connection!: Redis;
   private readonly queues = new Map<string, Queue>();
 
-  onModuleInit() {
-    this.connection = new Redis({
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-    });
-    this.logger.log('BullMQ connection ready');
-  }
+  constructor(private readonly redis: RedisService) {}
 
   async onModuleDestroy() {
     await Promise.all([...this.queues.values()].map((q) => q.close()));
-    await this.connection?.quit();
   }
 
   getQueue(name: QueueName): Queue {
     let queue = this.queues.get(name);
     if (!queue) {
       queue = new Queue(name, {
-        connection: this.connection,
+        connection: this.redis.getClient(),
         defaultJobOptions: {
           attempts: 3,
           backoff: { type: 'exponential', delay: 2000 },

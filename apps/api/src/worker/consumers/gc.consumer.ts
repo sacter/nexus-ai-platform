@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Worker } from 'bullmq';
-import Redis from 'ioredis';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 import { QueueService } from '../../infrastructure/queue/queue.service';
 import {
   QUEUE_NAMES,
@@ -35,6 +35,7 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly minio: MinioService,
     private readonly persist: PersistService,
+    private readonly redis: RedisService,
   ) {}
 
   @OnEvent(DOCUMENT_DELETED)
@@ -53,14 +54,6 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    const mkConnection = () =>
-      new Redis({
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-        maxRetriesPerRequest: null,
-        enableReadyCheck: false,
-      });
-
     this.deleteChunksWorker = new Worker(
       QUEUE_NAMES.DELETE_CHUNKS,
       async (job) => {
@@ -80,7 +73,7 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
         );
       },
       {
-        connection: mkConnection(),
+        connection: this.redis.getClient(),
         concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.DELETE_CHUNKS],
       },
     );
@@ -110,7 +103,7 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
         );
       },
       {
-        connection: mkConnection(),
+        connection: this.redis.getClient(),
         concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.CLEANUP],
       },
     );
