@@ -8,7 +8,11 @@ describe('DocumentService.findByKbId', () => {
   let service: DocumentService;
   const prisma = {
     document: { findMany: jest.fn(), count: jest.fn() },
-    $transaction: (ops: Promise<unknown>[]) => Promise.all(ops),
+    $transaction: async (ops: Promise<unknown>[]) => {
+      const results: unknown[] = [];
+      for (const op of ops) results.push(await op);
+      return results;
+    },
   };
 
   const docRow = {
@@ -51,6 +55,13 @@ describe('DocumentService.findByKbId', () => {
     expect(result).toEqual({ items: [docRow], total: 3, page: 2, pageSize: 20 });
   });
 
+  it('仅提供 page 不提供 pageSize → 返回全量数组', async () => {
+    prisma.document.findMany.mockResolvedValue([docRow]);
+    const result = await service.findByKbId('kb1', { page: 1 });
+    expect(result).toEqual([docRow]);
+    expect(prisma.document.count).not.toHaveBeenCalled();
+  });
+
   it('非法分页值归一化：page<1 → 1，pageSize>100 → 100', async () => {
     prisma.document.count.mockResolvedValue(0);
     prisma.document.findMany.mockResolvedValue([]);
@@ -59,5 +70,15 @@ describe('DocumentService.findByKbId', () => {
       expect.objectContaining({ skip: 0, take: 100 }),
     );
     expect(result).toEqual({ items: [], total: 0, page: 1, pageSize: 100 });
+  });
+
+  it('pageSize 下界归一化：pageSize<1 → 1', async () => {
+    prisma.document.count.mockResolvedValue(0);
+    prisma.document.findMany.mockResolvedValue([]);
+    const result = await service.findByKbId('kb1', { page: 1, pageSize: 0 });
+    expect(prisma.document.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 0, take: 1 }),
+    );
+    expect(result).toEqual({ items: [], total: 0, page: 1, pageSize: 1 });
   });
 });
