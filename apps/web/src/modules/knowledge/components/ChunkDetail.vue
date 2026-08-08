@@ -36,6 +36,13 @@ watch(
   },
 )
 
+// 选中的文档被删除/消失 → 重置为全部
+watch([documentIdRef, () => docs.value], ([docId, docList]) => {
+  if (docId && docList && !docList.some((d) => d.id === docId)) {
+    emit('update:documentId', '')
+  }
+})
+
 const items = computed(() => chunkData.value?.items ?? [])
 const total = computed(() => chunkData.value?.total ?? 0)
 
