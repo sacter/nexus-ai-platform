@@ -15,7 +15,7 @@ export class WorkerService {
     private readonly redis: RedisService,
   ) {}
 
-  async health() {
+  health() {
     const redisStatus = this.redis.getClient()?.status ?? 'disconnected';
     return {
       worker: 'running',

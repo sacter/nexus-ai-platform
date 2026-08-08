@@ -164,7 +164,7 @@ export class DocumentService {
       };
     });
 
-    // ★ 功能1：发布 document.uploaded → Index Worker
+    // ★ 功能：发布 document.uploaded → Index Worker
     const event: DocumentUploadedEvent = {
       documentId: result.document.id,
       versionId: result.version.id,
