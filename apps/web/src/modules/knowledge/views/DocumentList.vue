@@ -16,6 +16,8 @@ const props = defineProps<{
   embedded?: boolean
   /** 编辑权限（admin），控制 Embedding 按钮显示 */
   canEdit?: boolean
+  /** 文档名称搜索关键字（服务端模糊过滤）；变化时回到第 1 页 */
+  keyword?: string
 }>()
 
 defineEmits<{
@@ -29,7 +31,12 @@ const kbId = computed(() => props.kbId || (route.query.kbId as string) || '')
 
 const page = ref(1)
 const pageSize = ref(20)
-const { data: docData, isLoading, refetch } = usePagedDocuments(kbId, page, pageSize)
+const { data: docData, isLoading, refetch } = usePagedDocuments(
+  kbId,
+  page,
+  pageSize,
+  () => props.keyword || '',
+)
 const total = computed(() => docData.value?.total ?? 0)
 
 // 删除/刷新后当前页可能越界 → 回退到最后一页
@@ -37,6 +44,15 @@ watch(total, (t) => {
   const maxPage = Math.max(1, Math.ceil(t / pageSize.value))
   if (page.value > maxPage) page.value = maxPage
 })
+// 搜索词变化 → 回到第 1 页，避免停在旧页码看到空白页
+watch(() => props.keyword, () => {
+  page.value = 1
+})
+
+// 空状态文案：无搜索词 → "请先导入文档"；有搜索词无结果 → "未找到匹配的文档"
+const emptyText = computed(() =>
+  (props.keyword || '').trim() ? '未找到匹配的文档' : '请先导入文档',
+)
 const deleteMutation = useDeleteDocument()
 const reindexMutation = useReindexDocument()
 
@@ -182,7 +198,7 @@ function formatSize(bytes: number): string {
           v-loading="isLoading"
           stripe
           height="100%"
-          empty-text="请先导入文档"
+          :empty-text="emptyText"
         >
           <!-- 文档名称 / ID -->
           <el-table-column label="文档名称 / ID" min-width="240" fixed>
