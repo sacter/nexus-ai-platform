@@ -62,6 +62,7 @@ export class DocumentController {
     @Query('status') status?: string,
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
+    @Query('keyword') keyword?: string,
   ) {
     // 仅接受合法的 DocumentStatus 枚举值，非法值忽略（不传即排除已删除）
     const validStatuses = Object.values(DocumentStatus) as string[];
@@ -72,6 +73,7 @@ export class DocumentController {
       status: parsedStatus,
       page,
       pageSize,
+      keyword,
     });
   }
 
