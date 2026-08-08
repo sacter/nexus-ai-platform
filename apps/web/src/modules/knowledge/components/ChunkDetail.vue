@@ -68,7 +68,7 @@ const emptyText = computed(() =>
     >
       <el-table-column type="expand">
         <template #default="{ row }">
-          <div class="px-4 py-2 text-sm leading-6 whitespace-pre-wrap" style="color: var(--foreground)">
+          <div class="px-4 py-2 text-sm leading-6 whitespace-pre-wrap" style="color: var(--foreground, #303133)">
             {{ row.content }}
           </div>
         </template>
@@ -95,7 +95,7 @@ const emptyText = computed(() =>
       <el-table-column label="向量化状态" width="160" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.isEmbedded" type="success" size="small">
-            已向量化 · {{ row.embeddingModels.join(', ') }}
+            已向量化<template v-if="row.embeddingModels.length"> · {{ row.embeddingModels.join(', ') }}</template>
           </el-tag>
           <el-tag v-else type="warning" size="small">未向量化</el-tag>
         </template>
