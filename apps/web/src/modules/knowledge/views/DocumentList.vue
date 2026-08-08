@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CopyDocument, WarningFilled, View, Download, Clock, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useDocuments, useDeleteDocument, useDownloadUrl, useReindexDocument } from '@/modules/knowledge/composables/useDocuments'
+import { usePagedDocuments, useDeleteDocument, useDownloadUrl, useReindexDocument } from '@/modules/knowledge/composables/useDocuments'
 import type { Document } from '@/modules/knowledge/types/document'
 import { formatDate } from '@/utils/format'
 import DocumentUpload from '@/modules/knowledge/components/DocumentUpload.vue'
@@ -27,7 +27,16 @@ const route = useRoute()
 const router = useRouter()
 const kbId = computed(() => props.kbId || (route.query.kbId as string) || '')
 
-const { data: docs, isLoading, refetch } = useDocuments(kbId)
+const page = ref(1)
+const pageSize = ref(20)
+const { data: docData, isLoading, refetch } = usePagedDocuments(kbId, page, pageSize)
+const total = computed(() => docData.value?.total ?? 0)
+
+// 删除/刷新后当前页可能越界 → 回退到最后一页
+watch(total, (t) => {
+  const maxPage = Math.max(1, Math.ceil(t / pageSize.value))
+  if (page.value > maxPage) page.value = maxPage
+})
 const deleteMutation = useDeleteDocument()
 const reindexMutation = useReindexDocument()
 
@@ -42,7 +51,7 @@ const { refetch: fetchDownloadUrl } = useDownloadUrl(
 const versionHistoryDoc = ref<Document | null>(null)
 const popoverVisibleRow = ref('')
 
-const docsList = computed(() => (docs.value || []).map((doc) => {
+const docsList = computed(() => (docData.value?.items || []).map((doc) => {
   return {
     ...doc,
     version: doc.currentVersion?.versionNumber || 1,
@@ -329,6 +338,15 @@ function formatSize(bytes: number): string {
           </template>
         </el-table-column>
       </el-table>
+      <div v-if="total > 0" class="table-pagination flex justify-end mt-4">
+        <el-pagination
+          v-model:current-page="page"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+        />
+      </div>
     </div>
 
     <!-- 版本历史弹窗 -->
