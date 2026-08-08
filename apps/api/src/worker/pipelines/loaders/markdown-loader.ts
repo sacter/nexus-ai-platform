@@ -12,7 +12,7 @@ export class MarkdownLoader implements Loader {
     );
   }
 
-  load(buffer: Buffer): Promise<LoadedPage[]> {
+  async load(buffer: Buffer): Promise<LoadedPage[]> {
     const raw = buffer.toString('utf-8');
     const sections = raw
       .split(/(?=^#{1,2} )/m)
