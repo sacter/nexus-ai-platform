@@ -140,7 +140,7 @@ async function handleSaveEmbedding() {
             </div>
           </div>
           <el-dropdown trigger="click" v-if="canEdit || canManagePermissions || canDelete">
-            <el-button :icon="MoreFilled" circle />
+            <el-button :icon="MoreFilled" text />
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item v-if="canEdit" @click="editDialogVisible = true">编辑知识库</el-dropdown-item>
@@ -158,7 +158,7 @@ async function handleSaveEmbedding() {
       <el-card>
         <el-tabs v-model="activeTab">
           <el-tab-pane label="原始文档" name="documents">
-            <div class="mt-4">
+            <div class="mt-2">
               <div class="flex items-center justify-between mb-4">
                 <el-button v-if="canUpload" type="primary" :icon="Upload" @click="uploadDialogVisible = true">
                   上传文档
@@ -166,7 +166,7 @@ async function handleSaveEmbedding() {
                 <div class="flex items-center gap-2">
                   <el-input
                     v-model="searchQuery"
-                    placeholder="搜索文档名称"
+                    placeholder="文档名称搜索"
                     :prefix-icon="Search"
                     style="width: 220px"
                   />

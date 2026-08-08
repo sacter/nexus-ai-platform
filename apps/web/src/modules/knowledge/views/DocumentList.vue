@@ -176,170 +176,172 @@ function formatSize(bytes: number): string {
     </template>
 
     <div class="table-section" :class="{ 'table-section--embedded': embedded }">
-      <el-table
-        :data="docsList"
-        v-loading="isLoading"
-        stripe
-        height="100%"
-        empty-text="请先导入文档"
-      >
-        <!-- 文档名称 / ID -->
-        <el-table-column label="文档名称 / ID" min-width="240" fixed>
-          <template #default="{ row }">
-            <div>
-              <el-tooltip
-                :content="row.name"
-                placement="top"
-                :show-after="200"
-              >
-                <div class="font-medium overflow-hidden whitespace-nowrap text-ellipsis" style="color: var(--foreground)">{{ row.name }}</div>
-              </el-tooltip>
-              <div class="flex items-center gap-1 text-xs" style="color: var(--foreground); opacity: 0.4">
-                <span class="overflow-hidden whitespace-nowrap text-ellipsis">文档 ID</span>
-                <el-tooltip content="复制文档 ID" placement="top" :show-after="200">
-                  <el-icon
-                    class="cursor-pointer shrink-0 hover:text-primary"
-                    :size="13"
-                    @click="handleCopyDocId(row.id)"
-                  >
-                    <CopyDocument />
-                  </el-icon>
+      <div class="table-box" :style="{ height: 'calc(100vh - 410px)' }">
+        <el-table
+          :data="docsList"
+          v-loading="isLoading"
+          stripe
+          height="100%"
+          empty-text="请先导入文档"
+        >
+          <!-- 文档名称 / ID -->
+          <el-table-column label="文档名称 / ID" min-width="240" fixed>
+            <template #default="{ row }">
+              <div>
+                <el-tooltip
+                  :content="row.name"
+                  placement="top"
+                  :show-after="200"
+                >
+                  <div class="font-medium overflow-hidden whitespace-nowrap text-ellipsis" style="color: var(--foreground)">{{ row.name }}</div>
                 </el-tooltip>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-
-        <!-- 类型 -->
-        <el-table-column label="类型" width="80" align="center">
-          <template #default="{ row }">
-            <span class="doc-type-tag">{{ mimeTypeLabel(row.mimeType) }}</span>
-          </template>
-        </el-table-column>
-
-        <!-- 大小 -->
-        <el-table-column label="大小" width="90" align="right">
-          <template #default="{ row }">
-            {{ formatSize(Number(row.fileSize)) }}
-          </template>
-        </el-table-column>
-
-        <!-- 状态 -->
-        <el-table-column label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)" size="small">
-              {{ statusLabel(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <!-- 切片数 -->
-        <el-table-column label="切片数" width="80" align="center">
-          <template #default="{ row }">
-            {{ row.chunkCount }}
-          </template>
-        </el-table-column>
-
-        <!-- 版本 -->
-        <el-table-column label="版本" width="70" align="center">
-          <template #default="{ row }">
-            v{{ row.version }}
-          </template>
-        </el-table-column>
-
-        <!-- 上传者 -->
-        <el-table-column label="上传者" width="100">
-          <template #default="{ row }">
-            {{ row.user?.username || '-' }}
-          </template>
-        </el-table-column>
-
-        <!-- 上传时间 -->
-        <el-table-column label="上传时间" width="170">
-          <template #default="{ row }">
-            {{ row.createdAt }}
-          </template>
-        </el-table-column>
-
-        <!-- 更新时间 -->
-        <el-table-column label="更新时间" width="170">
-          <template #default="{ row }">
-            {{ row.updatedAt }}
-          </template>
-        </el-table-column>
-
-        <!-- 操作 -->
-        <el-table-column label="操作" :width="embedded ? 360 : 240" fixed="right">
-          <template #default="{ row }">
-            <div class="operation-cell flex items-center gap-1">
-              <el-button
-                v-if="embedded"
-                size="small"
-                text
-                type="primary"
-                @click="$emit('view-chunks', row)"
-              >
-                切片详情
-              </el-button>
-              <!-- <el-button
-                v-if="embedded && canEdit"
-                size="small"
-                text
-                type="primary"
-                @click="$emit('embedding')"
-              >
-                Embedding
-              </el-button> -->
-              <el-tooltip content="预览">
-                <el-button :icon="View" size="small" text @click="handleView(row)" />
-              </el-tooltip>
-              <el-tooltip content="下载">
-                <el-button :icon="Download" size="small" text @click="handleDownload(row)" />
-              </el-tooltip>
-              <el-tooltip content="版本历史">
-                <el-button :icon="Clock" size="small" text @click="handleVersionHistory(row)" />
-              </el-tooltip>
-              <el-tooltip content="重新索引">
-                <el-button :icon="Refresh" size="small" text @click="handleReindex(row)" />
-              </el-tooltip>
-              <el-popover
-                :visible="popoverVisibleRow === row.id"
-                trigger="click"
-                width="340"
-                @hide="popoverVisibleRow = ''"
-              >
-                <template #reference>
-                  <el-button
-                    size="small"
-                    text
-                    type="danger"
-                    @click="popoverVisibleRow = row.id"
-                  >
-                    删除
-                  </el-button>
-                </template>
-                <div class="px-1">
-                  <div class="flex items-center gap-1.5 mb-2">
-                    <el-icon :size="15" color="#f90">
-                      <WarningFilled />
+                <div class="flex items-center gap-1 text-xs" style="color: var(--foreground); opacity: 0.4">
+                  <span class="overflow-hidden whitespace-nowrap text-ellipsis">文档 ID</span>
+                  <el-tooltip content="复制文档 ID" placement="top" :show-after="200">
+                    <el-icon
+                      class="cursor-pointer shrink-0 hover:text-primary"
+                      :size="13"
+                      @click="handleCopyDocId(row.id)"
+                    >
+                      <CopyDocument />
                     </el-icon>
-                    <span class="font-medium text-sm" style="color: var(--el-text-color-primary)">
-                      确定删除所选文档？
-                    </span>
-                  </div>
-                  <p class="text-xs leading-5" style="color: var(--el-text-color-regular)">
-                    确定删除文档【{{ row.name }}】？删除不可恢复，请谨慎操作
-                  </p>
-                  <div class="flex justify-end mt-3">
-                    <el-button size="small" @click="popoverVisibleRow = ''">取消</el-button>
-                    <el-button size="small" type="primary" @click="handleConfirmDelete(row.id)">确定</el-button>
-                  </div>
+                  </el-tooltip>
                 </div>
-              </el-popover>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+              </div>
+            </template>
+          </el-table-column>
+  
+          <!-- 类型 -->
+          <el-table-column label="类型" width="80" align="center">
+            <template #default="{ row }">
+              <span class="doc-type-tag">{{ mimeTypeLabel(row.mimeType) }}</span>
+            </template>
+          </el-table-column>
+  
+          <!-- 大小 -->
+          <el-table-column label="大小" width="90" align="right">
+            <template #default="{ row }">
+              {{ formatSize(Number(row.fileSize)) }}
+            </template>
+          </el-table-column>
+  
+          <!-- 状态 -->
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="statusTagType(row.status)" size="small">
+                {{ statusLabel(row.status) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+  
+          <!-- 切片数 -->
+          <el-table-column label="切片数" width="80" align="center">
+            <template #default="{ row }">
+              {{ row.chunkCount }}
+            </template>
+          </el-table-column>
+  
+          <!-- 版本 -->
+          <el-table-column label="版本" width="70" align="center">
+            <template #default="{ row }">
+              v{{ row.version }}
+            </template>
+          </el-table-column>
+  
+          <!-- 上传者 -->
+          <el-table-column label="上传者" width="100">
+            <template #default="{ row }">
+              {{ row.user?.username || '-' }}
+            </template>
+          </el-table-column>
+  
+          <!-- 上传时间 -->
+          <el-table-column label="上传时间" width="170">
+            <template #default="{ row }">
+              {{ row.createdAt }}
+            </template>
+          </el-table-column>
+  
+          <!-- 更新时间 -->
+          <el-table-column label="更新时间" width="170">
+            <template #default="{ row }">
+              {{ row.updatedAt }}
+            </template>
+          </el-table-column>
+  
+          <!-- 操作 -->
+          <el-table-column label="操作" :width="embedded ? 360 : 240" fixed="right">
+            <template #default="{ row }">
+              <div class="operation-cell flex items-center gap-1">
+                <el-button
+                  v-if="embedded"
+                  size="small"
+                  text
+                  type="primary"
+                  @click="$emit('view-chunks', row)"
+                >
+                  切片详情
+                </el-button>
+                <!-- <el-button
+                  v-if="embedded && canEdit"
+                  size="small"
+                  text
+                  type="primary"
+                  @click="$emit('embedding')"
+                >
+                  Embedding
+                </el-button> -->
+                <el-tooltip content="预览">
+                  <el-button :icon="View" size="small" text @click="handleView(row)" />
+                </el-tooltip>
+                <el-tooltip content="下载">
+                  <el-button :icon="Download" size="small" text @click="handleDownload(row)" />
+                </el-tooltip>
+                <el-tooltip content="版本历史">
+                  <el-button :icon="Clock" size="small" text @click="handleVersionHistory(row)" />
+                </el-tooltip>
+                <el-tooltip content="重新索引">
+                  <el-button :icon="Refresh" size="small" text @click="handleReindex(row)" />
+                </el-tooltip>
+                <el-popover
+                  :visible="popoverVisibleRow === row.id"
+                  trigger="click"
+                  width="340"
+                  @hide="popoverVisibleRow = ''"
+                >
+                  <template #reference>
+                    <el-button
+                      size="small"
+                      text
+                      type="danger"
+                      @click="popoverVisibleRow = row.id"
+                    >
+                      删除
+                    </el-button>
+                  </template>
+                  <div class="px-1">
+                    <div class="flex items-center gap-1.5 mb-2">
+                      <el-icon :size="15" color="#f90">
+                        <WarningFilled />
+                      </el-icon>
+                      <span class="font-medium text-sm" style="color: var(--el-text-color-primary)">
+                        确定删除所选文档？
+                      </span>
+                    </div>
+                    <p class="text-xs leading-5" style="color: var(--el-text-color-regular)">
+                      确定删除文档【{{ row.name }}】？删除不可恢复，请谨慎操作
+                    </p>
+                    <div class="flex justify-end mt-3">
+                      <el-button size="small" @click="popoverVisibleRow = ''">取消</el-button>
+                      <el-button size="small" type="primary" @click="handleConfirmDelete(row.id)">确定</el-button>
+                    </div>
+                  </div>
+                </el-popover>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
       <div v-if="total > 0" class="table-pagination flex justify-end mt-4">
         <el-pagination
           v-model:current-page="page"

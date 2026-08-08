@@ -44,9 +44,14 @@ export class ChunkService {
    * - documentId 缺省时聚合库内全部非删除文档的活跃版本
    * - 向量化状态按当前页 chunkId 集合一次归组
    */
-  async listChunks(kbId: string, query: ListChunksQuery): Promise<ChunkListResult> {
+  async listChunks(
+    kbId: string,
+    query: ListChunksQuery,
+  ): Promise<ChunkListResult> {
     const page =
-      Number.isFinite(query.page) && query.page! >= 1 ? Math.floor(query.page!) : 1;
+      Number.isFinite(query.page) && query.page! >= 1
+        ? Math.floor(query.page!)
+        : 1;
     const pageSize =
       Number.isFinite(query.pageSize) && query.pageSize! >= 1
         ? Math.min(100, Math.floor(query.pageSize!))
@@ -77,7 +82,9 @@ export class ChunkService {
     }
 
     // 2. count + findMany（同一 where，事务内一致性）
-    const where: Prisma.DocumentChunkWhereInput = { versionId: { in: versionIds } };
+    const where: Prisma.DocumentChunkWhereInput = {
+      versionId: { in: versionIds },
+    };
     const [total, chunks] = await this.prisma.$transaction([
       this.prisma.documentChunk.count({ where }),
       this.prisma.documentChunk.findMany({

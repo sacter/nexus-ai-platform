@@ -27,15 +27,15 @@ onMounted(() => {
 
 <template>
   <!-- Show placeholder while not mounted to prevent layout shift -->
-  <div v-if="!mounted" class="flex items-center gap-1">
-    <el-button disabled circle :icon="Brush" />
-    <el-button disabled circle :icon="Sunny" />
+  <div v-if="!mounted" class="flex items-center">
+    <el-button disabled circle link :icon="Brush" />
+    <el-button disabled circle link :icon="Sunny" />
   </div>
 
-  <div v-else class="flex items-center gap-1">
+  <div v-else class="flex items-center">
     <!-- Color theme selector -->
     <el-dropdown trigger="click" @command="applyColorTheme">
-      <el-button circle :icon="Brush" aria-label="配色主题" />
+      <el-button circle :icon="Brush" link aria-label="配色主题" />
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item
@@ -52,7 +52,7 @@ onMounted(() => {
     </el-dropdown>
 
     <!-- Dark / Light toggle -->
-    <el-button circle @click="themeStore.toggle()">
+    <el-button circle link @click="themeStore.toggle()">
       <el-icon :size="16">
         <Sunny v-if="themeStore.theme === 'light'" />
         <Moon v-else />
