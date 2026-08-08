@@ -138,3 +138,9 @@ export interface DownloadUrlResponse {
   objectKey: string
   expiresIn: number
 }
+
+/** 重新索引响应 */
+export interface ReindexResponse {
+  reindexed: boolean
+  versionId: string
+}

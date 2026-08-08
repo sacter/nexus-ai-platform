@@ -1,18 +1,23 @@
 services:
   postgres:
-    image: postgres:18-alpine
-    container_name: nexus-postgres
+    # pgvector 镜像（含向量扩展，RAG 必需）—— 与现有 postgres18-pgvector 一致
+    image: pgvector/pgvector:pg18
+    container_name: postgres18-pgvector
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      # 复用已有数据卷时这些变量被忽略（postgres 镜像仅在 PGDATA 为空时初始化）
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # ★ 挂载点必须保持在 /var/lib/postgresql：现有数据在卷内 18/docker 下，
+      #   换成别的挂载点会重新初始化成空库
+      - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      # 复用库的超级用户是 postgres（.env 的 POSTGRES_USER=nexus 在复用数据下无对应角色）
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,16 +38,17 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: nexus-minio
+    container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
+      # MINIO_DATA_DIR 需设为绝对路径（/Users/aibee/minio-data），即绑定挂载现有桶数据
       - ${MINIO_DATA_DIR:-minio_data}:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -51,6 +57,9 @@ services:
       retries: 5
 
 volumes:
+  # ★ 复用现有 postgres 匿名卷（含 nexus 库数据），compose down -v 不会删除外部卷
   postgres_data:
+    external: true
+    name: a5525bcbf2be6fd890d868d213a706cd9027374a1bc3a33402ce693ad7fc5406
   redis_data:
   minio_data:

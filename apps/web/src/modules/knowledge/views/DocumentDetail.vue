@@ -27,7 +27,13 @@ const downloadLoading = ref(false)
 // --- 操作 ---
 
 function goBack() {
-  router.push({ name: 'Documents', query: { kbId: kbId.value } })
+  // 返回进入本页前的来源页（知识库详情 或 文档管理页），避免固定跳转到"文档管理"页；
+  // 直接访问本页（无历史记录）时回退到文档管理页。
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    router.push({ name: 'Documents', query: { kbId: kbId.value } })
+  }
 }
 
 async function handleDownload() {
@@ -37,8 +43,8 @@ async function handleDownload() {
     if (result.url) {
       window.open(result.url, '_blank')
     }
-  } catch (err: any) {
-    ElMessage.error(`获取下载链接失败: ${err.message}`)
+  } catch (err) {
+    ElMessage.error(`获取下载链接失败: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
     downloadLoading.value = false
   }

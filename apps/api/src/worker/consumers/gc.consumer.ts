@@ -53,6 +53,7 @@ export class GcConsumer implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`enqueued GC jobs: doc=${payload.documentId}`);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async onModuleInit() {
     this.deleteChunksWorker = new Worker(
       QUEUE_NAMES.DELETE_CHUNKS,

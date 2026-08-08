@@ -85,6 +85,9 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       select: { id: true, content: true },
     });
     if (chunks.length === 0) {
+      this.logger.warn(
+        `embedding job skipped: no chunks found for doc=${documentId} version=${versionId} (chunkIds=${chunkIds.length})`,
+      );
       await this.completeJob(
         indexJobId,
         documentId,
@@ -120,6 +123,9 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
         modelName: model ?? 'default',
         vector: vectors[i],
       })),
+    );
+    this.logger.log(
+      `Embedding done: doc=${documentId}, chunks=${chunks.length}, model=${model ?? 'default'}`,
     );
 
     await this.completeJob(

@@ -6,6 +6,7 @@ import type {
   SaveMetaRequest,
   SaveMetaResponse,
   DownloadUrlResponse,
+  ReindexResponse,
 } from '@/modules/knowledge/types/document'
 
 export const documentsApi = {
@@ -53,6 +54,12 @@ export const documentsApi = {
     http.get<DownloadUrlResponse>(
       `/knowledge-bases/${kbId}/documents/${docId}/download-url`,
       { params: versionId ? { versionId } : {} },
+    ),
+
+  /** 重新索引（重新切片 + 向量化） */
+  reindex: (kbId: string, id: string) =>
+    http.post<ReindexResponse>(
+      `/knowledge-bases/${kbId}/documents/${id}/reindex`,
     ),
 }
 

@@ -119,6 +119,27 @@ export function useDeleteDocument() {
   })
 }
 
+/** 重新索引（重新切片 + 向量化） */
+export function useReindexDocument() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ kbId, id }: { kbId: string; id: string }) =>
+      documentsApi.reindex(kbId, id),
+    onSuccess: (_data, variables) => {
+      ElMessage.success('重新索引任务已提交')
+      queryClient.invalidateQueries({
+        queryKey: ['documents', variables.kbId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['document', variables.kbId, variables.id],
+      })
+    },
+    onError: (err: Error) => {
+      ElMessage.error(`重新索引失败: ${err.message}`)
+    },
+  })
+}
+
 /** 切换活跃版本 */
 export function useActivateVersion() {
   const queryClient = useQueryClient()
