@@ -19,6 +19,7 @@ import { DocumentModule } from './modules/knowledge/document/document.module';
 import { VersionModule } from './modules/knowledge/version/version.module';
 import { ChunkModule } from './modules/knowledge/chunk/chunk.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { RetrievalModule } from './modules/retrieval/retrieval.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { UploadModule } from './modules/upload/upload.module';
     VersionModule,
     ChunkModule,
     UploadModule,
+    RetrievalModule,
   ],
   controllers: [AppController],
   providers: [AppService],
