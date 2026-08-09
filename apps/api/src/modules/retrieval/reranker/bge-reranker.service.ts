@@ -39,7 +39,7 @@ export class BgeRerankerService implements Reranker {
 
       if (!response.ok) {
         this.logger.warn(
-          `BGE Reranker returned ${response.status}, skipping rerank`,
+          `BGE Reranker 返回 HTTP ${response.status}，跳过重排序`,
         );
         return [];
       }
@@ -53,7 +53,7 @@ export class BgeRerankerService implements Reranker {
         relevanceScore: r.relevance_score,
       }));
     } catch (error) {
-      this.logger.warn('BGE Reranker call failed, skipping rerank', error);
+      this.logger.warn('BGE Reranker 调用失败，跳过重排序', error);
       return [];
     }
   }

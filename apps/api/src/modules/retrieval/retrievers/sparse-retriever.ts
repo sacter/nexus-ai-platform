@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
-import { BaseRetriever, RetrieveParams, RetrieveResult } from './base-retriever';
+import {
+  BaseRetriever,
+  RetrieveParams,
+  RetrieveResult,
+} from './base-retriever';
 
 @Injectable()
 export class SparseRetriever extends BaseRetriever {
@@ -14,10 +18,10 @@ export class SparseRetriever extends BaseRetriever {
   async retrieve(params: RetrieveParams): Promise<RetrieveResult[]> {
     const { query, kbId, topK } = params;
 
-    // PostgreSQL full-text search using tsvector
-    // Uses 'simple' config for broad CJK compatibility
-    // plainto_tsquery converts user query to tsquery with & operators
-    // ts_rank scores by term frequency and proximity
+    // PostgreSQL 全文搜索，使用 tsvector
+    // 使用 'simple' 配置以兼容中英文混合场景
+    // plainto_tsquery 将用户查询转换为 tsquery（& 连接）
+    // ts_rank 按词频和邻近度计算相关性分数
     const sql = `
       SELECT
         dc.id                AS chunk_id,
@@ -62,7 +66,7 @@ export class SparseRetriever extends BaseRetriever {
         versionNumber: row.version_number,
       }));
     } catch (error) {
-      this.logger.error('SparseRetriever query failed', error);
+      this.logger.error('SparseRetriever 全文搜索查询失败', error);
       throw error;
     }
   }

@@ -8,7 +8,7 @@ export interface RrfFusedResult {
   documentName: string;
   page: number;
   content: string;
-  score: number; // RRF score
+  score: number; // RRF 融合分数
   versionNumber: number;
   denseRank: number | null;
   sparseRank: number | null;
@@ -17,14 +17,14 @@ export interface RrfFusedResult {
 @Injectable()
 export class RrfService {
   /**
-   * Reciprocal Rank Fusion
+   * Reciprocal Rank Fusion 融合算法
    *
    * score(d) = Σ 1/(k + rank_i(d))
    *
-   * - k=60 (default) smooths the rank penalty
-   * - Ranks are 1-indexed
-   * - Deduplicates by chunkId, sums scores from both retrievers
-   * - Falls back to single-list if either input is empty
+   * - k=60（默认），平滑排名惩罚
+   * - 排名从 1 开始（1-indexed）
+   * - 按 chunkId 去重，累加两路检索器分数
+   * - 若某路结果为空，自动退化为单路
    */
   fuse(
     denseResults: RetrieveResult[],
@@ -42,13 +42,13 @@ export class RrfService {
       }
     >();
 
-    // Helper: add scores from one ranked list
+    // 辅助函数：将一路排序列表的分数累加到 scoreMap
     const addScores = (
       results: RetrieveResult[],
       rankKey: 'denseRank' | 'sparseRank',
     ) => {
       for (let i = 0; i < results.length; i++) {
-        const rank = i + 1; // 1-indexed
+        const rank = i + 1; // 1-indexed，排名从 1 开始
         const existing = scoreMap.get(results[i].chunkId);
         const contrib = 1 / (k + rank);
 
@@ -70,7 +70,7 @@ export class RrfService {
     addScores(denseResults, 'denseRank');
     addScores(sparseResults, 'sparseRank');
 
-    // Sort by RRF score descending, take topK
+    // 按 RRF 分数降序排列，取 topK
     const fused: RrfFusedResult[] = Array.from(scoreMap.values())
       .sort((a, b) => b.rrfScore - a.rrfScore)
       .slice(0, topK)
@@ -80,7 +80,7 @@ export class RrfService {
         documentName: entry.item.documentName,
         page: entry.item.page,
         content: entry.item.content,
-        score: Math.round(entry.rrfScore * 1e6) / 1e6, // round to 6 decimal places
+        score: Math.round(entry.rrfScore * 1e6) / 1e6, // 保留 6 位小数
         versionNumber: entry.item.versionNumber,
         denseRank: entry.denseRank,
         sparseRank: entry.sparseRank,

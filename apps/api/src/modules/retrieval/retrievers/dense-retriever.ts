@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
-import { BaseRetriever, RetrieveParams, RetrieveResult } from './base-retriever';
+import {
+  BaseRetriever,
+  RetrieveParams,
+  RetrieveResult,
+} from './base-retriever';
 
 @Injectable()
 export class DenseRetriever extends BaseRetriever {
@@ -14,8 +18,8 @@ export class DenseRetriever extends BaseRetriever {
   async retrieve(params: RetrieveParams): Promise<RetrieveResult[]> {
     const { queryVector, kbId, modelName, topK } = params;
 
-    // pgvector cosine distance: <=> returns [0, 2], 0 = identical
-    // Convert to similarity: 1 - (distance)
+    // pgvector 余弦距离：<=> 返回 [0, 2]，0 表示完全相同
+    // 转换为相似度：1 - (distance)
     const sql = `
       SELECT
         dc.id                AS chunk_id,
@@ -60,7 +64,7 @@ export class DenseRetriever extends BaseRetriever {
         versionNumber: row.version_number,
       }));
     } catch (error) {
-      this.logger.error('DenseRetriever query failed', error);
+      this.logger.error('DenseRetriever 向量检索查询失败', error);
       throw error;
     }
   }

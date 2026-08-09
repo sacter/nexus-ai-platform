@@ -11,10 +11,10 @@ export interface CitationInput {
 @Injectable()
 export class CitationService {
   /**
-   * Build a citation object from chunk metadata.
+   * 从切片元数据构建引用对象
    *
-   * Snippet: first ~200 characters of content for preview.
-   * Version: formatted as "v{versionNumber}".
+   * snippet：取内容前 200 字符作为预览摘要
+   * version：格式化为 "v{versionNumber}"
    */
   buildCitation(input: CitationInput): Citation {
     const snippet =

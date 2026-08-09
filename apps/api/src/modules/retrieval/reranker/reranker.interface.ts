@@ -8,7 +8,7 @@ export interface RerankInput {
 
 export interface RerankOutput {
   chunkId: string;
-  relevanceScore: number; // normalized [0, 1], higher = more relevant
+  relevanceScore: number; // 归一化得分 [0, 1]，越高越相关
 }
 
 export interface Reranker {

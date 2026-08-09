@@ -14,7 +14,7 @@ export class CohereRerankerService implements Reranker {
 
   async rerank(input: RerankInput, topK = 5): Promise<RerankOutput[]> {
     if (!this.config.apiKey) {
-      this.logger.warn('Cohere API key not configured, skipping rerank');
+      this.logger.warn('Cohere API Key 未配置，跳过重排序');
       return [];
     }
 
@@ -37,7 +37,7 @@ export class CohereRerankerService implements Reranker {
 
       if (!response.ok) {
         this.logger.warn(
-          `Cohere Rerank returned ${response.status}, skipping rerank`,
+          `Cohere Rerank 返回 HTTP ${response.status}，跳过重排序`,
         );
         return [];
       }
@@ -51,7 +51,7 @@ export class CohereRerankerService implements Reranker {
         relevanceScore: r.relevance_score,
       }));
     } catch (error) {
-      this.logger.warn('Cohere Rerank call failed, skipping rerank', error);
+      this.logger.warn('Cohere Rerank 调用失败，跳过重排序', error);
       return [];
     }
   }

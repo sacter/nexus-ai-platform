@@ -10,7 +10,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 
-// ── Request ──
+// ── 请求参数 ──
 
 export class SearchDto {
   @IsString()
@@ -47,7 +47,7 @@ export class SearchDto {
   rerank?: boolean;
 }
 
-// ── Response ──
+// ── 响应结果 ──
 
 export interface Citation {
   documentName: string;
@@ -72,7 +72,7 @@ export interface SearchResponse {
   totalCandidates: number;
 }
 
-// ── Defaults (from CLAUDE.md section 2.3) ──
+// ── 默认配置（来自 CLAUDE.md 2.3 节） ──
 
 export const SEARCH_DEFAULTS = {
   denseTopK: 20,
