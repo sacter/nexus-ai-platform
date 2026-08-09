@@ -1342,7 +1342,7 @@ Retrieval Pipeline 不是单一 Retriever, 而是可组合的分层架构:
                           ▼
 ┌──────────────────────────────────────────────────────────┐
 │  1. Query Rewrite (可选)                                  │
-│     "请假流程" → ["员工请假流程", "请假申请步骤"]           │
+│     "请假流程" → ["员工请假流程", "请假申请步骤"]             │
 └──────────────────────────┬───────────────────────────────┘
                            │
               ┌────────────┴────────────┐
@@ -1351,8 +1351,8 @@ Retrieval Pipeline 不是单一 Retriever, 而是可组合的分层架构:
 │ 2a. DenseRetriever   │   │ 2b. SparseRetriever  │
 │ (Vector / pgvector)  │   │ (BM25 / tsvector)    │
 │ HNSW 索引            │   │ PostgreSQL 全文搜索    │
-│ TopK=20 (语义相似)    │   │ TopK=20 (关键词匹配)  │
-│ kb_ids 过滤 + RLS    │   │ kb_ids 过滤 + RLS    │
+│ TopK=20 (语义相似)    │   │ TopK=20 (关键词匹配)   │
+│ kb_ids 过滤 + RLS    │   │ kb_ids 过滤 + RLS     │
 └──────────┬───────────┘   └──────────┬───────────┘
            │                          │
            └──────────┬───────────────┘
@@ -1375,7 +1375,7 @@ Retrieval Pipeline 不是单一 Retriever, 而是可组合的分层架构:
 ┌──────────────────────────────────────────────────────────┐
 │  5. Citation Generator                                   │
 │     {document_name, page, version, snippet, score}       │
-│     SSE Event: citations (在回答前优先吐出)               │
+│     SSE Event: citations (在回答前优先吐出)                 │
 └──────────────────────────┬───────────────────────────────┘
                            │
                            ▼
@@ -1390,7 +1390,7 @@ Retrieval Pipeline 不是单一 Retriever, 而是可组合的分层架构:
 ┌──────────────────────────────────────────────────────────┐
 │  7. LLM (SSE Streaming)                                  │
 │     SSE Events: step → citations → delta* → done         │
-│     支持 AbortController 中途终止                         │
+│     支持 AbortController 中途终止                          │
 └──────────────────────────────────────────────────────────┘
 ```
 

@@ -52,7 +52,12 @@ describe('DocumentService.findByKbId', () => {
     expect(prisma.document.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 20, take: 20 }),
     );
-    expect(result).toEqual({ items: [docRow], total: 3, page: 2, pageSize: 20 });
+    expect(result).toEqual({
+      items: [docRow],
+      total: 3,
+      page: 2,
+      pageSize: 20,
+    });
   });
 
   it('仅提供 page 不提供 pageSize → 返回全量数组', async () => {

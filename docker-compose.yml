@@ -56,6 +56,33 @@ services:
       timeout: 5s
       retries: 5
 
+  bge-reranker:
+    # Infinity: 高性能模型推理服务器，支持 Embedding + Reranker
+    # bge-reranker-v2-m3 首次启动时会从 HuggingFace 下载模型（~2.2GB），需等待 1-2 分钟
+    image: michaelf34/infinity:latest
+    container_name: bge-reranker
+    restart: unless-stopped
+    command: >
+      v2
+      --model-id BAAI/bge-reranker-v2-m3
+      --port 8000
+      --no-model-warmup
+      --no-compile
+    environment:
+      # 国内需通过镜像下载模型
+      HF_ENDPOINT: https://hf-mirror.com
+    ports:
+      - "${BGE_RERANKER_PORT:-8000}:8000"
+    volumes:
+      # 持久化模型缓存，避免每次重启重新下载
+      - bge_reranker_cache:/app/.cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
 volumes:
   # ★ 复用现有 postgres 匿名卷（含 nexus 库数据），compose down -v 不会删除外部卷
   postgres_data:
@@ -63,3 +90,4 @@ volumes:
     name: a5525bcbf2be6fd890d868d213a706cd9027374a1bc3a33402ce693ad7fc5406
   redis_data:
   minio_data:
+  bge_reranker_cache:

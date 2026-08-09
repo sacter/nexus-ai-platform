@@ -178,9 +178,7 @@ export class RetrievalService {
     // 6. 写入缓存（异步触发，不阻塞响应）
     this.redis
       .set(cacheKey, JSON.stringify(response), RETRIEVAL_CACHE_TTL)
-      .catch((err) =>
-        this.logger.warn('检索结果缓存写入失败', err),
-      );
+      .catch((err) => this.logger.warn('检索结果缓存写入失败', err));
 
     return response;
   }
