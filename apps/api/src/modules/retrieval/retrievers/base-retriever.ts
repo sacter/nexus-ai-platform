@@ -1,4 +1,4 @@
-import { SearchResult } from '../dto/search.dto';
+import type { SearchResult } from '../dto/search.dto';
 
 export interface RetrieveParams {
   query: string;
@@ -8,13 +8,8 @@ export interface RetrieveParams {
   topK: number;
 }
 
-export interface RetrieveResult {
-  chunkId: string;
-  documentId: string;
-  documentName: string;
-  page: number;
-  content: string;
-  score: number;
+/** Retriever raw output — extends SearchResult minus citation, plus versionNumber for downstream formatting */
+export interface RetrieveResult extends Omit<SearchResult, 'citation'> {
   versionNumber: number;
 }
 
