@@ -29,6 +29,7 @@ export class SparseRetriever extends BaseRetriever {
         d.name               AS document_name,
         dc.page              AS page,
         dc.content           AS content,
+        dc.token_count       AS token_count,
         ts_rank(dc.tsv, plainto_tsquery('simple', $1)) AS score,
         dv.version_number    AS version_number
       FROM document_chunks dc
@@ -51,6 +52,7 @@ export class SparseRetriever extends BaseRetriever {
           document_name: string;
           page: number;
           content: string;
+          token_count: number;
           score: number;
           version_number: number;
         }[]
@@ -62,6 +64,7 @@ export class SparseRetriever extends BaseRetriever {
         documentName: row.document_name,
         page: row.page,
         content: row.content,
+        tokenCount: Number(row.token_count),
         score: Number(row.score),
         versionNumber: row.version_number,
       }));

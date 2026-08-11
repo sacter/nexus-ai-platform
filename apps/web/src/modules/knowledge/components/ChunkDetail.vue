@@ -18,7 +18,7 @@ const pageSize = ref(20)
 
 // 受控文档选择：getter 读父组件状态，setter 回传
 const selectedDocId = computed({
-  get: () => props.documentId,
+  get: () => props.documentId || 'all',
   set: (val: string) => emit('update:documentId', val),
 })
 
@@ -67,7 +67,7 @@ const emptyText = computed(() =>
       >
         <el-option
           label="全部文档"
-          value=""
+          value="all"
         />
         <el-option
           v-for="d in docs || []"

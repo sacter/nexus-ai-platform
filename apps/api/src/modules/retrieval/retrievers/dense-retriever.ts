@@ -27,6 +27,7 @@ export class DenseRetriever extends BaseRetriever {
         d.name               AS document_name,
         dc.page              AS page,
         dc.content           AS content,
+        dc.token_count       AS token_count,
         1 - (ce.embedding <=> $1::vector) AS score,
         dv.version_number    AS version_number
       FROM chunk_embeddings ce
@@ -49,6 +50,7 @@ export class DenseRetriever extends BaseRetriever {
           document_name: string;
           page: number;
           content: string;
+          token_count: number;
           score: number;
           version_number: number;
         }[]
@@ -60,6 +62,7 @@ export class DenseRetriever extends BaseRetriever {
         documentName: row.document_name,
         page: row.page,
         content: row.content,
+        tokenCount: Number(row.token_count),
         score: Number(row.score),
         versionNumber: row.version_number,
       }));

@@ -11,6 +11,7 @@ import ChunkDetail from '@/modules/knowledge/components/ChunkDetail.vue'
 import DocumentUpload from '@/modules/knowledge/components/DocumentUpload.vue'
 import KnowledgeCreateDialog from '@/modules/knowledge/components/KnowledgeCreateDialog.vue'
 import PermissionDialog from '@/modules/knowledge/components/PermissionDialog.vue'
+import KnowledgeSearch from '@/modules/knowledge/components/KnowledgeSearch.vue'
 import { EMBEDDING_MODEL_OPTIONS, type KnowledgeBase } from '@/modules/knowledge/types/knowledge'
 import type { Document as DocType } from '@/modules/knowledge/types/document'
 import type { KbPermission } from '@/modules/knowledge/types/permission'
@@ -265,16 +266,7 @@ async function handleSaveEmbedding() {
             label="知识检索"
             name="search"
           >
-            <div class="flex items-center justify-center py-20">
-              <div class="text-center">
-                <p
-                  class="text-sm"
-                  style="color: var(--foreground); opacity: 0.6"
-                >
-                  请先导入文档以启用知识检索
-                </p>
-              </div>
-            </div>
+            <KnowledgeSearch :kb-id="kbId" />
           </el-tab-pane>
 
           <el-tab-pane

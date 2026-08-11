@@ -63,6 +63,7 @@ export interface SearchResult {
   page: number;
   content: string;
   score: number;
+  tokenCount: number;
   citation: Citation;
 }
 

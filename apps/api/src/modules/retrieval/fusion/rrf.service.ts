@@ -8,6 +8,7 @@ export interface RrfFusedResult {
   documentName: string;
   page: number;
   content: string;
+  tokenCount: number;
   score: number; // RRF 融合分数
   versionNumber: number;
   denseRank: number | null;
@@ -80,6 +81,7 @@ export class RrfService {
         documentName: entry.item.documentName,
         page: entry.item.page,
         content: entry.item.content,
+        tokenCount: entry.item.tokenCount,
         score: Math.round(entry.rrfScore * 1e6) / 1e6, // 保留 6 位小数
         versionNumber: entry.item.versionNumber,
         denseRank: entry.denseRank,
