@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { WorkerService } from './worker.service';
-import { SessionLockService } from './session-lock.service';
 import { IndexPipeline } from './pipelines/index-pipeline';
 import { ReindexPipeline } from './pipelines/reindex-pipeline';
 import { TextSplitter } from './pipelines/splitters/text-splitter';
@@ -9,15 +9,18 @@ import { PdfLoader } from './pipelines/loaders/pdf-loader';
 import { MarkdownLoader } from './pipelines/loaders/markdown-loader';
 import { TextLoader } from './pipelines/loaders/text-loader';
 import { PersistService } from './pipelines/persist/persist.service';
-import { IndexConsumer } from './consumers/index.consumer';
-import { EmbeddingConsumer } from './consumers/embedding.consumer';
-import { GcConsumer } from './consumers/gc.consumer';
-import { ReindexConsumer } from './consumers/reindex.consumer';
+import { IndexProcessor } from './consumers/index.processor';
+import { EmbeddingProcessor } from './consumers/embedding.processor';
+import { DeleteChunksProcessor, CleanupProcessor } from './consumers/gc.processor';
+import { ReindexProcessor } from './consumers/reindex.processor';
+import { QUEUE_NAMES } from '../infrastructure/queue/queue.constants';
 
 @Module({
+  imports: [
+    BullModule.registerQueue({ name: QUEUE_NAMES.EMBEDDING }),
+  ],
   providers: [
     WorkerService,
-    SessionLockService,
     IndexPipeline,
     ReindexPipeline,
     PersistService,
@@ -31,11 +34,12 @@ import { ReindexConsumer } from './consumers/reindex.consumer';
     },
     { provide: 'TEXT_SPLITTER', useClass: TextSplitter },
     { provide: 'TEXT_PARSER', useClass: TextParser },
-    IndexConsumer,
-    EmbeddingConsumer,
-    GcConsumer,
-    ReindexConsumer,
+    IndexProcessor,
+    EmbeddingProcessor,
+    DeleteChunksProcessor,
+    CleanupProcessor,
+    ReindexProcessor,
   ],
-  exports: [SessionLockService, WorkerService],
+  exports: [WorkerService],
 })
 export class WorkerModule {}

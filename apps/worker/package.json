@@ -1,28 +1,47 @@
 {
   "name": "@nexus/worker",
   "version": "1.0.0",
-  "description": "Nexus AI Platform - Background Worker",
+  "description": "Nexus AI Platform - Background Worker (standalone)",
   "private": true,
-  "main": "dist/index.js",
+  "main": "dist/main.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsc --watch",
-    "lint": "eslint"
+    "dev": "rm -f tsconfig.build.tsbuildinfo tsconfig.tsbuildinfo && nest start --watch --path tsconfig.build.json",
+    "prebuild": "rm -f tsconfig.build.tsbuildinfo tsconfig.tsbuildinfo",
+    "build": "nest build",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "start": "node dist/main.js",
+    "start:dev": "rm -f tsconfig.build.tsbuildinfo tsconfig.tsbuildinfo && nest start --watch --path tsconfig.build.json",
+    "start:prod": "node dist/main.js",
+    "lint": "eslint \"src/**/*.ts\" --fix"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "@nestjs/bullmq": "^11.0.5",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.0.1",
+    "@prisma/adapter-pg": "^7.9.0",
+    "@prisma/client": "^7.9.0",
     "bullmq": "^5.81.1",
-    "dotenv": "^17.4.2"
+    "ioredis": "^5.4.1",
+    "minio": "^8.0.7",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.22.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "eslint": "^9",
-    "rimraf": "^6.1.3",
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
-    "typescript": "^6",
-    "typescript-eslint": "^8"
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.20.0"
   }
 }

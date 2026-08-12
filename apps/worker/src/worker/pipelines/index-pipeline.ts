@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import { MinioService } from '../../infrastructure/minio/minio.service';
@@ -6,7 +8,6 @@ import { PersistService } from './persist/persist.service';
 import type { Loader } from './loaders/loader.interface';
 import type { TextSplitterPort } from './splitters/splitter.interface';
 import type { DocumentParser } from './parsers/parser.interface';
-import { QueueService } from '../../infrastructure/queue/queue.service';
 import { QUEUE_NAMES } from '../../infrastructure/queue/queue.constants';
 import { ModelProviderService } from '../../modules/model-provider/model-provider.service';
 
@@ -31,7 +32,7 @@ export class IndexPipeline {
     @Inject('LOADERS') private readonly loaders: Loader[],
     @Inject('TEXT_SPLITTER') private readonly splitter: TextSplitterPort,
     @Inject('TEXT_PARSER') private readonly parser: DocumentParser,
-    private readonly queueService: QueueService,
+    @InjectQueue(QUEUE_NAMES.EMBEDDING) private readonly embeddingQueue: Queue,
     private readonly modelProvider: ModelProviderService,
   ) {}
 
@@ -129,7 +130,7 @@ export class IndexPipeline {
       const { dimension } =
         this.modelProvider.resolveEmbeddingConfig(modelName);
 
-      await this.queueService.add(QUEUE_NAMES.EMBEDDING, 'embed-chunks', {
+      await this.embeddingQueue.add('embed-chunks', {
         documentId,
         versionId,
         kbId,

@@ -103,7 +103,9 @@ export class MinioService {
    * - 仅允许 PutObject 写入，禁止删除/覆盖
    * - 有效期默认 1 小时
    */
-  async generateStsCredentials(kbId: string): Promise<StsCredentials> {
+  async generateStsCredentials(
+    kbId: string,
+  ): Promise<StsCredentials> {
     await this.ensureBucket();
 
     const prefix = `kb/${kbId}/`;

@@ -2,30 +2,25 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { resolve } from 'path';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { MinioModule } from './infrastructure/minio/minio.module';
-import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { ModelProviderModule } from './modules/model-provider/model-provider.module';
 import { EmbeddingModule } from './modules/embedding/embedding.module';
-import { UserModule } from './modules/user/user.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledge-base.module';
-import { PermissionModule } from './modules/knowledge/permission/permission.module';
-import { DocumentModule } from './modules/knowledge/document/document.module';
-import { VersionModule } from './modules/knowledge/version/version.module';
-import { ChunkModule } from './modules/knowledge/chunk/chunk.module';
-import { UploadModule } from './modules/upload/upload.module';
-import { RetrievalModule } from './modules/retrieval/retrieval.module';
+import { WorkerModule } from './worker/worker.module';
 import { QUEUE_NAMES } from './infrastructure/queue/queue.constants';
 
+/**
+ * Worker 根模块
+ *
+ * - BullMQ 连接由 BullModule.forRoot 管理（专用 Redis 连接）
+ * - RedisModule 管理缓存/锁专用 Redis 连接（与 BullMQ 分离）
+ * - 通过 createApplicationContext 启动，无 HTTP 服务器
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // .env 位于 monorepo 根目录，在 apps/api/ 启动时需向上两级
       envFilePath: resolve(process.cwd(), '../../.env'),
     }),
     BullModule.forRoot({
@@ -52,21 +47,10 @@ import { QUEUE_NAMES } from './infrastructure/queue/queue.constants';
     ),
     PrismaModule,
     MinioModule,
-    EventBusModule,
     RedisModule,
     ModelProviderModule,
     EmbeddingModule,
-    UserModule,
-    AuthModule,
-    KnowledgeBaseModule,
-    PermissionModule,
-    DocumentModule,
-    VersionModule,
-    ChunkModule,
-    UploadModule,
-    RetrievalModule,
+    WorkerModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { QueueService } from '../infrastructure/queue/queue.service';
-import { QUEUE_NAMES } from '../infrastructure/queue/queue.constants';
 import { RedisService } from '../infrastructure/redis/redis.service';
+import { QUEUE_NAMES } from '../infrastructure/queue/queue.constants';
 
 /**
  * Worker 服务 —— 状态上报与健康检查
@@ -10,10 +9,7 @@ import { RedisService } from '../infrastructure/redis/redis.service';
 export class WorkerService {
   private readonly logger = new Logger(WorkerService.name);
 
-  constructor(
-    private readonly queueService: QueueService,
-    private readonly redis: RedisService,
-  ) {}
+  constructor(private readonly redis: RedisService) {}
 
   health() {
     const redisStatus = this.redis.getClient()?.status ?? 'disconnected';

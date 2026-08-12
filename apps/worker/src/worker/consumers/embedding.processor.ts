@@ -1,16 +1,7 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
-import { Worker } from 'bullmq';
-import { RedisService } from '../../infrastructure/redis/redis.service';
-import { QueueService } from '../../infrastructure/queue/queue.service';
-import {
-  QUEUE_NAMES,
-  QUEUE_CONCURRENCY,
-} from '../../infrastructure/queue/queue.constants';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Job } from 'bullmq';
+import { Logger } from '@nestjs/common';
+import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
 import { EmbeddingService } from '../../modules/embedding/embedding.service';
 import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
 import { PersistService } from '../pipelines/persist/persist.service';
@@ -26,49 +17,23 @@ interface EmbedChunksJob {
 }
 
 /**
- * Embedding 消费者 —— ★ 独立 Queue（IO 密集，5 并发）
- * 步骤 9-13：embed → 持久化向量 → 文档 READY → job DONE → audit_log
+ * Embedding 处理器 —— 独立 Queue（IO 密集，5 并发）
+ * embed → 持久化向量 → 文档 READY → job DONE → audit_log
  */
-@Injectable()
-export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(EmbeddingConsumer.name);
-  private worker!: Worker;
+@Processor(QUEUE_NAMES.EMBEDDING, { concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING] })
+export class EmbeddingProcessor extends WorkerHost {
+  private readonly logger = new Logger(EmbeddingProcessor.name);
 
   constructor(
-    private readonly queueService: QueueService,
     private readonly embeddingService: EmbeddingService,
     private readonly prisma: PrismaService,
     private readonly persist: PersistService,
-    private readonly redis: RedisService,
-  ) {}
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async onModuleInit() {
-    this.worker = new Worker(
-      QUEUE_NAMES.EMBEDDING,
-      async (job) => {
-        const data = job.data as EmbedChunksJob;
-        await this.handle(data);
-        return { documentId: data.documentId };
-      },
-      {
-        connection: this.redis.getClient(),
-        concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING],
-      },
-    );
-    this.worker.on('failed', (job, err) => {
-      this.logger.error(`embedding job failed: ${job?.id}`, err);
-    });
-    this.logger.log(
-      `EmbeddingConsumer started (concurrency=${QUEUE_CONCURRENCY[QUEUE_NAMES.EMBEDDING]})`,
-    );
+  ) {
+    super();
   }
 
-  async onModuleDestroy() {
-    await this.worker?.close();
-  }
-
-  private async handle(data: EmbedChunksJob) {
+  async process(job: Job<EmbedChunksJob>): Promise<void> {
+    const data = job.data;
     const {
       documentId,
       versionId,
@@ -79,24 +44,16 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       indexJobId,
     } = data;
 
-    // 9. 取 chunks → embed（60→95）
+    // 取 chunks → embed
     const chunks = await this.prisma.documentChunk.findMany({
       where: { id: { in: chunkIds }, versionId },
       select: { id: true, content: true },
     });
     if (chunks.length === 0) {
       this.logger.warn(
-        `embedding job skipped: no chunks found for doc=${documentId} version=${versionId} (chunkIds=${chunkIds.length})`,
+        `embedding job skipped: no chunks found for doc=${documentId}`,
       );
-      await this.completeJob(
-        indexJobId,
-        documentId,
-        versionId,
-        kbId,
-        0,
-        model,
-        dimension,
-      );
+      await this.completeJob(indexJobId, documentId, versionId, kbId, 0, model, dimension);
       return;
     }
 
@@ -115,7 +72,7 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       data: { progress: 95, stepDescription: '向量化完成，写入向量库' },
     });
 
-    // 10. 持久化 chunk_embeddings
+    // 持久化 chunk_embeddings
     await this.persist.saveEmbeddings(
       chunks.map((c, i) => ({
         chunkId: c.id,
@@ -128,15 +85,7 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
       `Embedding done: doc=${documentId}, chunks=${chunks.length}, model=${model ?? 'default'}`,
     );
 
-    await this.completeJob(
-      indexJobId,
-      documentId,
-      versionId,
-      kbId,
-      chunks.length,
-      model,
-      dimension,
-    );
+    await this.completeJob(indexJobId, documentId, versionId, kbId, chunks.length, model, dimension);
   }
 
   private async completeJob(
@@ -155,7 +104,6 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
     const modelName = model ?? resolved?.kb.embeddingModel ?? undefined;
     const dim = dimension ?? resolved?.embeddingDim ?? undefined;
 
-    // 11. 文档 → READY
     await this.prisma.document.update({
       where: { id: documentId },
       data: {
@@ -166,12 +114,10 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
         updatedAt: new Date(),
       },
     });
-    // 版本 → READY
     await this.prisma.documentVersion.update({
       where: { id: versionId },
       data: { status: 'READY', chunkCount },
     });
-    // 12. job → DONE
     await this.prisma.indexJob.update({
       where: { id: indexJobId },
       data: {
@@ -181,7 +127,6 @@ export class EmbeddingConsumer implements OnModuleInit, OnModuleDestroy {
         stepDescription: '索引完成',
       },
     });
-    // 13. audit_log
     await this.prisma.auditLog.create({
       data: {
         userId: resolved?.userId ?? null,

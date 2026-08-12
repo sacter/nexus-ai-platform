@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RedisService } from '../infrastructure/redis/redis.service';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 
 /**
  * Session 分布式锁 —— 设计文档

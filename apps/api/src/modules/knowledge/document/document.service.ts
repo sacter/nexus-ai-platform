@@ -4,21 +4,11 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
 import { MinioService } from '../../../infrastructure/minio/minio.service';
-import { EventBusService } from '../../../infrastructure/event-bus/event-bus.service';
-import {
-  DOCUMENT_UPLOADED,
-  DocumentUploadedEvent,
-} from '../../../infrastructure/event-bus/events/document-uploaded.event';
-import {
-  DOCUMENT_DELETED,
-  DocumentDeletedEvent,
-} from '../../../infrastructure/event-bus/events/document-deleted.event';
-import {
-  INDEX_REQUESTED,
-  IndexRequestedEvent,
-} from '../../../infrastructure/event-bus/events/index-requested.event';
+import { QUEUE_NAMES } from '../../../infrastructure/queue/queue.constants';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import type { DocumentStatus, Prisma } from '@prisma/client';
@@ -41,7 +31,10 @@ export class DocumentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly minioService: MinioService,
-    private readonly eventBus: EventBusService,
+    @InjectQueue(QUEUE_NAMES.INDEX) private readonly indexQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.DELETE_CHUNKS) private readonly deleteChunksQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.CLEANUP) private readonly cleanupQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.REINDEX) private readonly reindexQueue: Queue,
   ) {}
 
   /**
@@ -164,14 +157,13 @@ export class DocumentService {
       };
     });
 
-    // ★ 功能：发布 document.uploaded → Index Worker
-    const event: DocumentUploadedEvent = {
+    // ★ 功能：直接入队 index Queue（独立 Worker 消费）
+    await this.indexQueue.add('index-document', {
       documentId: result.document.id,
       versionId: result.version.id,
       kbId,
-    };
-    await this.eventBus.emit(DOCUMENT_UPLOADED, event);
-    this.logger.log(`Emitted ${DOCUMENT_UPLOADED}: doc=${result.document.id}`);
+    });
+    this.logger.log(`Enqueued index job: doc=${result.document.id}`);
 
     return result;
   }
@@ -293,11 +285,15 @@ export class DocumentService {
       data: { status: 'DELETED', updatedAt: new Date() },
     });
 
-    // ★ 功能4：发布 document.deleted → 异步 GC
-    await this.eventBus.emit(DOCUMENT_DELETED, {
+    // ★ 功能4：直接入队 GC Queue（独立 Worker 消费）
+    await this.deleteChunksQueue.add('delete-chunks', {
       documentId: doc.id,
       kbId: doc.kbId,
-    } satisfies DocumentDeletedEvent);
+    });
+    await this.cleanupQueue.add('cleanup-document', {
+      documentId: doc.id,
+      kbId: doc.kbId,
+    });
     return updated;
   }
 
@@ -433,12 +429,12 @@ export class DocumentService {
     if (!doc.currentVersionId)
       throw new ConflictException('文档没有活跃版本，无法重新索引');
 
-    const event: IndexRequestedEvent = {
+    // ★ 直接入队 reindex Queue（独立 Worker 消费）
+    await this.reindexQueue.add('reindex-document', {
       documentId: docId,
       versionId: doc.currentVersionId,
       kbId,
-    };
-    await this.eventBus.emit(INDEX_REQUESTED, event);
+    });
     return { reindexed: true, versionId: doc.currentVersionId };
   }
 }

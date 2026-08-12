@@ -4,7 +4,7 @@ import { ModelProviderService } from '../model-provider/model-provider.service';
 import { RedisService } from '../../infrastructure/redis/redis.service';
 import { OllamaEmbeddingProvider } from './providers/ollama-embedding.provider';
 import { OpenAiEmbeddingProvider } from './providers/openai-embedding.provider';
-import { BatchEmbedder } from './batch-embedder';
+import { BatchEmbedder } from '../../worker/pipelines/embedders/batch-embedder';
 
 export interface QueryEmbedResult {
   vector: number[];
