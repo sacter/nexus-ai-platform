@@ -32,7 +32,8 @@ export class DocumentService {
     private readonly prisma: PrismaService,
     private readonly minioService: MinioService,
     @InjectQueue(QUEUE_NAMES.INDEX) private readonly indexQueue: Queue,
-    @InjectQueue(QUEUE_NAMES.DELETE_CHUNKS) private readonly deleteChunksQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.DELETE_CHUNKS)
+    private readonly deleteChunksQueue: Queue,
     @InjectQueue(QUEUE_NAMES.CLEANUP) private readonly cleanupQueue: Queue,
     @InjectQueue(QUEUE_NAMES.REINDEX) private readonly reindexQueue: Queue,
   ) {}
@@ -158,10 +159,12 @@ export class DocumentService {
     });
 
     // ★ 功能：直接入队 index Queue（独立 Worker 消费）
+    // bizId = versionId：Worker 侧幂等抢占（重复入队/重试/死信重建不重复索引）
     await this.indexQueue.add('index-document', {
       documentId: result.document.id,
       versionId: result.version.id,
       kbId,
+      bizId: result.version.id,
     });
     this.logger.log(`Enqueued index job: doc=${result.document.id}`);
 
@@ -430,10 +433,12 @@ export class DocumentService {
       throw new ConflictException('文档没有活跃版本，无法重新索引');
 
     // ★ 直接入队 reindex Queue（独立 Worker 消费）
+    // bizId = versionId：Worker 侧幂等抢占（重复入队/重试/死信重建不重复重建）
     await this.reindexQueue.add('reindex-document', {
       documentId: docId,
       versionId: doc.currentVersionId,
       kbId,
+      bizId: doc.currentVersionId,
     });
     return { reindexed: true, versionId: doc.currentVersionId };
   }

@@ -8,11 +8,13 @@ interface ReindexJob {
   documentId: string;
   versionId: string;
   kbId: string;
+  /** 业务幂等键 = versionId（死信重试、重新入队后仍不变） */
+  bizId?: string;
 }
 
 /**
  * Reindex 处理器 —— 消费 reindex Queue（2 并发）
- * 清空旧 chunks + 复用 IndexPipeline 重建
+ * 复用 IndexPipeline 原子重建（幂等抢占 + 事务内先清后插）
  */
 @Processor(QUEUE_NAMES.REINDEX, { concurrency: QUEUE_CONCURRENCY[QUEUE_NAMES.REINDEX] })
 export class ReindexProcessor extends WorkerHost {
@@ -24,6 +26,8 @@ export class ReindexProcessor extends WorkerHost {
 
   async process(job: Job<ReindexJob>): Promise<void> {
     const p = job.data;
-    await this.reindexPipeline.run(p.documentId, p.versionId, p.kbId);
+    await this.reindexPipeline.run(p.documentId, p.versionId, p.kbId, {
+      bizId: p.bizId,
+    });
   }
 }

@@ -8,6 +8,8 @@ interface IndexJob {
   documentId: string;
   versionId: string;
   kbId: string;
+  /** 业务幂等键 = versionId（死信重试、重新入队后仍不变） */
+  bizId?: string;
 }
 
 /**
@@ -28,6 +30,7 @@ export class IndexProcessor extends WorkerHost {
       payload.documentId,
       payload.versionId,
       payload.kbId,
+      { bizId: payload.bizId },
     );
     return { documentId: payload.documentId };
   }

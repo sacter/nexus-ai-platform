@@ -289,6 +289,7 @@ model ChunkEmbedding {
 
 model IndexJob {
   id              String    @id @default(uuid()) @db.Uuid
+  bizId           String?   @unique @map("biz_id") @db.Uuid   // ★ 业务幂等键：INDEX/REINDEX 任务 = versionId，重复入队/重试/死信重建不重复执行；DELETE_CHUNKS 审计记录为 NULL
   documentId      String    @map("document_id") @db.Uuid
   versionId       String?   @map("version_id") @db.Uuid
   jobType         JobType   @default(INDEX) @map("job_type")
