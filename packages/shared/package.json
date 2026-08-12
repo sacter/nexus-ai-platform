@@ -19,7 +19,7 @@
     "minio": "^8.0.7"
   },
   "peerDependencies": {
-    "@nestjs/common": "^11.0.1"
+    "@nestjs/common": "^11.1.29"
   },
   "devDependencies": {
     "typescript": "^6.0.3"
