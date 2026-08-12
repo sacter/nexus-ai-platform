@@ -1,0 +1,27 @@
+{
+  "name": "@nexus/shared",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "build": "nest build"
+  },
+  "dependencies": {
+    "ioredis": "^5.4.1",
+    "minio": "^8.0.7"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

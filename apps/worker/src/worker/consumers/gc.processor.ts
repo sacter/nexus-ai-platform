@@ -1,9 +1,9 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
-import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
-import { MinioService } from '../../infrastructure/minio/minio.service';
+import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '@nexus/shared';
+import { PrismaService } from '@nexus/database';
+import { MinioService } from '@nexus/shared';
 import { PersistService } from '../pipelines/persist/persist.service';
 
 interface GcJob {

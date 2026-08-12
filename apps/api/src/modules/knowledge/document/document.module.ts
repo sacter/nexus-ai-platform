@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { EventBusModule } from '../../../infrastructure/event-bus/event-bus.module';
-import { QUEUE_NAMES } from '../../../infrastructure/queue/queue.constants';
+import { QUEUE_NAMES } from '@nexus/shared';
 import { DocumentService } from './document.service';
 import { DocumentController } from './document.controller';
 

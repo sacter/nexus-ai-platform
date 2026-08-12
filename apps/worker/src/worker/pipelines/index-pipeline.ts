@@ -2,14 +2,14 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import type { Prisma } from '@prisma/client';
-import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
-import { MinioService } from '../../infrastructure/minio/minio.service';
+import { PrismaService } from '@nexus/database';
+import { MinioService } from '@nexus/shared';
 import { PersistService } from './persist/persist.service';
 import type { Loader } from './loaders/loader.interface';
 import type { TextSplitterPort } from './splitters/splitter.interface';
 import type { DocumentParser } from './parsers/parser.interface';
-import { QUEUE_NAMES } from '../../infrastructure/queue/queue.constants';
-import { ModelProviderService } from '../../modules/model-provider/model-provider.service';
+import { QUEUE_NAMES } from '@nexus/shared';
+import { ModelProviderService } from '@nexus/ai-core';
 
 export interface IndexRunResult {
   chunkIds: string[];

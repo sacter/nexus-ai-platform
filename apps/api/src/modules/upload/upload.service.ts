@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MinioService } from '../../infrastructure/minio/minio.service';
-import type { StsCredentials } from '../../infrastructure/minio/minio.service';
+import { MinioService } from '@nexus/shared';
+import type { StsCredentials } from '@nexus/shared';
 import {
   ALLOWED_MIME_TYPES,
   ALLOWED_EXTENSIONS,
-} from '../../infrastructure/minio/minio.service';
+} from '@nexus/shared';
 
 /**
  * 上传服务

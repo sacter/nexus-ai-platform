@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { resolve } from 'path';
-import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
-import { MinioModule } from './infrastructure/minio/minio.module';
-import { RedisModule } from './infrastructure/redis/redis.module';
-import { ModelProviderModule } from './modules/model-provider/model-provider.module';
-import { EmbeddingModule } from './modules/embedding/embedding.module';
+import { PrismaModule } from '@nexus/database';
+import { MinioModule } from '@nexus/shared';
+import { RedisModule } from '@nexus/shared';
+import { ModelProviderModule } from '@nexus/ai-core';
+import { EmbeddingModule } from '@nexus/ai-core';
 import { WorkerModule } from './worker/worker.module';
-import { QUEUE_NAMES } from './infrastructure/queue/queue.constants';
+import { QUEUE_NAMES } from '@nexus/shared';
 
 /**
  * Worker 根模块

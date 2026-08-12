@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { DocumentService } from './document.service';
-import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
-import { MinioService } from '../../../infrastructure/minio/minio.service';
+import { PrismaService } from '@nexus/database';
+import { MinioService } from '@nexus/shared';
 import { EventBusService } from '../../../infrastructure/event-bus/event-bus.service';
 
 describe('DocumentService.findByKbId', () => {

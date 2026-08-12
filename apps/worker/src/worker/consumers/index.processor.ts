@@ -1,7 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '../../infrastructure/queue/queue.constants';
+import { QUEUE_NAMES, QUEUE_CONCURRENCY } from '@nexus/shared';
 import { IndexPipeline } from '../pipelines/index-pipeline';
 
 interface IndexJob {

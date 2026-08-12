@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
+import { PrismaService } from '@nexus/database';
 import { SplitChunk } from '../splitters/splitter.interface';
 import { toChunkRows } from './batch-writer';
 

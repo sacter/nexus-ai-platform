@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
-import { PrismaService } from '../../../infrastructure/database/prisma/prisma.service';
-import { MinioService } from '../../../infrastructure/minio/minio.service';
-import { QUEUE_NAMES } from '../../../infrastructure/queue/queue.constants';
+import { PrismaService } from '@nexus/database';
+import { MinioService } from '@nexus/shared';
+import { QUEUE_NAMES } from '@nexus/shared';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import type { DocumentStatus, Prisma } from '@prisma/client';

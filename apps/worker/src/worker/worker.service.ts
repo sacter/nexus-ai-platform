@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RedisService } from '../infrastructure/redis/redis.service';
-import { QUEUE_NAMES } from '../infrastructure/queue/queue.constants';
+import { RedisService } from '@nexus/shared';
+import { QUEUE_NAMES } from '@nexus/shared';
 
 /**
  * Worker 服务 —— 状态上报与健康检查

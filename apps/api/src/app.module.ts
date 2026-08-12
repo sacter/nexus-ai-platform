@@ -4,12 +4,12 @@ import { BullModule } from '@nestjs/bullmq';
 import { resolve } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
-import { MinioModule } from './infrastructure/minio/minio.module';
+import { PrismaModule } from '@nexus/database';
+import { MinioModule } from '@nexus/shared';
 import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
-import { RedisModule } from './infrastructure/redis/redis.module';
-import { ModelProviderModule } from './modules/model-provider/model-provider.module';
-import { EmbeddingModule } from './modules/embedding/embedding.module';
+import { RedisModule } from '@nexus/shared';
+import { ModelProviderModule } from '@nexus/ai-core';
+import { EmbeddingModule } from '@nexus/ai-core';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { KnowledgeBaseModule } from './modules/knowledge/knowledge-base/knowledge-base.module';
@@ -19,7 +19,7 @@ import { VersionModule } from './modules/knowledge/version/version.module';
 import { ChunkModule } from './modules/knowledge/chunk/chunk.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
-import { QUEUE_NAMES } from './infrastructure/queue/queue.constants';
+import { QUEUE_NAMES } from '@nexus/shared';
 
 @Module({
   imports: [

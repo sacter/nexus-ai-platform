@@ -6,6 +6,7 @@
       "outputs": ["dist/**", ".next/**", ".worker/**", ".vite/**"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },

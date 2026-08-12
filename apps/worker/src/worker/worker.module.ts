@@ -13,7 +13,7 @@ import { IndexProcessor } from './consumers/index.processor';
 import { EmbeddingProcessor } from './consumers/embedding.processor';
 import { DeleteChunksProcessor, CleanupProcessor } from './consumers/gc.processor';
 import { ReindexProcessor } from './consumers/reindex.processor';
-import { QUEUE_NAMES } from '../infrastructure/queue/queue.constants';
+import { QUEUE_NAMES } from '@nexus/shared';
 
 @Module({
   imports: [

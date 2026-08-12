@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { PrismaService } from '../../infrastructure/database/prisma/prisma.service';
-import { EmbeddingService } from '../embedding/embedding.service';
-import { RedisService } from '../../infrastructure/redis/redis.service';
+import { PrismaService } from '@nexus/database';
+import { EmbeddingService } from '@nexus/ai-core';
+import { RedisService } from '@nexus/shared';
 import { DenseRetriever } from './retrievers/dense-retriever';
 import { SparseRetriever } from './retrievers/sparse-retriever';
 import { RrfService } from './fusion/rrf.service';
