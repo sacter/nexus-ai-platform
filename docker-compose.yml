@@ -58,12 +58,16 @@ services:
 
   bge-reranker:
     # Infinity: 高性能模型推理服务器，支持 Embedding + Reranker
-    # bge-reranker-v2-m3 首次启动时会从 HuggingFace 下载模型（~2.2GB），需等待 1-2 分钟
+    # 同时加载两个 reranker 模型，API 请求通过 model 字段路由：
+    #   - bge-reranker-base    默认（体积小、CPU 推理快，延迟约减半）
+    #   - bge-reranker-v2-m3   保留的高精度多语言模型，可切换使用
+    # 模型首次启动时从 HuggingFace 下载（base ~1.1GB / v2-m3 ~2.2GB），需等待 1-2 分钟
     image: michaelf34/infinity:latest
     container_name: bge-reranker
     restart: unless-stopped
     command: >
       v2
+      --model-id BAAI/bge-reranker-base
       --model-id BAAI/bge-reranker-v2-m3
       --port 8000
       --no-model-warmup

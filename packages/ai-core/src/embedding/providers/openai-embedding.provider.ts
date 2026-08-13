@@ -31,6 +31,8 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.apiKey}`,
       },
+      // 超时保护：网络异常/上游挂起时避免请求无限等待
+      signal: AbortSignal.timeout(30_000),
       body: JSON.stringify({ model: this.model, input: texts }),
     });
     if (!res.ok) {

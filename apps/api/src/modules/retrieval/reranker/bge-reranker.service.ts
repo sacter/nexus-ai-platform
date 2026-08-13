@@ -7,6 +7,10 @@ interface BgeRerankerConfig {
   model: string;
 }
 
+// ★ cross-encoder 只需看前 ~512 token 即可判断相关性，发送前截断长文档
+//   可显著降低本地 CPU 推理耗时（长 chunk 推理时间近乎线性增长）
+const MAX_RERANK_CHARS = 512;
+
 @Injectable()
 export class BgeRerankerService implements Reranker {
   readonly name = 'bge-reranker';
@@ -14,7 +18,8 @@ export class BgeRerankerService implements Reranker {
 
   private readonly config: BgeRerankerConfig = {
     baseUrl: process.env.BGE_RERANKER_BASE_URL ?? 'http://localhost:8080',
-    model: process.env.BGE_RERANKER_MODEL ?? 'bge-reranker-v2-m3',
+    // ★ Infinity 按精确 model id 路由，必须用完整 ID（短名会返回 400）
+    model: process.env.BGE_RERANKER_MODEL ?? 'BAAI/bge-reranker-base',
   };
 
   async rerank(input: RerankInput, topK = 5): Promise<RerankOutput[]> {
@@ -31,7 +36,10 @@ export class BgeRerankerService implements Reranker {
         },
         body: JSON.stringify({
           query: input.query,
-          documents: input.documents.map((d) => d.content),
+          // 仅截断发送给模型的文本；results[].index 仍映射原始 input.documents
+          documents: input.documents.map((d) =>
+            d.content.slice(0, MAX_RERANK_CHARS),
+          ),
           model: this.config.model,
           top_k: topK,
         }),

@@ -85,6 +85,8 @@ export class RetrievalService {
       `[计时] 3. Embedding向量化: ${Date.now() - t}ms (模型=${model}, 维度=${vector.length})`,
     );
 
+    // 4. 检索
+    t = Date.now();
     const topK = dto.topK ?? SEARCH_DEFAULTS.topK;
 
     let retrieveResults: RetrieveResult[];
@@ -166,12 +168,12 @@ export class RetrievalService {
       totalCandidates = retrieveResults.length;
     }
 
-    // 4. 重排序（默认开启，本地 BGE Reranker 提升精度）
+    // 5. 重排序（默认开启，本地 BGE Reranker 提升精度）
     //    先截断送给 reranker 的候选数，避免 CPU 推理耗时过长（每条文档 ~2s）
     const rerankEnabled = dto.rerank ?? true;
     if (rerankEnabled && retrieveResults.length > 0) {
-      // ★ 只把 topK×3 条粗排候选送进 reranker，在精度与延迟间取平衡
-      const rerankCandidateLimit = Math.min(retrieveResults.length, topK * 3);
+      // ★ 只把 topK×2 条粗排候选送进 reranker，在精度与延迟间取平衡
+      const rerankCandidateLimit = Math.min(retrieveResults.length, topK * 2);
       const rerankCandidates = retrieveResults.slice(0, rerankCandidateLimit);
 
       t = Date.now();
@@ -181,7 +183,7 @@ export class RetrievalService {
         topK,
       );
       this.logger.log(
-        `[计时] 5. Reranker: ${Date.now() - t}ms (输入=${retrieveResults.length}, 输出=${reranked.length})`,
+        `[计时] 5.2 Reranker: ${Date.now() - t}ms (输入=${retrieveResults.length}, 输出=${reranked.length})`,
       );
       if (reranked.length > 0) {
         retrieveResults = reranked;
@@ -192,7 +194,7 @@ export class RetrievalService {
       }
     }
 
-    // 5. 过滤低相关度碎片 + 取 topK + 构建引用
+    // 6. 过滤低相关度碎片 + 取 topK + 构建引用
     t = Date.now();
     const MIN_SCORE_THRESHOLD = 0.1;
     const finalResults: SearchResult[] = retrieveResults
@@ -328,7 +330,7 @@ export class RetrievalService {
       topK,
     );
     this.logger.log(
-      `[计时]   ├ BGE Reranker: ${Date.now() - tBge}ms (结果=${bgeResults.length})`,
+      `[计时] 5.a BGE Reranker: ${Date.now() - tBge}ms (结果=${bgeResults.length})`,
     );
 
     if (bgeResults.length > 0) {
@@ -354,7 +356,7 @@ export class RetrievalService {
       topK,
     );
     this.logger.log(
-      `[计时]   ├ Cohere Reranker: ${Date.now() - tCohere}ms (结果=${cohereResults.length})`,
+      `[计时] 5.b Cohere Reranker: ${Date.now() - tCohere}ms (结果=${cohereResults.length})`,
     );
 
     if (cohereResults.length > 0) {
