@@ -12,14 +12,90 @@
   --color-surface-secondary: var(--surface-secondary);
   --color-border: var(--border);
   --color-foreground: var(--foreground);
+
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Bricolage Grotesque Variable", system-ui, -apple-system, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo,
+    Consolas, monospace;
 }
 
 /* ============================================
-   Shared Element Plus overrides (non-theme-specific)
+   Design tokens — radii, derived tokens, motion
    ============================================ */
-
 :root {
-  --el-border-radius-base: 4px;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 999px;
+
+  /* 兼容旧组件内未定义变量的 fallback（暗色模式回退浅色的问题） */
+  --bg-primary: var(--surface);
+  --bg-secondary: var(--surface-secondary);
+  --border-color: var(--border);
+  --foreground-secondary: var(--el-text-color-secondary);
+
+  /* 主题派生 token — 基于 --accent 自动适配三套配色 */
+  --accent-soft: color-mix(in oklch, var(--accent) 8%, transparent);
+  --accent-soft-strong: color-mix(in oklch, var(--accent) 15%, transparent);
+  --accent-glow: color-mix(in oklch, var(--accent) 16%, transparent);
+  --grid-line: color-mix(in oklch, var(--foreground) 4%, transparent);
+  --grid-line-strong: color-mix(in oklch, var(--foreground) 8%, transparent);
+
+  /* 动效时长（语义化命名） */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --page-fade-dur: 220ms;
+  --page-slide-distance: 8px;
+  --icon-swap-dur: 220ms;
+}
+
+/* ============================================
+   Base
+   ============================================ */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 等宽数字排版 — 统计数字 / ID / 标签 */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* 通用入场动画（配合 animation-delay 做 stagger） */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise-in {
+  animation: rise-in 420ms var(--ease-out) both;
+}
+
+/* 主内容区背景 — 网格纹理 + 顶部主题色氛围光 */
+.nexus-main {
+  background-color: var(--surface-secondary);
+  background-image:
+    radial-gradient(900px 320px at 50% -160px, var(--accent-glow), transparent 65%),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px;
 }
 
 /* ============================================
@@ -49,6 +125,8 @@
   --border: oklch(90.00% 0.0000 0.00);
   --accent: oklch(0 0 0);
   --foreground: oklch(21.03% 0.0000 0.00);
+
+  --brand-gradient: linear-gradient(135deg, oklch(0 0 0), oklch(42% 0 0));
 }
 
 html.dark,
@@ -77,6 +155,8 @@ html.dark[data-theme="uber"] {
   --border: oklch(28.00% 0.0000 0.00);
   --accent: oklch(0.9848 0 0);
   --foreground: oklch(99.11% 0.0000 0.00);
+
+  --brand-gradient: linear-gradient(135deg, oklch(98% 0 0), oklch(62% 0 0));
 }
 
 /* ============================================
@@ -105,6 +185,12 @@ html.dark[data-theme="uber"] {
   --border: oklch(90.00% 0.0020 262.87);
   --accent: oklch(52.82% 0.2628 262.87);
   --foreground: oklch(21.03% 0.0020 262.87);
+
+  --brand-gradient: linear-gradient(
+    135deg,
+    oklch(45% 0.24 262.87),
+    oklch(65% 0.2 262.87)
+  );
 }
 
 html.dark[data-theme="coinbase"] {
@@ -131,6 +217,12 @@ html.dark[data-theme="coinbase"] {
   --border: oklch(28.00% 0.0020 262.87);
   --accent: oklch(52.82% 0.2628 262.87);
   --foreground: oklch(99.11% 0.0020 262.87);
+
+  --brand-gradient: linear-gradient(
+    135deg,
+    oklch(72% 0.18 262.87),
+    oklch(55% 0.24 262.87)
+  );
 }
 
 /* ============================================
@@ -159,6 +251,12 @@ html.dark[data-theme="coinbase"] {
   --border: oklch(90.00% 0.0100 36.66);
   --accent: oklch(66.78% 0.2232 36.66);
   --foreground: oklch(21.03% 0.0100 36.66);
+
+  --brand-gradient: linear-gradient(
+    135deg,
+    oklch(58% 0.21 36.66),
+    oklch(76% 0.19 36.66)
+  );
 }
 
 html.dark[data-theme="rabbit"] {
@@ -185,4 +283,228 @@ html.dark[data-theme="rabbit"] {
   --border: oklch(28.00% 0.0100 36.66);
   --accent: oklch(66.78% 0.2232 36.66);
   --foreground: oklch(99.11% 0.0100 36.66);
+
+  --brand-gradient: linear-gradient(
+    135deg,
+    oklch(80% 0.16 36.66),
+    oklch(62% 0.22 36.66)
+  );
+}
+
+/* ============================================
+   Element Plus refinements
+   ============================================ */
+
+/* 表格 */
+:root {
+  --el-table-header-bg-color: color-mix(
+    in oklch,
+    var(--surface-secondary) 55%,
+    var(--surface)
+  );
+  --el-table-row-hover-bg-color: var(--accent-soft);
+}
+
+.el-table {
+  border-radius: 12px;
+  --el-table-border-color: var(--border);
+}
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: var(--el-text-color-secondary);
+}
+.el-table td.el-table__cell .num {
+  font-family: var(--font-mono);
+}
+
+/* 卡片 — 圆角 + hover 微浮动 + 主题色描边 */
+.el-card {
+  border-radius: 12px;
+  border: 1px solid var(--el-border-color);
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) ease;
+}
+.el-card.is-hover-shadow:hover,
+.el-card.is-always-shadow {
+  transform: translateY(-2px);
+}
+.el-card.is-always-shadow {
+  box-shadow: 0 12px 16px -12px var(--accent-glow);
+}
+.el-card.is-hover-shadow:hover {
+  box-shadow: 0 14px 32px -14px var(--accent-glow);
+  border-color: color-mix(in oklch, var(--accent) 32%, var(--border));
+}
+
+/* 按钮 — 按压反馈 */
+.el-button:not(.is-disabled):not(.is-loading):active {
+  transform: scale(0.96);
+}
+.el-button {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+/* 弹窗 */
+.el-dialog {
+  border-radius: 16px;
+  box-shadow: 0 24px 64px -16px oklch(0 0 0 / 0.28);
+}
+.el-dialog__title {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.el-overlay {
+  backdrop-filter: blur(2px);
+}
+
+/* 下拉菜单 */
+.el-dropdown-menu {
+  border-radius: 10px;
+  padding: 6px;
+}
+.el-dropdown-menu__item {
+  border-radius: 6px;
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+/* 标签 */
+.el-tag {
+  border-radius: 6px;
+}
+
+/* 消息提示 */
+.el-message {
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -8px oklch(0 0 0 / 0.18);
+}
+
+/* 输入框内框 hover / focus 呼吸感 */
+.el-input__wrapper {
+  transition:
+    box-shadow var(--dur-fast) ease,
+    background-color var(--dur-fast) ease;
+}
+
+/* 分页按钮 */
+.el-pagination button,
+.el-pagination .el-pager li {
+  border-radius: 8px;
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+/* ============================================
+   Motion — dialog / page / icon transitions
+   ============================================ */
+
+/* 弹窗入场/离场（EP 2.10 dialog-fade 结构覆盖） */
+.dialog-fade-enter-active .el-overlay-dialog {
+  animation: nexus-dialog-in var(--modal-open-dur) var(--ease-out);
+}
+.dialog-fade-leave-active .el-overlay-dialog {
+  animation: nexus-dialog-out var(--modal-close-dur) ease;
+}
+@keyframes nexus-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--modal-scale));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nexus-dialog-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(var(--modal-scale));
+  }
+}
+
+/* 页面切换过渡 */
+.page-fade-enter-active {
+  transition:
+    opacity var(--page-fade-dur) var(--ease-out),
+    transform var(--page-fade-dur) var(--ease-out);
+}
+.page-fade-leave-active {
+  transition:
+    opacity calc(var(--page-fade-dur) * 0.6) ease,
+    transform calc(var(--page-fade-dur) * 0.6) ease;
+}
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(var(--page-slide-distance));
+}
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(calc(var(--page-slide-distance) * -0.5));
+}
+
+/* 图标切换（明暗主题按钮） */
+.icon-swap-enter-active,
+.icon-swap-leave-active {
+  transition:
+    opacity var(--icon-swap-dur) ease,
+    transform var(--icon-swap-dur) var(--ease-spring),
+    filter var(--icon-swap-dur) ease;
+}
+.icon-swap-enter-from {
+  opacity: 0;
+  transform: scale(0.4) rotate(-90deg);
+  filter: blur(2px);
+}
+.icon-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.4) rotate(90deg);
+  filter: blur(2px);
+}
+
+/* ============================================
+   Scrollbars
+   ============================================ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--foreground) 16%, transparent);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--foreground) 30%, transparent);
+  background-clip: padding-box;
+}
+
+/* ============================================
+   Reduced motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

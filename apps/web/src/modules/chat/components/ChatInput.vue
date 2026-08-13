@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Promotion } from '@element-plus/icons-vue'
 
 const emit = defineEmits<{
   send: [content: string]
@@ -27,6 +28,8 @@ function handleSend() {
     />
     <el-button
       type="primary"
+      :icon="Promotion"
+      :disabled="!content.trim()"
       @click="handleSend"
     >
       发送

@@ -19,14 +19,14 @@ const emit = defineEmits<{
 }>()
 
 const gradients = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #f83600 0%, #f9d423 100%)',
+  'linear-gradient(135deg, #5b7cfa 0%, #3f5bd9 100%)',
+  'linear-gradient(135deg, #7c6cf0 0%, #5a3fd9 100%)',
+  'linear-gradient(135deg, #2ec4b6 0%, #1a8f84 100%)',
+  'linear-gradient(135deg, #ff9f43 0%, #ee5a24 100%)',
+  'linear-gradient(135deg, #ff6b81 0%, #eb3b5a 100%)',
+  'linear-gradient(135deg, #37474f 0%, #212a30 100%)',
+  'linear-gradient(135deg, #54a0ff 0%, #2e86de 100%)',
+  'linear-gradient(135deg, #9980fa 0%, #6c5ce7 100%)',
 ]
 
 function hashString(str: string): number {
@@ -52,7 +52,7 @@ const canDelete = computed(() => props.userRole === 'admin')
 <template>
   <el-card
     shadow="hover"
-    class="cursor-pointer brrounded-lg"
+    class="group cursor-pointer rounded-lg"
     @click="emit('view', id)"
   >
     <div class="flex items-center gap-4">
@@ -88,7 +88,7 @@ const canDelete = computed(() => props.userRole === 'admin')
 
       <!-- 右侧渐变方块图 -->
       <div
-        class="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center"
+        class="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
         :style="squareStyle"
       >
         <el-icon

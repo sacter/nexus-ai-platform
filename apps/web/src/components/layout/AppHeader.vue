@@ -70,8 +70,8 @@ async function handleLogout() {
 
 <template>
   <header
-    class="h-14 shrink-0 flex items-center justify-between px-6"
-    style="border-bottom: 1px solid var(--border); background-color: var(--surface)"
+    class="h-14 shrink-0 flex items-center justify-between px-6 backdrop-blur-md"
+    style="border-bottom: 1px solid var(--border); background-color: color-mix(in oklch, var(--surface) 82%, transparent)"
   >
     <div class="flex items-center gap-4">
       <el-breadcrumb

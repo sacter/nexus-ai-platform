@@ -120,14 +120,22 @@ async function handleSaveEmbedding() {
     <!-- Header -->
     <div
       v-if="kbLoading"
-      class="flex justify-center py-12"
+      class="flex flex-col gap-4"
     >
-      <el-icon
-        class="is-loading"
-        :size="24"
+      <el-skeleton
+        animated
       >
-        <Document />
-      </el-icon>
+        <template #template>
+          <el-skeleton-item
+            variant="rect"
+            style="height: 180px; border-radius: 12px"
+          />
+          <el-skeleton-item
+            variant="rect"
+            style="height: 120px; border-radius: 12px; margin-top: 16px"
+          />
+        </template>
+      </el-skeleton>
     </div>
 
     <template v-else-if="kb">

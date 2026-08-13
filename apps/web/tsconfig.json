@@ -5,24 +5,17 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "jsx": "react-jsx",
     "noEmit": true,
     "allowJs": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": [
-    "next-env.d.ts",
+    "env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
+    "**/*.vue",
     "**/*.mts"
   ],
   "exclude": ["node_modules"]

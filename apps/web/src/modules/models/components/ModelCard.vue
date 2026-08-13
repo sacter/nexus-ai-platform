@@ -4,27 +4,36 @@ defineProps<{ id: string; name: string; provider?: string; type?: string }>()
 const emit = defineEmits<{ edit: [id: string]; delete: [id: string] }>()
 </script>
 <template>
-  <el-card shadow="hover">
-    <div class="flex items-start justify-between mb-2">
+  <el-card
+    shadow="hover"
+    class="group"
+  >
+    <div class="flex items-start justify-between gap-2 mb-2">
       <h3
-        class="font-semibold text-base"
+        class="font-semibold text-base truncate min-w-0"
         style="color: var(--foreground)"
       >
         {{ name }}
       </h3>
-      <div class="flex gap-1">
-        <el-button
-          :icon="Edit"
-          size="small"
-          text
-          @click="emit('edit', id)"
-        />
-        <el-button
-          :icon="Delete"
-          size="small"
-          text
-          @click="emit('delete', id)"
-        />
+      <div class="flex gap-1 shrink-0">
+        <el-tooltip content="编辑">
+          <el-button
+            :icon="Edit"
+            size="small"
+            text
+            aria-label="编辑"
+            @click="emit('edit', id)"
+          />
+        </el-tooltip>
+        <el-tooltip content="删除">
+          <el-button
+            :icon="Delete"
+            size="small"
+            text
+            aria-label="删除"
+            @click="emit('delete', id)"
+          />
+        </el-tooltip>
       </div>
     </div>
     <div class="flex gap-2">

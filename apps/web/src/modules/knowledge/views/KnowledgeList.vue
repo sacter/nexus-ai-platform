@@ -63,64 +63,66 @@ function handleDelete(id: string, isActive: boolean) {
 </script>
 
 <template>
-  <div class="flex items-center justify-between">
-    <h3
-      class="text-xl font-semibold"
-      style="color: var(--foreground)"
-    >
-      知识库
-    </h3>
-    <el-button
-      type="primary"
-      :icon="Plus"
-      @click="createDialogVisible = true"
-    >
-      创建知识库
-    </el-button>
-  </div>
+  <div>
+    <div class="flex items-center justify-between">
+      <h3
+        class="text-xl font-semibold"
+        style="color: var(--foreground)"
+      >
+        知识库
+      </h3>
+      <el-button
+        type="primary"
+        :icon="Plus"
+        @click="createDialogVisible = true"
+      >
+        创建知识库
+      </el-button>
+    </div>
 
-  <!-- 加载骨架屏 -->
-  <div
-    v-if="isLoading"
-    class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2"
-  >
-    <el-skeleton
-      v-for="i in 6"
-      :key="i"
-      animated
+    <!-- 加载骨架屏 -->
+    <div
+      v-if="isLoading"
+      class="grid gap-[11.2px] sm:grid-cols-2 xl:grid-cols-2"
     >
-      <template #template>
-        <el-skeleton-item
-          variant="rect"
-          style="height: 120px; border-radius: 8px"
-        />
-      </template>
-    </el-skeleton>
-  </div>
+      <el-skeleton
+        v-for="i in 6"
+        :key="i"
+        animated
+      >
+        <template #template>
+          <el-skeleton-item
+            variant="rect"
+            style="height: 120px; border-radius: 12px"
+          />
+        </template>
+      </el-skeleton>
+    </div>
 
-  <div
-    v-else-if="kbs && Array.isArray(kbs) && kbs.length > 0"
-    class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2 mt-4"
-  >
-    <KbCard
-      v-for="kb in kbs"
-      :id="(kb as KnowledgeBase).id"
-      :key="(kb as KnowledgeBase).id"
-      :name="(kb as KnowledgeBase).name"
-      :description="(kb as KnowledgeBase).description"
-      :creator-name="(kb as KnowledgeBase).createdByUser?.username"
-      :created-at="(kb as KnowledgeBase).createdAt"
-      :is-active="(kb as KnowledgeBase).isActive"
-      :user-role="myRoleMap[(kb as KnowledgeBase).id]"
-      @view="handleView"
-      @delete="handleDelete"
+    <div
+      v-else-if="kbs && Array.isArray(kbs) && kbs.length > 0"
+      class="grid gap-[11.2px] sm:grid-cols-2 xl:grid-cols-2 mt-4"
+    >
+      <KbCard
+        v-for="kb in kbs"
+        :id="(kb as KnowledgeBase).id"
+        :key="(kb as KnowledgeBase).id"
+        :name="(kb as KnowledgeBase).name"
+        :description="(kb as KnowledgeBase).description"
+        :creator-name="(kb as KnowledgeBase).createdByUser?.username"
+        :created-at="(kb as KnowledgeBase).createdAt"
+        :is-active="(kb as KnowledgeBase).isActive"
+        :user-role="myRoleMap[(kb as KnowledgeBase).id]"
+        @view="handleView"
+        @delete="handleDelete"
+      />
+    </div>
+
+    <el-empty
+      v-else
+      description="暂无知识库"
     />
+
+    <KbCreateDialog v-model:visible="createDialogVisible" />
   </div>
-
-  <el-empty
-    v-else
-    description="暂无知识库"
-  />
-
-  <KbCreateDialog v-model:visible="createDialogVisible" />
 </template>

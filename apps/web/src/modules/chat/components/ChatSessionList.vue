@@ -26,6 +26,8 @@ const { data: sessions, isLoading } = useChatSessions()
       <el-button
         :icon="Plus"
         size="small"
+        type="primary"
+        plain
         class="w-full"
         @click="emit('new')"
       >
@@ -35,11 +37,20 @@ const { data: sessions, isLoading } = useChatSessions()
     <div class="flex-1 overflow-y-auto p-2">
       <div
         v-if="isLoading"
-        class="flex justify-center py-8"
+        class="flex flex-col gap-2"
       >
-        <el-icon class="is-loading">
-          <Plus />
-        </el-icon>
+        <el-skeleton
+          v-for="i in 5"
+          :key="i"
+          animated
+        >
+          <template #template>
+            <el-skeleton-item
+              variant="rect"
+              style="height: 36px; border-radius: 8px"
+            />
+          </template>
+        </el-skeleton>
       </div>
       <div
         v-else-if="sessions && Array.isArray(sessions) && sessions.length > 0"

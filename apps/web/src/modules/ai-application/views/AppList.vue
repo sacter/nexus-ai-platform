@@ -32,19 +32,25 @@ function handleDelete(id: string) { deleteMutation.mutate(id) }
 
     <div
       v-if="isLoading"
-      class="flex justify-center py-12"
+      class="grid grid-cols-3 gap-[11.2px]"
     >
-      <el-icon
-        class="is-loading"
-        :size="24"
+      <el-skeleton
+        v-for="i in 6"
+        :key="i"
+        animated
       >
-        <Plus />
-      </el-icon>
+        <template #template>
+          <el-skeleton-item
+            variant="rect"
+            style="height: 110px; border-radius: 12px"
+          />
+        </template>
+      </el-skeleton>
     </div>
 
     <div
       v-else-if="apps && Array.isArray(apps) && apps.length > 0"
-      class="grid grid-cols-3 gap-4"
+      class="grid grid-cols-3 gap-[11.2px]"
     >
       <AppCard
         v-for="app in apps"
