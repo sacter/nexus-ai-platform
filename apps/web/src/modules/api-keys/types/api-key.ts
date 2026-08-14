@@ -10,7 +10,7 @@ export const PROVIDERS = [
 
 export type ProviderId = (typeof PROVIDERS)[number]['value']
 
-/** API Key（列表返回，apiKey 为服务端 AES 加密后的密文；字段名与后端 Prisma 返回一致，camelCase） */
+/** API Key（列表返回，apiKey 为脱敏后的明文，如 sk-a****f3a2；字段名与后端 Prisma 返回一致，camelCase） */
 export interface ApiKey {
   id: string
   provider: ProviderId
@@ -20,7 +20,7 @@ export interface ApiKey {
   model: string
   /** 自定义 API 端点（如代理） */
   baseUrl?: string | null
-  /** 服务端加密存储的密钥密文 */
+  /** 脱敏后的密钥串（完整明文仅在创建时返回一次） */
   apiKey: string
   isActive: boolean
   createdBy: string
