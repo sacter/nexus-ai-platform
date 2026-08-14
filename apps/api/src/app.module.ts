@@ -19,6 +19,8 @@ import { VersionModule } from './modules/knowledge/version/version.module';
 import { ChunkModule } from './modules/knowledge/chunk/chunk.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
+import { ApiKeyModule } from './modules/api-key/api-key.module';
+
 import { QUEUE_NAMES } from '@nexus/shared';
 
 @Module({
@@ -65,6 +67,7 @@ import { QUEUE_NAMES } from '@nexus/shared';
     ChunkModule,
     UploadModule,
     RetrievalModule,
+    ApiKeyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -673,8 +673,6 @@ COMMENT ON COLUMN audit_logs.details IS 'JSONB: {old_value, new_value, affected_
 >   - 过期数据直接 DROP PARTITION
 > ```
 
-```
-
 ### 4.12 api_keys — API Key 表
 
 ```sql

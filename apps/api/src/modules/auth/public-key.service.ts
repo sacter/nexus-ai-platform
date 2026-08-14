@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 
+const ALGORITHM = 'aes-256-gcm';
+
 /**
  * RSA-2048 公钥/私钥管理服务
  *
@@ -56,5 +58,58 @@ export class PublicKeyService {
         Buffer.from(encryptedBase64, 'base64'),
       )
       .toString('utf8');
+  }
+
+  /**
+   * AES‑256‑GCM加密
+   * @param {string} plainText 待加密原始字符串(api_key明文)
+   * @param {Buffer} key 32字节Buffer的AES主密钥
+   * @returns {{cipherText:string, nonce:string, tag:string}} 全部hex编码，用于入库
+   */
+  aesGcmEncrypt(plainText: string, key: Buffer) {
+    if (key.length !== 32) throw new Error('AES‑256密钥必须32字节');
+    // GCM标准推荐12字节nonce
+    const nonce = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, nonce);
+
+    let cipherText = cipher.update(plainText, 'utf8', 'hex');
+    cipherText += cipher.final('hex');
+    const tag = cipher.getAuthTag().toString('hex');
+
+    return {
+      cipherText,
+      nonce: nonce.toString('hex'),
+      tag,
+    };
+  }
+
+  /**
+   * AES‑256‑GCM解密
+   * @param {{cipherText:string, nonce:string, tag:string}} dbData 数据库读出的hex字段
+   * @param {Buffer} key 32字节AES主密钥
+   * @returns {string} 原始明文（仅内存存在，禁止打印、禁止写日志）
+   * @throws 篡改、密钥错误、nonce/tag错误直接抛异常
+   */
+  aesGcmDecrypt(
+    {
+      cipherText,
+      nonce,
+      tag,
+    }: { cipherText: string; nonce: string; tag: string },
+    key: Buffer,
+  ) {
+    if (key.length !== 32) throw new Error('AES‑256密钥必须32字节');
+
+    const decipher = crypto.createDecipheriv(
+      ALGORITHM,
+      key,
+      Buffer.from(nonce, 'hex'),
+    );
+    // GCM必须设置tag，校验完整性；篡改直接抛错
+    decipher.setAuthTag(Buffer.from(tag, 'hex'));
+
+    let plain = decipher.update(cipherText, 'hex', 'utf8');
+    plain += decipher.final('utf8');
+    return plain;
   }
 }

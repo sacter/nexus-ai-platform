@@ -418,7 +418,9 @@ model ApiKey {
   name      String   @db.VarChar(256)
   model     String   @default("") @db.VarChar(128)
   baseUrl   String?  @map("base_url") @db.VarChar(512)
-  apiKey    String   @map("api_key") @db.VarChar(512)
+  apiKey    String   @map("api_key") @db.VarChar(2048)
+  nonce     String   @default("") @map("encryption_nonce") @db.VarChar(32)
+  tag       String   @default("") @map("encryption_tag") @db.VarChar(32)
   isActive  Boolean  @default(true) @map("is_active")
   createdBy String   @map("created_by") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()

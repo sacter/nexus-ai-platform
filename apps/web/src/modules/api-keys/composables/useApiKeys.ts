@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { apiKeysApi } from '@/modules/system/api/api-keys.api'
+import { apiKeysApi } from '@/modules/api-keys/api/api-keys.api'
+
+export function useApiKeysPublicKey() {
+  return useQuery({ queryKey: ['api-keys', 'public-key'], queryFn: () => apiKeysApi.publicKey() })
+}
 
 export function useApiKeys() {
   return useQuery({ queryKey: ['api-keys'], queryFn: () => apiKeysApi.list() })

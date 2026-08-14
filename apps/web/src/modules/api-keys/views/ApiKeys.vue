@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { JSEncrypt } from 'jsencrypt'
 import {
   Plus,
   Key,
@@ -12,15 +13,22 @@ import {
 } from '@element-plus/icons-vue'
 import {
   useApiKeys,
+  useApiKeysPublicKey,
   useCreateApiKey,
   useUpdateApiKey,
   useDeleteApiKey,
-} from '@/modules/system/composables/useApiKeys'
+} from '@/modules/api-keys/composables/useApiKeys'
 import { formatDate } from '@/utils/format'
-import { PROVIDERS } from '@/modules/system/types/api-key'
-import type { ApiKey, ApiKeyCreateResult, ProviderId } from '@/modules/system/types/api-key'
+import { PROVIDERS } from '@/modules/api-keys/types/api-key'
+import type { ApiKey, ApiKeyCreateResult, ProviderId } from '@/modules/api-keys/types/api-key'
 
 const { data: keys, isLoading } = useApiKeys()
+// RSA 公钥：创建 API Key 时用 jsencrypt 加密 apiKey 明文，服务端持有对应私钥解密存储
+const { data: publicKey } = useApiKeysPublicKey()
+
+// 防御：el-table 内部对 data 直接 .reduce，非数组（如后端异常返回的字符串/对象）会抛 TypeError，统一兜底为数组
+const keyList = computed(() => (Array.isArray(keys.value) ? keys.value : []))
+
 const createMutation = useCreateApiKey()
 const updateMutation = useUpdateApiKey()
 const deleteMutation = useDeleteApiKey()
@@ -36,17 +44,17 @@ const editingId = ref('')
 const form = ref<{
   provider: ProviderId
   name: string
-  api_key: string
+  apiKey: string
   model: string
-  base_url: string
-  is_active: boolean
+  baseUrl: string
+  isActive: boolean
 }>({
   provider: 'openai',
   name: '',
-  api_key: '',
+  apiKey: '',
   model: '',
-  base_url: '',
-  is_active: true,
+  baseUrl: '',
+  isActive: true,
 })
 const submitting = computed(
   () => createMutation.isPending.value || updateMutation.isPending.value,
@@ -58,10 +66,10 @@ function openCreate() {
   form.value = {
     provider: 'openai',
     name: '',
-    api_key: '',
+    apiKey: '',
     model: '',
-    base_url: '',
-    is_active: true,
+    baseUrl: '',
+    isActive: true,
   }
   dialogVisible.value = true
 }
@@ -72,10 +80,10 @@ function openEdit(row: ApiKey) {
   form.value = {
     provider: row.provider,
     name: row.name,
-    api_key: '',
+    apiKey: '',
     model: row.model ?? '',
-    base_url: row.base_url ?? '',
-    is_active: row.is_active,
+    baseUrl: row.baseUrl ?? '',
+    isActive: row.isActive,
   }
   dialogVisible.value = true
 }
@@ -83,14 +91,27 @@ function openEdit(row: ApiKey) {
 async function handleSubmit() {
   if (!form.value.name.trim()) return
   if (dialogMode.value === 'create') {
-    if (!form.value.api_key.trim()) return
+    if (!form.value.apiKey.trim()) return
+    // 前端 RSA 加密：公钥未就绪或加密失败时中止提交，密文才允许入库
+    const publicKeyStr = publicKey.value?.publicKey
+    if (!publicKeyStr) {
+      ElMessage.error('加密公钥未就绪，请稍后重试')
+      return
+    }
+    const encryptor = new JSEncrypt()
+    encryptor.setPublicKey(publicKeyStr)
+    const encrypted = encryptor.encrypt(form.value.apiKey.trim())
+    if (!encrypted) {
+      ElMessage.error('密钥加密失败，请重试')
+      return
+    }
     try {
       const key = await createMutation.mutateAsync({
         provider: form.value.provider,
         name: form.value.name.trim(),
         model: form.value.model.trim(),
-        base_url: form.value.base_url.trim() || null,
-        api_key: form.value.api_key.trim(),
+        baseUrl: form.value.baseUrl.trim() || null,
+        apiKey: encrypted,
       })
       dialogMode.value = 'result'
       resultKey.value = key
@@ -107,8 +128,8 @@ async function handleSubmit() {
           provider: form.value.provider,
           name: form.value.name.trim(),
           model: form.value.model.trim(),
-          base_url: form.value.base_url.trim() || null,
-          is_active: form.value.is_active,
+          baseUrl: form.value.baseUrl.trim() || null,
+          isActive: form.value.isActive,
         },
       })
       dialogVisible.value = false
@@ -131,8 +152,8 @@ async function handleToggle(row: ApiKey, val: boolean) {
         provider: row.provider,
         name: row.name,
         model: row.model,
-        base_url: row.base_url ?? null,
-        is_active: val,
+        baseUrl: row.baseUrl ?? null,
+        isActive: val,
       },
     })
     ElMessage.success(val ? '已启用' : '已停用')
@@ -150,7 +171,7 @@ const copied = ref(false)
 async function copyKey() {
   if (!resultKey.value) return
   try {
-    await navigator.clipboard.writeText(resultKey.value.api_key)
+    await navigator.clipboard.writeText(resultKey.value.apiKey)
     copied.value = true
     setTimeout(() => (copied.value = false), 2000)
   } catch {
@@ -268,7 +289,7 @@ function handleDelete(id: string) {
 
     <!-- 空状态 -->
     <el-empty
-      v-else-if="!keys?.length"
+      v-else-if="!keyList.length"
       description="暂无 API Key"
     >
       <el-button
@@ -284,7 +305,7 @@ function handleDelete(id: string) {
     <el-table
       v-else
       v-loading="deleteMutation.isPending.value"
-      :data="keys"
+      :data="keyList"
     >
       <el-table-column
         label="Provider"
@@ -339,7 +360,7 @@ function handleDelete(id: string) {
               background: var(--surface-secondary);
               color: var(--foreground);
             "
-          >{{ row.api_key }}</code>
+          >{{ row.apiKey }}</code>
         </template>
       </el-table-column>
       <el-table-column
@@ -348,11 +369,11 @@ function handleDelete(id: string) {
       >
         <template #default="{ row }">
           <span
-            v-if="row.base_url"
+            v-if="row.baseUrl"
             class="block max-w-[160px] truncate font-mono text-xs"
-            :title="row.base_url"
+            :title="row.baseUrl"
             style="color: var(--foreground)"
-          >{{ row.base_url }}</span>
+          >{{ row.baseUrl }}</span>
           <span
             v-else
             class="text-xs"
@@ -367,7 +388,7 @@ function handleDelete(id: string) {
       >
         <template #default="{ row }">
           <el-switch
-            :model-value="row.is_active"
+            :model-value="row.isActive"
             size="small"
             :loading="toggleId === row.id"
             @change="(val: boolean) => handleToggle(row, val)"
@@ -382,7 +403,7 @@ function handleDelete(id: string) {
           <span
             class="text-xs"
             style="color: var(--foreground)"
-          >{{ formatDate(row.created_at) }}</span>
+          >{{ formatDate(row.createdAt) }}</span>
         </template>
       </el-table-column>
       <el-table-column
@@ -471,7 +492,7 @@ function handleDelete(id: string) {
             label="密钥"
           >
             <el-input
-              v-model="form.api_key"
+              v-model="form.apiKey"
               type="password"
               show-password
               placeholder="粘贴该 Provider 的 API Key"
@@ -486,7 +507,7 @@ function handleDelete(id: string) {
           </el-form-item>
           <el-form-item label="自定义端点（可选）">
             <el-input
-              v-model="form.base_url"
+              v-model="form.baseUrl"
               placeholder="如 https://api.openai.com/v1（代理场景）"
               maxlength="512"
             />
@@ -496,7 +517,7 @@ function handleDelete(id: string) {
             label="状态"
           >
             <div class="flex items-center gap-3">
-              <el-switch v-model="form.is_active" />
+              <el-switch v-model="form.isActive" />
               <span
                 class="text-xs"
                 style="color: var(--foreground); opacity: 0.55"
@@ -563,7 +584,7 @@ function handleDelete(id: string) {
             <code
               class="block break-all font-mono text-sm leading-relaxed"
               style="color: var(--foreground)"
-            >{{ resultKey?.api_key }}</code>
+            >{{ resultKey?.apiKey }}</code>
           </div>
           <p
             class="mt-3 text-xs"
@@ -593,7 +614,7 @@ function handleDelete(id: string) {
           <el-button
             type="primary"
             :loading="submitting"
-            :disabled="!form.name.trim() || (dialogMode === 'create' && !form.api_key.trim())"
+            :disabled="!form.name.trim() || (dialogMode === 'create' && !form.apiKey.trim())"
             @click="handleSubmit"
           >
             {{ dialogMode === 'create' ? '创建' : '保存' }}

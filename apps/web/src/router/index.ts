@@ -57,7 +57,7 @@ const routes: RouteRecordRaw[] = [
 
       // System
       { path: 'settings', name: 'Settings', component: () => import('@/modules/system/views/Settings.vue') },
-      { path: 'api-keys', name: 'ApiKeys', component: () => import('@/modules/system/views/ApiKeys.vue') },
+      { path: 'api-keys', name: 'ApiKeys', component: () => import('@/modules/api-keys/views/ApiKeys.vue') },
       { path: 'audit-logs', name: 'AuditLogs', component: () => import('@/modules/system/views/AuditLogs.vue') },
     ],
   },
