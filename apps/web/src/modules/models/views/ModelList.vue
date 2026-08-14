@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Coin } from '@element-plus/icons-vue'
 import { useModels, useDeleteModel } from '@/modules/models/composables/useModels'
 import ModelCard from '@/modules/models/components/ModelCard.vue'
 const { data: models, isLoading } = useModels()
@@ -8,13 +8,34 @@ function handleDelete(id: string) { deleteMutation.mutate(id) }
 </script>
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1
-        class="text-2xl font-semibold"
-        style="color: var(--foreground)"
-      >
-        模型
-      </h1>
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+          style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+        >
+          <el-icon
+            :size="18"
+            color="#fff"
+          >
+            <Coin />
+          </el-icon>
+        </div>
+        <div>
+          <h1
+            class="font-display text-2xl font-bold tracking-tight"
+            style="color: var(--foreground)"
+          >
+            模型
+          </h1>
+          <p
+            class="mt-0.5 text-xs"
+            style="color: var(--foreground); opacity: 0.55"
+          >
+            注册模型并配置各 Provider 接入
+          </p>
+        </div>
+      </div>
       <el-button
         type="primary"
         :icon="Plus"

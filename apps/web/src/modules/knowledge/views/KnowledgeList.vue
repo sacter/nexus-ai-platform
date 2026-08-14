@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Collection } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useQueries } from '@tanstack/vue-query'
 import { useKnowledgeBases, useDeleteKnowledgeBase } from '@/modules/knowledge/composables/useKnowledge'
@@ -64,13 +64,34 @@ function handleDelete(id: string, isActive: boolean) {
 
 <template>
   <div>
-    <div class="flex items-center justify-between">
-      <h3
-        class="text-xl font-semibold"
-        style="color: var(--foreground)"
-      >
-        知识库
-      </h3>
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+          style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+        >
+          <el-icon
+            :size="18"
+            color="#fff"
+          >
+            <Collection />
+          </el-icon>
+        </div>
+        <div>
+          <h1
+            class="font-display text-2xl font-bold tracking-tight"
+            style="color: var(--foreground)"
+          >
+            知识库
+          </h1>
+          <p
+            class="mt-0.5 text-xs"
+            style="color: var(--foreground); opacity: 0.55"
+          >
+            集中管理知识库与文档，支持向量检索
+          </p>
+        </div>
+      </div>
       <el-button
         type="primary"
         :icon="Plus"

@@ -407,12 +407,20 @@ html.dark[data-theme="rabbit"] {
    Motion — dialog / page / icon transitions
    ============================================ */
 
-/* 弹窗入场/离场（EP 2.10 dialog-fade 结构覆盖） */
+/* 弹窗入场/离场（EP 2.10 dialog-fade 结构覆盖）
+   注意：必须加 fill-mode: both —— 子元素动画先于根元素结束时，
+   无 fill-mode 会让元素在卸载前瞬间恢复 opacity:1，造成“先关闭再弹一下”的闪烁 */
+.dialog-fade-enter-active {
+  animation: modal-fade-in var(--modal-open-dur) var(--ease-out) both;
+}
 .dialog-fade-enter-active .el-overlay-dialog {
-  animation: nexus-dialog-in var(--modal-open-dur) var(--ease-out);
+  animation: nexus-dialog-in var(--modal-open-dur) var(--ease-out) both;
+}
+.dialog-fade-leave-active {
+  animation: modal-fade-out var(--modal-close-dur) ease both;
 }
 .dialog-fade-leave-active .el-overlay-dialog {
-  animation: nexus-dialog-out var(--modal-close-dur) ease;
+  animation: nexus-dialog-out var(--modal-close-dur) ease both;
 }
 @keyframes nexus-dialog-in {
   from {

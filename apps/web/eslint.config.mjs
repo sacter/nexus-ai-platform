@@ -53,7 +53,6 @@ export default tseslint.config(
     ignores: [
       'dist/**',
       'node_modules/**',
-      '.next/**',
       '.vite/**',
       'coverage/**',
     ],

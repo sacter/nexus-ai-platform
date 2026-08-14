@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Share } from '@element-plus/icons-vue'
 import { useWorkflows, useDeleteWorkflow } from '@/modules/workflow/composables/useWorkflow'
 import WorkflowCard from '@/modules/workflow/components/WorkflowCard.vue'
 const router = useRouter()
@@ -12,13 +12,34 @@ function handleDelete(id: string) { deleteMutation.mutate(id) }
 </script>
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1
-        class="text-2xl font-semibold"
-        style="color: var(--foreground)"
-      >
-        Workflow
-      </h1>
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+          style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+        >
+          <el-icon
+            :size="18"
+            color="#fff"
+          >
+            <Share />
+          </el-icon>
+        </div>
+        <div>
+          <h1
+            class="font-display text-2xl font-bold tracking-tight"
+            style="color: var(--foreground)"
+          >
+            Workflow
+          </h1>
+          <p
+            class="mt-0.5 text-xs"
+            style="color: var(--foreground); opacity: 0.55"
+          >
+            可视化编排多步骤自动化流程
+          </p>
+        </div>
+      </div>
       <div class="flex gap-2">
         <el-button @click="router.push('/workflows/designer')">
           设计器

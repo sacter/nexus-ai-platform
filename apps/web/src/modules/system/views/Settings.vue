@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
+import { Setting } from '@element-plus/icons-vue'
 import { settingsApi } from '@/modules/system/api/settings.api'
 const form = reactive({ siteName: '', defaultModel: '' })
 const loading = ref(false)
@@ -9,12 +10,33 @@ async function handleSave() { loading.value = true; try { await settingsApi.upda
 </script>
 <template>
   <div>
-    <h1
-      class="text-2xl font-semibold mb-6"
-      style="color: var(--foreground)"
-    >
-      设置
-    </h1>
+    <div class="mb-6 flex items-center gap-3">
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+        style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+      >
+        <el-icon
+          :size="18"
+          color="#fff"
+        >
+          <Setting />
+        </el-icon>
+      </div>
+      <div>
+        <h1
+          class="font-display text-2xl font-bold tracking-tight"
+          style="color: var(--foreground)"
+        >
+          设置
+        </h1>
+        <p
+          class="mt-0.5 text-xs"
+          style="color: var(--foreground); opacity: 0.55"
+        >
+          配置平台站点信息与默认模型
+        </p>
+      </div>
+    </div>
     <el-card>
       <el-form label-width="120px">
         <el-form-item label="站点名称">

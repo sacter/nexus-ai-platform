@@ -1,12 +1,33 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1
-        class="text-2xl font-semibold tracking-tight"
-        style="color: var(--foreground)"
-      >
-        平台概览
-      </h1>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+          style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+        >
+          <el-icon
+            :size="18"
+            color="#fff"
+          >
+            <Monitor />
+          </el-icon>
+        </div>
+        <div>
+          <h1
+            class="font-display text-2xl font-bold tracking-tight"
+            style="color: var(--foreground)"
+          >
+            平台概览
+          </h1>
+          <p
+            class="mt-0.5 text-xs"
+            style="color: var(--foreground); opacity: 0.55"
+          >
+            全局资源统计与最近动态
+          </p>
+        </div>
+      </div>
       <span
         class="num text-xs px-2.5 py-1 rounded-full"
         style="background: var(--accent-soft); color: var(--accent)"
@@ -71,7 +92,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { Collection, Document, Grid, Cpu, Coin, Switch } from '@element-plus/icons-vue'
+import { Collection, Document, Grid, Cpu, Coin, Switch, Monitor } from '@element-plus/icons-vue'
 
 const router = useRouter()
 

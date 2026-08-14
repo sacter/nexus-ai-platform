@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Switch } from '@element-plus/icons-vue'
 import { useTools, useDeleteTool } from '@/modules/tools/composables/useTools'
 import ToolCard from '@/modules/tools/components/ToolCard.vue'
 const { data: tools, isLoading } = useTools()
@@ -8,13 +8,34 @@ function handleDelete(id: string) { deleteMutation.mutate(id) }
 </script>
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1
-        class="text-2xl font-semibold"
-        style="color: var(--foreground)"
-      >
-        工具
-      </h1>
+    <div class="mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+          style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+        >
+          <el-icon
+            :size="18"
+            color="#fff"
+          >
+            <Switch />
+          </el-icon>
+        </div>
+        <div>
+          <h1
+            class="font-display text-2xl font-bold tracking-tight"
+            style="color: var(--foreground)"
+          >
+            工具
+          </h1>
+          <p
+            class="mt-0.5 text-xs"
+            style="color: var(--foreground); opacity: 0.55"
+          >
+            管理 AI 应用可调用的外部工具
+          </p>
+        </div>
+      </div>
       <el-button
         type="primary"
         :icon="Plus"

@@ -12,6 +12,7 @@ import {
   Timer,
   Setting,
   Lock,
+  Key,
   Fold,
   Expand,
 } from '@element-plus/icons-vue'
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/tools', label: '工具', icon: Switch },
   { href: '/jobs', label: 'Job', icon: Timer },
   { href: '/settings', label: '设置', icon: Setting },
+  { href: '/api-keys', label: 'API Key', icon: Key },
   { href: '/audit-logs', label: '审计', icon: Lock },
 ]
 

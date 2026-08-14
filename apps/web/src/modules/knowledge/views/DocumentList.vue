@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { CopyDocument, WarningFilled, View, Download, Clock, Refresh } from '@element-plus/icons-vue'
+import { CopyDocument, WarningFilled, View, Download, Clock, Refresh, Document as DocumentIcon } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePagedDocuments, useDeleteDocument, useDownloadUrl, useReindexDocument } from '@/modules/knowledge/composables/useDocuments'
 import type { Document } from '@/modules/knowledge/types/document'
@@ -187,9 +187,30 @@ function formatSize(bytes: number): string {
   >
     <template v-if="!embedded">
       <div class="page-header">
-        <h1 class="page-title">
-          文档管理
-        </h1>
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+            style="background: var(--brand-gradient); box-shadow: 0 8px 20px -8px color-mix(in oklch, var(--accent) 55%, transparent)"
+          >
+            <el-icon
+              :size="18"
+              color="#fff"
+            >
+              <DocumentIcon />
+            </el-icon>
+          </div>
+          <div>
+            <h1 class="page-title">
+              文档管理
+            </h1>
+            <p
+              class="mt-0.5 text-xs"
+              style="color: var(--foreground); opacity: 0.55"
+            >
+              管理知识库文档与切片
+            </p>
+          </div>
+        </div>
       </div>
       <div class="upload-section">
         <DocumentUpload
