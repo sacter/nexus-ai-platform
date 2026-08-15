@@ -12,39 +12,21 @@ export const MODEL_TYPES = [
 
 export type ModelType = (typeof MODEL_TYPES)[number]['value']
 
+// 模型能力参数结构 / 默认值 / 取值范围 — 单一来源 @nexus/model-config（DATABASE.md 4.20 config）
+// 类型经 import type 本地绑定再 export type 导出，避免 Rollup 对 CJS 包的 `export type {} from` 报错
+import {
+  MODEL_CONFIG_DEFAULTS,
+  PROVIDERS as MODELS_PROVIDERS,
+  type ModelChatConfig,
+  type ModelConfig,
+  type ModelEmbeddingConfig,
+  type ModelRerankConfig,
+} from '@nexus/model-config'
 /** Provider 枚举（与 api_keys.provider 对应；brand 色用于品牌徽章，多主题下经 color-mix 混合保持协调） */
-export const PROVIDERS = [
-  { value: 'openai', label: 'OpenAI', brand: '#10a37f' },
-  { value: 'deepseek', label: 'DeepSeek', brand: '#4d6bfe' },
-  { value: 'qwen', label: 'Qwen', brand: '#6d5ef2' },
-  { value: 'anthropic', label: 'Anthropic', brand: '#d97757' },
-  { value: 'bge', label: 'BGE', brand: '#e5484d' },
-  { value: 'cohere', label: 'Cohere', brand: '#39594d' },
-  { value: 'dashscope', label: 'DashScope', brand: '#168fff' },
-] as const
-
+export const PROVIDERS = MODELS_PROVIDERS;
 export type ModelProvider = (typeof PROVIDERS)[number]['value']
-
-/** config — chat 模型能力参数 */
-export interface ModelChatConfig {
-  maxTokens?: number
-  temperature?: number
-  supportsVision?: boolean
-  supportsTools?: boolean
-}
-
-/** config — embedding 模型能力参数 */
-export interface ModelEmbeddingConfig {
-  dimension?: number
-  maxBatchSize?: number
-}
-
-/** config — rerank 模型能力参数 */
-export interface ModelRerankConfig {
-  maxBatchSize?: number
-}
-
-export type ModelConfig = ModelChatConfig | ModelEmbeddingConfig | ModelRerankConfig
+export type { ModelChatConfig, ModelEmbeddingConfig, ModelRerankConfig, ModelConfig }
+export { MODEL_CONFIG_DEFAULTS, MODEL_CONFIG_LIMITS } from '@nexus/model-config'
 
 /** 模型注册项（apiKeyName 由列表查询 LEFT JOIN api_keys 附带返回） */
 export interface Model {
@@ -80,14 +62,7 @@ export interface ModelUpdateInput extends ModelCreateInput {
   isActive: boolean
 }
 
-/** 按类型返回 config 默认模板（与 DATABASE.md 4.20 config 注释一致） */
+/** 按类型返回 config 默认模板（取自 @nexus/model-config MODEL_CONFIG_DEFAULTS） */
 export function createDefaultConfig(type: ModelType): ModelConfig {
-  switch (type) {
-    case 'chat':
-      return { maxTokens: 4096, temperature: 0.7, supportsVision: false, supportsTools: true }
-    case 'embedding':
-      return { dimension: 1536, maxBatchSize: 2048 }
-    case 'rerank':
-      return { maxBatchSize: 100 }
-  }
+  return MODEL_CONFIG_DEFAULTS[type]
 }

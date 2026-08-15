@@ -319,8 +319,9 @@ html.dark[data-theme="rabbit"] {
 
 /* 卡片 — 圆角 + hover 微浮动 + 主题色描边 */
 .el-card {
-  border-radius: 12px;
-  border: 1px solid var(--el-border-color);
+  border-radius: 10px;
+  /* border: 1px solid var(--el-border-color); */
+  border: 0;
   transition:
     transform var(--dur-base) var(--ease-out),
     box-shadow var(--dur-base) var(--ease-out),
@@ -334,8 +335,11 @@ html.dark[data-theme="rabbit"] {
   box-shadow: 0 12px 16px -12px var(--accent-glow);
 }
 .el-card.is-hover-shadow:hover {
-  box-shadow: 0 14px 32px -14px var(--accent-glow);
+  box-shadow: 0 12px 16px -12px var(--accent-glow);
   border-color: color-mix(in oklch, var(--accent) 32%, var(--border));
+}
+.el-card__body {
+  padding: 14px 20px;
 }
 
 /* 按钮 — 按压反馈 */
@@ -353,7 +357,7 @@ html.dark[data-theme="rabbit"] {
 
 /* 弹窗 */
 .el-dialog {
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: 0 24px 64px -16px oklch(0 0 0 / 0.28);
 }
 .el-dialog__title {

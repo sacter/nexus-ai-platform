@@ -1,0 +1,21 @@
+{
+  "name": "@nexus/model-config",
+  "version": "0.0.1",
+  "description": "Model Center 模型能力参数约束（类型/范围/默认值）— api 与 web 共用单一来源",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

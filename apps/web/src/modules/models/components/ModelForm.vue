@@ -4,7 +4,7 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ChatDotRound, DataLine, Key, Link, Sort } from '@element-plus/icons-vue'
 import { useCreateModel, useUpdateModel } from '@/modules/models/composables/useModels'
 import { useApiKeys } from '@/modules/api-keys/composables/useApiKeys'
-import { MODEL_TYPES, PROVIDERS, createDefaultConfig } from '@/modules/models/types/model'
+import { MODEL_TYPES, PROVIDERS, MODEL_CONFIG_LIMITS, createDefaultConfig } from '@/modules/models/types/model'
 import type {
   Model,
   ModelChatConfig,
@@ -40,7 +40,7 @@ const keyGroups = computed(() =>
 
 const formRef = ref<FormInstance>()
 const form = reactive({
-  provider: 'openai' as ModelProvider,
+  provider: 'deepseek' as ModelProvider,
   modelName: '',
   type: 'chat' as ModelType,
   displayName: '',
@@ -65,7 +65,7 @@ const rules: FormRules = {
   provider: [{ required: true, message: '请选择 Provider', trigger: 'change' }],
   modelName: [
     { required: true, message: '请输入模型名称', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/, message: '仅支持字母、数字及 . _ -（如 gpt-4o）', trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,127}$/, message: '仅支持字母、数字及 . _ - /（如 gpt-4o / deepseek-v4-pro）', trigger: 'blur' },
   ],
   type: [{ required: true, message: '请选择模型类型', trigger: 'change' }],
   displayName: [{ required: true, message: '请输入显示名称', trigger: 'blur' }],
@@ -79,7 +79,7 @@ function resetConfigs(type: ModelType) {
 }
 
 function resetForm() {
-  form.provider = 'openai'
+  form.provider = 'deepseek'
   form.modelName = ''
   form.type = 'chat'
   form.displayName = ''
@@ -146,14 +146,15 @@ function buildConfig(): ModelConfig {
 }
 
 function validateConfig(): string | null {
+  // 边界取自 @nexus/model-config MODEL_CONFIG_LIMITS，与后端 validateConfig 一致
+  const range = (v: number | undefined, bound: { min: number; max: number }, label: string) =>
+    v !== undefined && (v < bound.min || v > bound.max) ? `${label} 需在 ${bound.min} ~ ${bound.max} 之间` : null
   if (form.type === 'chat') {
-    const maxTokens = chatConfig.maxTokens
-    const temperature = chatConfig.temperature
-    if (maxTokens !== undefined && (maxTokens < 1 || maxTokens > 128000)) return 'maxTokens 需在 1 ~ 128000 之间'
-    if (temperature !== undefined && (temperature < 0 || temperature > 2)) return 'temperature 需在 0 ~ 2 之间'
+    const limits = MODEL_CONFIG_LIMITS.chat
+    return range(chatConfig.maxTokens, limits.maxTokens, 'maxTokens') ?? range(chatConfig.temperature, limits.temperature, 'temperature')
   } else if (form.type === 'embedding') {
-    const dimension = embedConfig.dimension
-    if (dimension !== undefined && (dimension < 1 || dimension > 3072)) return '向量维度需在 1 ~ 3072 之间'
+    const limits = MODEL_CONFIG_LIMITS.embedding
+    return range(embedConfig.dimension, limits.dimension, '向量维度')
   }
   return null
 }
@@ -236,7 +237,7 @@ async function handleSubmit() {
         >
           <el-input
             v-model="form.modelName"
-            placeholder="如 gpt-4o / deepseek-chat"
+            placeholder="如 gpt-4o / deepseek-v4-pro"
             class="font-mono"
             maxlength="128"
           />
@@ -355,8 +356,8 @@ async function handleSubmit() {
           <el-form-item label="maxTokens">
             <el-input-number
               v-model="chatConfig.maxTokens"
-              :min="1"
-              :max="128000"
+              :min="MODEL_CONFIG_LIMITS.chat.maxTokens.min"
+              :max="MODEL_CONFIG_LIMITS.chat.maxTokens.max"
               :step="512"
               controls-position="right"
               style="width: 100%"
@@ -365,8 +366,8 @@ async function handleSubmit() {
           <el-form-item label="temperature">
             <el-input-number
               v-model="chatConfig.temperature"
-              :min="0"
-              :max="2"
+              :min="MODEL_CONFIG_LIMITS.chat.temperature.min"
+              :max="MODEL_CONFIG_LIMITS.chat.temperature.max"
               :step="0.1"
               :precision="1"
               controls-position="right"
@@ -413,8 +414,8 @@ async function handleSubmit() {
           <el-form-item label="向量维度 (dimension)">
             <el-input-number
               v-model="embedConfig.dimension"
-              :min="1"
-              :max="3072"
+              :min="MODEL_CONFIG_LIMITS.embedding.dimension.min"
+              :max="MODEL_CONFIG_LIMITS.embedding.dimension.max"
               :step="64"
               controls-position="right"
               style="width: 100%"
@@ -423,8 +424,8 @@ async function handleSubmit() {
           <el-form-item label="最大批量 (maxBatchSize)">
             <el-input-number
               v-model="embedConfig.maxBatchSize"
-              :min="1"
-              :max="10000"
+              :min="MODEL_CONFIG_LIMITS.embedding.maxBatchSize.min"
+              :max="MODEL_CONFIG_LIMITS.embedding.maxBatchSize.max"
               :step="128"
               controls-position="right"
               style="width: 100%"
@@ -447,8 +448,8 @@ async function handleSubmit() {
         <el-form-item label="最大批量 (maxBatchSize)">
           <el-input-number
             v-model="rerankConfig.maxBatchSize"
-            :min="1"
-            :max="10000"
+            :min="MODEL_CONFIG_LIMITS.rerank.maxBatchSize.min"
+            :max="MODEL_CONFIG_LIMITS.rerank.maxBatchSize.max"
             :step="16"
             controls-position="right"
             style="width: 100%"

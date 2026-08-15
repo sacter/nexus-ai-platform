@@ -272,6 +272,7 @@ function handleDelete(m: Model) {
     <!-- 分组渲染：Chat / Embedding / Rerank -->
     <template v-else>
       <div
+        class="mb-6"
         v-for="t in MODEL_TYPES"
         :key="t.value"
       >

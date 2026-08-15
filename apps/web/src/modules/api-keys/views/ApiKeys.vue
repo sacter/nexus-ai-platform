@@ -49,7 +49,7 @@ const form = ref<{
   baseUrl: string
   isActive: boolean
 }>({
-  provider: 'openai',
+  provider: 'deepseek',
   name: '',
   apiKey: '',
   model: '',
@@ -64,7 +64,7 @@ function openCreate() {
   dialogMode.value = 'create'
   editingId.value = ''
   form.value = {
-    provider: 'openai',
+    provider: 'deepseek',
     name: '',
     apiKey: '',
     model: '',
@@ -509,7 +509,7 @@ function handleDelete(id: string) {
           <el-form-item label="自定义端点（可选）">
             <el-input
               v-model="form.baseUrl"
-              placeholder="如 https://api.openai.com/v1（代理场景）"
+              placeholder="如 https://api.deepseek.com（代理场景）"
               maxlength="512"
             />
           </el-form-item>

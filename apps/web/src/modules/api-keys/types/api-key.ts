@@ -1,13 +1,6 @@
 /** Provider 可选值（与 api_keys.provider 列一致） */
-export const PROVIDERS = [
-  { label: 'OpenAI', value: 'openai' },
-  { label: 'DashScope', value: 'dashscope' },
-  { label: 'DeepSeek', value: 'deepseek' },
-  { label: 'BGE', value: 'bge' },
-  { label: 'Cohere', value: 'cohere' },
-  { label: 'Anthropic', value: 'anthropic' },
-] as const
-
+import { PROVIDERS as MODELS_PROVIDERS } from '@nexus/model-config'
+export const PROVIDERS = MODELS_PROVIDERS;
 export type ProviderId = (typeof PROVIDERS)[number]['value']
 
 /** API Key（列表返回，apiKey 为脱敏后的明文，如 sk-a****f3a2；字段名与后端 Prisma 返回一致，camelCase） */

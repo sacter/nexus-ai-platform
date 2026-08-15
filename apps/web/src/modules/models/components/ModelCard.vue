@@ -128,8 +128,16 @@ const credentialLabel = computed(() => {
     >{{ model.modelName }}</code>
     <p
       v-if="model.description"
-      class="mt-2 line-clamp-2 text-xs leading-relaxed"
-      style="color: var(--foreground); opacity: 0.5"
+      class="mt-2 text-xs leading-relaxed"
+      style="
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--foreground);
+        opacity: 0.5;
+      "
     >
       {{ model.description }}
     </p>
@@ -137,7 +145,7 @@ const credentialLabel = computed(() => {
     <!-- 能力徽章 -->
     <div
       v-if="badges.length"
-      class="mt-3 flex flex-wrap gap-1.5"
+      class="mt-3 flex flex-wrap gap-1.5 mb-3"
     >
       <el-tooltip
         v-for="b in badges"
@@ -157,9 +165,9 @@ const credentialLabel = computed(() => {
       </el-tooltip>
     </div>
 
-    <!-- 凭证 + 操作 -->
+    <!-- 凭证 + 操作：mt-auto 贴卡片底部（等高网格下永远置底） -->
     <div
-      class="mt-4 flex items-center justify-between gap-2 border-t pt-3"
+      class="mt-auto flex items-center justify-between gap-2 border-t pt-2"
       style="border-color: var(--border)"
     >
       <span
@@ -212,6 +220,13 @@ const credentialLabel = computed(() => {
 </template>
 
 <style scoped>
+/* 卡片 body 纵向 flex：内容不足时“凭证 + 操作”仍贴底 */
+:deep(.el-card__body) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 /* 操作按钮紧凑排列（覆盖 el-button 相邻 margin-left） */
 .ops-group :deep(.el-button + .el-button) {
   margin-left: 4px;

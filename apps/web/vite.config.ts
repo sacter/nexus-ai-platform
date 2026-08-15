@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      // 纯常量 workspace 包直接消费 TS 源（api 侧仍消费 dist）；避免 Rollup 对 CJS dist 的命名导出检测问题
+      '@nexus/model-config': resolve(__dirname, '../../packages/model-config/src/index.ts'),
     },
   },
   server: {
