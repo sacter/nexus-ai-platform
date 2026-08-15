@@ -308,21 +308,9 @@ function handleDelete(id: string) {
       :data="keyList"
     >
       <el-table-column
-        label="Provider"
-        width="120"
-      >
-        <template #default="{ row }">
-          <el-tag
-            size="small"
-            effect="plain"
-          >
-            {{ row.provider }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
         label="名称"
         min-width="160"
+        fixed
       >
         <template #default="{ row }">
           <span
@@ -346,6 +334,19 @@ function handleDelete(id: string) {
             class="text-xs"
             style="color: var(--foreground); opacity: 0.4"
           >—</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="Provider"
+        width="120"
+      >
+        <template #default="{ row }">
+          <el-tag
+            size="small"
+            effect="plain"
+          >
+            {{ row.provider }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -641,13 +642,14 @@ function handleDelete(id: string) {
 }
 .dialog-panes > .dialog-pane.pane-hidden {
   opacity: 0;
-  visibility: hidden;
+  display: none;
+  /* visibility: hidden; */
   pointer-events: none;
   transition: opacity 0.15s ease, visibility 0s linear 0.15s;
 }
 /* 结果面板补足高度：与创建模式表单高度（400px）一致，切换时容器零塌缩 */
 .dialog-panes > .dialog-pane:last-child {
-  min-height: 400px;
+  /* min-height: 400px; */
   display: flex;
   flex-direction: column;
   justify-content: center;

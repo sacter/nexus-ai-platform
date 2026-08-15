@@ -50,7 +50,7 @@ pnpm install
 ### 启动基础设施
 
 ```bash
-# 一键启动 PostgreSQL + Redis + MinIO
+# 一键启动 PostgreSQL + Redis + MinIO + Bge-reranker
 docker compose up -d
 
 # 停止
