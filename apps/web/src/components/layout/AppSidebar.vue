@@ -25,10 +25,10 @@ const navItems = [
   { href: '/workflows', label: 'Workflow', icon: Share },
   { href: '/models', label: '模型', icon: Coin },
   { href: '/tools', label: '工具', icon: Switch },
-  { href: '/jobs', label: 'Job', icon: Timer },
-  { href: '/settings', label: '设置', icon: Setting },
   { href: '/api-keys', label: 'API Key', icon: Key },
+  { href: '/jobs', label: 'Job', icon: Timer },
   { href: '/audit-logs', label: '审计', icon: Lock },
+  { href: '/settings', label: '设置', icon: Setting },
 ]
 
 const route = useRoute()
