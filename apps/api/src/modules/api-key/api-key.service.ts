@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
 import { PublicKeyService } from '../auth/public-key.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
@@ -77,6 +82,21 @@ export class ApiKeyService {
     return this.prisma.apiKey
       .delete({ where: { id } })
       .then((row) => this.toPublic(row));
+  }
+
+  /**
+   * ★ 服务端内部方法：解密凭证明文（仅服务端调用，不进 DTO/响应，禁止日志/下发前端）。
+   * 供 ModelCallerService 等进程内解密 api_key 后调用上游 LLM。
+   */
+  async decryptSecret(id: string): Promise<string> {
+    const row = await this.prisma.apiKey.findUnique({ where: { id } });
+    if (!row) throw new NotFoundException('API Key 不存在');
+    const aesKeyHex = process.env.AES_ENCRYPTION_KEY;
+    if (!aesKeyHex) throw new Error('AES_ENCRYPTION_KEY 未配置');
+    return this.publicKeyService.aesGcmDecrypt(
+      { cipherText: row.apiKey, nonce: row.nonce, tag: row.tag },
+      Buffer.from(aesKeyHex, 'hex'),
+    );
   }
 
   /**
