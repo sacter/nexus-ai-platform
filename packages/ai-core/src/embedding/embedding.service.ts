@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { ModelProviderService } from '../model-provider/model-provider.service.js';
-import { EmbeddingModelConfig } from '../model-provider/model-provider.js';
+import { EmbeddingConfigService } from './config.service.js';
+import { EmbeddingModelConfig } from './model-config.js';
 import { RedisService } from '@nexus/shared';
 import { EmbeddingProvider } from './providers/embedding-provider.interface.js';
 import { OllamaEmbeddingProvider } from './providers/ollama-embedding.provider.js';
@@ -23,12 +23,12 @@ export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
 
   constructor(
-    private readonly modelProvider: ModelProviderService,
+    private readonly configService: EmbeddingConfigService,
     private readonly redis: RedisService,
   ) {}
 
   private buildProvider(modelName?: string) {
-    const config = this.modelProvider.resolveEmbeddingConfig(modelName);
+    const config = this.configService.resolveEmbeddingConfig(modelName);
     const provider =
       config.provider === 'openai'
         ? new OpenAiEmbeddingProvider({

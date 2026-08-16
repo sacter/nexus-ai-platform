@@ -4,16 +4,16 @@ import {
   isEmbeddingProviderName,
   parseModelName,
   resolveKnownModel,
-} from './model-provider.js';
+} from './model-config.js';
 
 /**
- * 模型提供解析服务
+ * Embedding 模型配置解析服务
  *
  * 解析优先级：传入 modelName（KB.embedding_model）→ 环境默认
  * provider baseUrl/apiKey 从环境变量读取。
  */
 @Injectable()
-export class ModelProviderService {
+export class EmbeddingConfigService {
   resolveEmbeddingConfig(modelName?: string): EmbeddingModelConfig {
     const effectiveModel =
       modelName?.trim() || process.env.EMBEDDING_DEFAULT_MODEL || 'bge-m3';

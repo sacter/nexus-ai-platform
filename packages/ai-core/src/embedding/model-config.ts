@@ -3,7 +3,7 @@
  *
  * 集中管理 Embedding 模型 → Provider 的注册表与解析规则。
  * 任何模块（Worker 索引 / 客户提问 Embedding / 检索）都通过
- * ModelProviderService 获取模型配置，禁止各自硬编码模型名。
+ * EmbeddingConfigService 获取模型配置，禁止各自硬编码模型名。
  */
 export type EmbeddingProviderName = 'ollama' | 'openai';
 

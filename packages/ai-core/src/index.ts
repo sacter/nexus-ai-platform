@@ -11,15 +11,14 @@ export type { OllamaEmbeddingConfig } from './embedding/providers/ollama-embeddi
 export { OpenAiEmbeddingProvider } from './embedding/providers/openai-embedding.provider.js';
 export type { OpenAiEmbeddingConfig } from './embedding/providers/openai-embedding.provider.js';
 
-// Model Provider
+// Embedding 模型配置解析
 export {
   isEmbeddingProviderName,
   parseModelName,
   resolveKnownModel,
-} from './model-provider/model-provider.js';
+} from './embedding/model-config.js';
 export type {
   EmbeddingProviderName,
   EmbeddingModelConfig,
-} from './model-provider/model-provider.js';
-export { ModelProviderService } from './model-provider/model-provider.service.js';
-export { ModelProviderModule } from './model-provider/model-provider.module.js';
+} from './embedding/model-config.js';
+export { EmbeddingConfigService } from './embedding/config.service.js';

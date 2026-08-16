@@ -5,7 +5,6 @@ import { resolve } from 'path';
 import { PrismaModule } from '@nexus/database';
 import { MinioModule } from '@nexus/shared';
 import { RedisModule } from '@nexus/shared';
-import { ModelProviderModule } from '@nexus/ai-core';
 import { EmbeddingModule } from '@nexus/ai-core';
 import { WorkerModule } from './worker/worker.module';
 import { QUEUE_NAMES } from '@nexus/shared';
@@ -48,7 +47,6 @@ import { QUEUE_NAMES } from '@nexus/shared';
     PrismaModule,
     MinioModule,
     RedisModule,
-    ModelProviderModule,
     EmbeddingModule,
     WorkerModule,
   ],

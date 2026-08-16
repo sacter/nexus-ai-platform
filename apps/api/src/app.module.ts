@@ -8,7 +8,6 @@ import { PrismaModule } from '@nexus/database';
 import { MinioModule } from '@nexus/shared';
 import { EventBusModule } from './infrastructure/event-bus/event-bus.module';
 import { RedisModule } from '@nexus/shared';
-import { ModelProviderModule } from '@nexus/ai-core';
 import { EmbeddingModule } from '@nexus/ai-core';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -57,7 +56,6 @@ import { QUEUE_NAMES } from '@nexus/shared';
     MinioModule,
     EventBusModule,
     RedisModule,
-    ModelProviderModule,
     EmbeddingModule,
     UserModule,
     AuthModule,

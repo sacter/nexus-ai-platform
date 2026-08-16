@@ -9,7 +9,7 @@ import type { Loader } from './loaders/loader.interface';
 import type { TextSplitterPort } from './splitters/splitter.interface';
 import type { DocumentParser } from './parsers/parser.interface';
 import { QUEUE_NAMES } from '@nexus/shared';
-import { ModelProviderService } from '@nexus/ai-core';
+import { EmbeddingConfigService } from '@nexus/ai-core';
 
 export interface IndexRunResult {
   chunkIds: string[];
@@ -50,7 +50,7 @@ export class IndexPipeline {
     @Inject('TEXT_SPLITTER') private readonly splitter: TextSplitterPort,
     @Inject('TEXT_PARSER') private readonly parser: DocumentParser,
     @InjectQueue(QUEUE_NAMES.EMBEDDING) private readonly embeddingQueue: Queue,
-    private readonly modelProvider: ModelProviderService,
+    private readonly configService: EmbeddingConfigService,
   ) {}
 
   async run(
@@ -151,7 +151,7 @@ export class IndexPipeline {
       });
       const modelName = kb?.embeddingModel || undefined;
       const { dimension } =
-        this.modelProvider.resolveEmbeddingConfig(modelName);
+        this.configService.resolveEmbeddingConfig(modelName);
 
       await this.embeddingQueue.add('embed-chunks', {
         documentId,
