@@ -22,3 +22,23 @@ export type {
   EmbeddingModelConfig,
 } from './embedding/model-config.js';
 export { EmbeddingConfigService } from './embedding/config.service.js';
+
+// Chat Provider 协议抽象
+export type {
+  ChatRole,
+  ChatMessage,
+  ChatProtocol,
+  ChatRequest,
+  ChatChunk,
+  ChatProvider,
+} from './chat-provider/index.js';
+export {
+  OpenAiCompatibleChatClient,
+  OllamaNativeChatClient,
+  createChatProvider,
+} from './chat-provider/index.js';
+export type {
+  OpenAiCompatibleChatConfig,
+  OllamaNativeChatConfig,
+  ChatProviderOptions,
+} from './chat-provider/index.js';

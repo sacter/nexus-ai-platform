@@ -12,7 +12,19 @@
   },
   "scripts": {
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
-    "build": "nest build"
+    "build": "nest build",
+    "test": "jest"
+  },
+  "jest": {
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "testEnvironment": "node"
   },
   "dependencies": {
     "@nexus/shared": "workspace:*"
