@@ -45,4 +45,27 @@ describe('FetchSseChatTransport', () => {
     expect(events).toHaveLength(1)
     expect(events[0].type).toBe('error')
   })
+
+  it('reassembles an event split across multiple read chunks', async () => {
+    // 同一事件的 data 行被切到两个 chunk（边界落在 JSON 中间），验证 buffer 重组
+    const chunks = [
+      'data: {"type":"step","data":{"step":"retr',
+      'ieval","message":"检索中"}}\n\n',
+      'data: {"type":"done","data":{"messageId":"m9"}}\n\n',
+    ]
+    const fakeFetch = (() => Promise.resolve({
+      ok: true,
+      body: sseBody(chunks),
+    } as unknown as Response)) as unknown as typeof fetch
+
+    const transport = new FetchSseChatTransport(
+      { baseUrl: 'http://x', getToken: () => null },
+      fakeFetch,
+    )
+    const events = []
+    for await (const ev of transport.stream({ sessionId: 's1', content: 'hi' })) events.push(ev)
+    expect(events.map(e => e.type)).toEqual(['step', 'done'])
+    expect((events[0].data as any).step).toBe('retrieval')
+    expect((events[1].data as any).messageId).toBe('m9')
+  })
 })

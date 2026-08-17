@@ -29,6 +29,7 @@ export class MockSseChatTransport implements ChatTransport {
       await sleep(stepDelay, signal)
       if (aborted()) return
       yield { type: 'citations', data: CITATIONS }
+      if (aborted()) return // 防止 Stop 后短暂闪过 generating 阶段
       yield { type: 'step', data: { step: 'generating', message: '正在生成回答…' } }
       const parts = ANSWER.match(/[\s\S]{1,18}/g) ?? [ANSWER]
       for (const p of parts) {
@@ -46,7 +47,8 @@ export class MockSseChatTransport implements ChatTransport {
         },
       }
     } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') return
+      // 重抛 AbortError，让 useChatStream 的 abort catch-branch 在 mock 模式下生效
+      if (e instanceof DOMException && e.name === 'AbortError') throw e
       yield { type: 'error', data: { message: 'mock 错误' } }
     }
   }

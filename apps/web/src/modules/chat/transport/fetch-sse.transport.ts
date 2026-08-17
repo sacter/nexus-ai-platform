@@ -54,12 +54,15 @@ export class FetchSseChatTransport implements ChatTransport {
           try {
             yield JSON.parse(dataStr) as ChatStreamEvent
           } catch {
-            // 跳过格式异常的事件
+            // 跳过格式异常的事件，但留下诊断日志
+            console.warn('[fetch-sse] malformed SSE event skipped:', dataStr)
           }
         }
       }
     } finally {
-      reader.releaseLock()
+      // cancel（非 releaseLock）真正中止底层流，避免 abort 后 TCP 泄漏；
+      // 流可能已关闭/errored，cancel 自身的拒绝不可掩盖原始异常
+      try { await reader.cancel() } catch { /* already closed/errored */ }
     }
   }
 }
