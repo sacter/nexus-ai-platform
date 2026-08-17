@@ -19,13 +19,15 @@ const { messages, phase, isStreaming, error, send, stop, sendFeedback } = useCha
 
 const threadRef = ref<HTMLElement | null>(null)
 const showScrollBtn = ref(false)
+const isNearBottom = ref(true)
 
 const isEmpty = computed(() => !isStreaming.value && messages.value.length === 0)
 
 async function scrollToBottom() {
   await nextTick()
   const el = threadRef.value
-  if (el) el.scrollTop = el.scrollHeight
+  // 仅当用户贴底时自动滚动；用户上滑查阅时不打断（避免流式增量把视图拽回底部）
+  if (el && isNearBottom.value) el.scrollTop = el.scrollHeight
 }
 
 watch(() => messages.value.length, scrollToBottom)
@@ -38,7 +40,9 @@ watch(
 function onScroll() {
   const el = threadRef.value
   if (!el) return
-  showScrollBtn.value = el.scrollTop + el.clientHeight < el.scrollHeight - 80
+  const near = el.scrollTop + el.clientHeight >= el.scrollHeight - 80
+  isNearBottom.value = near
+  showScrollBtn.value = !near
 }
 
 function onSelect(id: string) { router.push(`/chat/${id}`) }
@@ -51,7 +55,7 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
   <div class="flex h-full -m-6">
     <ChatSessionList :active-id="sessionId" @select="onSelect" @new="onNew" />
 
-    <section class="flex flex-1 flex-col">
+    <section class="relative flex flex-1 flex-col">
       <header
         class="flex items-center justify-between border-b px-4 py-3"
         :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
@@ -62,13 +66,15 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
       </header>
 
       <div ref="threadRef" class="relative flex-1 overflow-y-auto px-4 py-4" @scroll="onScroll">
+        <div v-if="error" class="my-2 rounded-lg px-3 py-2 text-sm text-red-500" style="background: var(--accent-soft)">
+          {{ error }}
+          <button v-if="messages.length >= 2" class="underline" @click="send(messages[messages.length-2]?.content ?? '')">重试</button>
+        </div>
+
         <ChatEmptyState v-if="isEmpty" @suggest="onSuggest" />
 
         <template v-else>
           <ChatStreamStatus :phase="phase" />
-          <div v-if="error" class="my-2 rounded-lg px-3 py-2 text-sm text-red-500" style="background: var(--accent-soft)">
-            {{ error }} <button class="underline" @click="send(messages[messages.length-2]?.content ?? '')">重试</button>
-          </div>
           <TransitionGroup name="msg" tag="div">
             <ChatMessage
               v-for="m in messages"
