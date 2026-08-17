@@ -71,8 +71,16 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     (data) => {
       // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容（spec §3.4，避免清空刚生成内容）
       if (!isStreaming.value && data && data.length) {
-        messages.value = data.map((m) => ({ ...m }))
-        streamingMessage.value = null
+        // done 后历史失效会回流与当前一致的线程；长度+末条 id 相同时跳过替换，
+        // 避免 TransitionGroup 因对象引用全换而重放进入动画（用户气泡 tempId→id 闪动）
+        const cur = messages.value
+        const sameShape = cur.length === data.length
+          && cur.length > 0
+          && cur[cur.length - 1].id === data[data.length - 1].id
+        if (!sameShape) {
+          messages.value = data.map((m) => ({ ...m }))
+          streamingMessage.value = null
+        }
       }
     },
     { immediate: true },
@@ -89,6 +97,16 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     const text = content.trim()
     if (!text || isStreaming.value) return
     error.value = null
+    // 重试清理：末尾若是失败/中断的助手占位（streaming 关、phase error/aborted），
+    // 连同其前导用户消息一并移除，避免重试时重复堆叠用户气泡与残留错误占位
+    {
+      const arr = messages.value
+      const last = arr[arr.length - 1]
+      if (last && last.role === 'assistant' && last.streaming === false && (last.phase === 'error' || last.phase === 'aborted')) {
+        const prev = arr[arr.length - 2]
+        messages.value = prev && prev.role === 'user' ? arr.slice(0, -2) : arr.slice(0, -1)
+      }
+    }
     let sid = toValue(sessionId)
     if (sid === 'new') {
       phase.value = 'pendingCreate'
