@@ -13,11 +13,12 @@ const emit = defineEmits<{
 const isUser = computed(() => props.message.role === 'user')
 const html = computed(() => (isUser.value ? '' : renderMarkdown(props.message.content)))
 const showCursor = computed(() => !!props.message.streaming)
-const showTokens = computed(() => props.message.totalTokens != null)
+const showTokens = computed(() => props.message.totalTokens != null && props.message.promptTokens != null && props.message.completionTokens != null)
 const { copy, copied } = useClipboard()
 
 function onCopy() {
-  copy(props.message.content)
+  // copy 返回 Promise；吞掉拒绝避免未处理 rejection（如剪贴板权限被拒）
+  copy(props.message.content).catch(() => {})
 }
 function onFeedback(action: 'like' | 'dislike') {
   if (props.message.id) emit('feedback', props.message.id, action)
@@ -50,7 +51,7 @@ function onFeedback(action: 'like' | 'dislike') {
         />
       </div>
 
-      <CitationsCard v-if="!isUser && message.citations?.length" :citations="message.citations!" />
+      <CitationsCard v-if="!isUser && message.citations?.length" :citations="message.citations ?? []" />
 
       <!-- 页脚：反馈 / 复制 / token（仅 assistant 且 done） -->
       <div
@@ -65,6 +66,7 @@ function onFeedback(action: 'like' | 'dislike') {
           @click="onFeedback('like')"
         >👍</button>
         <button
+          data-testid="feedback-dislike"
           class="opacity-60 transition-opacity hover:opacity-100"
           :class="message.feedback === 'dislike' ? 'opacity-100' : ''"
           @click="onFeedback('dislike')"

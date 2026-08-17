@@ -38,4 +38,30 @@ describe('ChatMessage', () => {
     })
     expect(wrapper.text()).toContain('1 条来源')
   })
+
+  it('does not render token footer when only totalTokens is set (no undefined)', () => {
+    // showTokens 守卫三个字段；仅 totalTokens 时整段不渲染，避免 undefined/undefined/123
+    const wrapper = mount(ChatMessage, { props: { message: { ...base, totalTokens: 123 } } })
+    expect(wrapper.html()).not.toContain('undefined')
+  })
+
+  it('renders token footer when all token fields set', () => {
+    const wrapper = mount(ChatMessage, {
+      props: { message: { ...base, promptTokens: 1, completionTokens: 2, totalTokens: 3 } },
+    })
+    expect(wrapper.html()).toContain('1/2/3')
+  })
+
+  it('emits dislike on dislike-button click', async () => {
+    const wrapper = mount(ChatMessage, { props: { message: { ...base, id: 'm1' } } })
+    await wrapper.find('[data-testid="feedback-dislike"]').trigger('click')
+    expect(wrapper.emitted('feedback')?.[0]).toEqual(['m1', 'dislike'])
+  })
+
+  it('strips script tags from assistant markdown (XSS contract)', () => {
+    const wrapper = mount(ChatMessage, {
+      props: { message: { ...base, content: '<script>alert(1)</script>text' } },
+    })
+    expect(wrapper.html()).not.toContain('<script')
+  })
 })

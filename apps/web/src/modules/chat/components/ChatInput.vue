@@ -64,6 +64,7 @@ onMounted(() => autosize())
     />
     <button
       v-if="!streaming"
+      aria-label="发送"
       class="flex h-9 w-9 items-center justify-center rounded-lg text-white transition-opacity disabled:opacity-40"
       :style="{ backgroundColor: 'var(--accent)' }"
       :disabled="!content.trim()"
@@ -74,6 +75,7 @@ onMounted(() => autosize())
     <button
       v-else
       data-testid="stop-btn"
+      aria-label="停止"
       class="flex h-9 w-9 items-center justify-center rounded-lg"
       :style="{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }"
       @click="emit('stop')"

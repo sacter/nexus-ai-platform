@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import type { Citation } from '../types/chat'
 
-const props = defineProps<{ citations: Citation[] }>()
+defineProps<{ citations: Citation[] }>()
 const expanded = ref(false)
 </script>
 
@@ -11,6 +11,7 @@ const expanded = ref(false)
     <button
       data-testid="citations-toggle"
       type="button"
+      :aria-expanded="expanded"
       class="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-colors"
       :style="{
         backgroundColor: expanded ? 'var(--accent-soft)' : 'var(--surface-secondary)',
