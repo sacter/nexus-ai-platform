@@ -1,0 +1,41 @@
+import { describe, it, expect } from 'vitest'
+import { mount } from '@vue/test-utils'
+import ChatMessage from '../components/ChatMessage.vue'
+import type { ChatMessage as ChatMessageType } from '../types/chat'
+
+const base: ChatMessageType = {
+  tempId: 't1', sessionId: 's1', role: 'assistant',
+  content: '# Title\n\nsome **bold**', citations: [], streaming: false, phase: 'done',
+}
+
+describe('ChatMessage', () => {
+  it('renders markdown for assistant', () => {
+    const wrapper = mount(ChatMessage, { props: { message: base } })
+    expect(wrapper.html()).toContain('<h1>Title</h1>')
+    expect(wrapper.html()).toContain('<strong>bold</strong>')
+  })
+
+  it('renders plain text for user', () => {
+    const wrapper = mount(ChatMessage, { props: { message: { ...base, role: 'user', content: '<b>not html</b>' } } })
+    expect(wrapper.html()).not.toContain('<b>not html</b>')
+    expect(wrapper.text()).toContain('<b>not html</b>')
+  })
+
+  it('shows streaming cursor when streaming', () => {
+    const wrapper = mount(ChatMessage, { props: { message: { ...base, streaming: true, content: 'partial' } } })
+    expect(wrapper.find('[data-testid="stream-cursor"]').exists()).toBe(true)
+  })
+
+  it('emits feedback action on click', async () => {
+    const wrapper = mount(ChatMessage, { props: { message: { ...base, id: 'm1' } } })
+    await wrapper.find('[data-testid="feedback-like"]').trigger('click')
+    expect(wrapper.emitted('feedback')?.[0]).toEqual(['m1', 'like'])
+  })
+
+  it('renders citations card when citations present', () => {
+    const wrapper = mount(ChatMessage, {
+      props: { message: { ...base, citations: [{ documentName: 'a.pdf', page: 1, score: 0.9 }] } },
+    })
+    expect(wrapper.text()).toContain('1 条来源')
+  })
+})
