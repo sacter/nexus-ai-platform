@@ -117,7 +117,7 @@ export interface ChatRequest {
   /** 生成控制，来自 models.config（data-driven） */
   temperature?: number;
   maxTokens?: number;
-  /** ★ 每个模型 config 不同 → 从 models.config 读出后透传，接口不枚举 */
+  /** ★ 模型/厂商特有扩展参数（透传）：由【调用方】在调用时传入（如 DeepSeek enable_thinking），不存 DB、接口不枚举。DB 只存大众化参数（temperature/maxTokens） */
   vendorParams?: Record<string, unknown>;
 }
 
@@ -150,7 +150,7 @@ export interface ChatProvider {
 
 - **默认协议 = openai-compatible**：`baseUrl`（DashScope 兼容端点 / DeepSeek / Kimi 等）、`apiKey`、`model`、参数全部来自 DB，client 不感知厂商。
 - **可拓展性**：换厂商/换模型 = 改 DB 数据，不改代码；只有协议真不同才新增 client。
-- **参数面**：通用参数（temperature/maxTokens）+ `vendorParams` 透传（回答"每个模型参数不同"）。
+- **参数面**：通用参数（temperature/maxTokens，来自 DB）+ `vendorParams` 透传（调用方在调用时传入，回答"每个模型参数不同"）。
 
 #### 设计决策：参数面（入参 → 消费者）
 
@@ -162,13 +162,33 @@ export interface ChatProvider {
 | `stream: false`（默认） | Summary / 反思自查 / AI 应用 test / Workflow LLM 节点 | 只要整段结果 |
 | `signal` | Chat | 客户端断开立即中断，省 token |
 | `temperature` / `maxTokens` | Chat、Workflow LLM 节点 | 来自 models.config |
-| `vendorParams` | 任意带模型特有参数的场景 | 每个模型参数不同，透传不写死 |
+| `vendorParams` | 任意带模型特有参数的场景 | 每个模型参数不同，由调用方在调用时传入 |
 | `messages` | 所有 | 对话本身 |
 
 **要点：**
 - **不建两条平行路径**——`stream()` 是唯一实现，`complete()` 只做聚合。换入参，不换代码路径。
 - **协议归一化在 client 内部**——上层永远只填统一 `ChatRequest`；openai-compatible（`temperature`/`max_tokens`）与 ollama-native（`options.temperature`）的字段差异由各自 client 消化。
 - **YAGNI**——`responseFormat: json` 目前无消费者，不预先加进接口；等 V3 工具调用 / V5 实体抽取真需要时再加。
+
+#### 设计决策：模型扩展参数（vendorParams）由调用方传入，DB 只存大众化参数
+
+DeepSeek `enable_thinking` 这类"模型特有、各厂商不同"的开关，**不落 DB**（`models.config` 只存大众化参数 maxTokens/temperature 等）。它由**调用方在调用 chat-provider 时传入**，链路：
+
+```
+调用方（ChatService / Workflow LLM 节点 / AI App test）   ← ① 自带特殊参数 { enable_thinking: false }
+   │  （来自会话/应用/节点配置，不是模型注册表数据）
+   ▼
+model-caller.resolveChatModel(modelId)                   ← ② 从 DB 解析大众化配置 { baseUrl, apiKey, model, temperature, maxTokens }
+   ▼
+client.stream({ ...通用配置, vendorParams: 调用方参数 })   ← ③ 调用方特殊参数 + DB 通用参数合并
+   ▼
+POST {baseUrl}/chat/completions body                     ← ④ DeepSeek 收到 enable_thinking=false，关闭思考模式
+```
+
+设计要点：
+- **DB 的 `models.config` 保持大众化、通用**——不预留各模型特殊配置位，避免模型中心被各家私有参数污染。
+- 特殊参数由使用方在**调用点**决定（会话/应用/工作流节点各有一套），模型注册表不背这个包袱。
+- `ChatRequest.vendorParams` 是**调用方传入**的透传桶；通用参数（maxTokens/temperature）走类型字段。
 
 **Task 1.2：OpenAI 兼容协议 client（默认）**
 
@@ -177,7 +197,7 @@ export interface ChatProvider {
 实现要点：
 - 用原生 `fetch`（Node 18+）调 `{baseUrl}/chat/completions`，`stream: true` 时解析 SSE `data: {...}` 行，遇到 `[DONE]` 结束。
 - 构造时接收 `{ baseUrl, apiKey }`；`baseUrl` 来自 DB（`models.api_key.base_url`），**不写死 `api.openai.com`**——它是"OpenAI 兼容"协议的实现，不是"OpenAI 厂商"的实现。
-- `vendorParams` 直接透传到请求体（每个模型特有参数）。
+- `vendorParams` 展开进请求体：`{ ...req.vendorParams, model, messages, temperature, max_tokens }`（先展开 vendorParams，显式字段覆盖，避免模型特有参数冲掉通用参数）。
 - `complete()` 复用 `stream()`，把增量拼接后返回（DRY）。
 
 **Task 1.3：Ollama 原生协议 client（可选，按需再建）**
@@ -217,8 +237,8 @@ export function createChatProvider(opts: ChatProviderOptions): ChatProvider {
 > 放置原则：DB 查询（models/api_keys）、密钥解密、参数组装属于 API 进程职责，放 api；ai-core 只提供纯协议 client。
 
 - Modify: `apps/api/src/modules/api-key/api-key.service.ts` —— 暴露服务端内部方法 `decryptSecret(id): Promise<string>`（用现有 nonce/tag AEAD 逆过程），并注明「仅服务端调用，不进 DTO/响应」。
-- Create: `apps/api/src/modules/model/model-caller.service.ts` —— `resolveChatModel(modelId: string): Promise<{ client: ChatProvider; modelName: string }>`：查 `models`（type=chat）→ 取其 `apiKeyId` → `decryptSecret` → 从 `models.config` 读 `temperature/maxTokens/vendorParams` → `createChatProvider({ protocol, baseUrl, apiKey })`。`protocol` 由 `models.provider` 映射（默认 openai-compatible）。
-- Create: `apps/api/src/modules/model/model-caller.service.spec.ts`（mock Prisma + ApiKeyService）。
+- Create: `apps/api/src/modules/model/model-caller.service.ts` —— `resolveChatModel(modelId: string): Promise<{ client: ChatProvider; modelName: string; baseConfig: { temperature?: number; maxTokens?: number } }>`：查 `models`（type=chat）→ 取其 `apiKeyId` → `decryptSecret` → 从 `models.config` 拆出大众化参数 `maxTokens/temperature` → `createChatProvider({ protocol, baseUrl, apiKey })`。`protocol` 由 `models.provider` 映射（默认 openai-compatible）。**不含 vendorParams——特殊参数由调用方在调用时传入**。
+- Create: `apps/api/src/modules/model/model-caller.service.spec.ts`（mock Prisma + ApiKeyService，断言大众化参数解析正确、vendorParams 不在返回里）。
 - Commit：`feat(api): 模型→凭证→协议参数解析链`
 
 **P1 验收**：`@nexus/ai-core` 能按 openai-compatible 协议流式/非流式调用（baseUrl/apiKey/参数全部由 DB 提供，代码零厂商写死）；API 进程能凭 modelId 组装出可用的 ChatProvider + 完整请求参数。

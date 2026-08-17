@@ -20,6 +20,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { ModelModule } from './modules/model/model.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 import { QUEUE_NAMES } from '@nexus/shared';
 
@@ -68,6 +69,7 @@ import { QUEUE_NAMES } from '@nexus/shared';
     RetrievalModule,
     ApiKeyModule,
     ModelModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
