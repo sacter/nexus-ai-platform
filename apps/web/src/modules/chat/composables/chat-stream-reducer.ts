@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatStreamEvent, Citation, MessagePhase } from '../types/chat'
+import type { ChatMessage, ChatStreamEvent, MessagePhase } from '../types/chat'
 
 export interface ReduceState {
   message: ChatMessage
@@ -11,7 +11,7 @@ export function applyStreamEvent(prev: ReduceState, ev: ChatStreamEvent): Reduce
 
   switch (ev.type) {
     case 'step': {
-      const step = (ev.data as { step?: string }).step
+      const step = ev.data.step
       if (step === 'retrieval') phase = 'retrieving'
       else if (step === 'reranking') phase = 'reranking'
       else if (step === 'generating') phase = 'generating'
@@ -19,21 +19,17 @@ export function applyStreamEvent(prev: ReduceState, ev: ChatStreamEvent): Reduce
       break
     }
     case 'citations':
-      message.citations = ev.data as Citation[]
+      message.citations = ev.data
       break
     case 'delta': {
       phase = 'generating'
       message.phase = 'generating'
-      const delta = (ev.data as { content?: string }).content ?? ''
+      const delta = ev.data.content
       message.content = (message.content ?? '') + delta
       break
     }
     case 'done': {
-      const d = ev.data as {
-        messageId?: string
-        usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number }
-        citations?: Citation[]
-      }
+      const d = ev.data
       phase = 'done'
       message.streaming = false
       message.phase = 'done'
@@ -47,7 +43,7 @@ export function applyStreamEvent(prev: ReduceState, ev: ChatStreamEvent): Reduce
       break
     }
     case 'error': {
-      const e = ev.data as { message?: string }
+      const e = ev.data
       phase = 'error'
       message.streaming = false
       message.phase = 'error'

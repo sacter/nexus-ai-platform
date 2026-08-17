@@ -16,15 +16,12 @@ export interface Citation {
   score?: number
 }
 
-export interface ChatStreamEvent {
-  type: 'step' | 'citations' | 'delta' | 'done' | 'error'
-  data:
-    | { step: 'retrieval' | 'reranking' | 'generating'; message?: string }
-    | Citation[]
-    | { content: string }
-    | { messageId: string; usage?: TokenUsage; citations?: Citation[] }
-    | { code?: string; message: string }
-}
+export type ChatStreamEvent =
+  | { type: 'step'; data: { step: 'retrieval' | 'reranking' | 'generating'; message?: string } }
+  | { type: 'citations'; data: Citation[] }
+  | { type: 'delta'; data: { content: string } }
+  | { type: 'done'; data: { messageId: string; usage?: TokenUsage; citations?: Citation[] } }
+  | { type: 'error'; data: { code?: string; message: string } }
 
 export interface ChatMessage {
   id?: string

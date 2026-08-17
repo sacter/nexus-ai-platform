@@ -47,4 +47,11 @@ describe('applyStreamEvent', () => {
     expect(s.message.streaming).toBe(false)
     expect(s.message.error).toBe('boom')
   })
+
+  it('does not mutate the input state', () => {
+    const before = base()
+    applyStreamEvent(before, { type: 'delta', data: { content: 'x' } })
+    expect(before.message.content).toBe('')
+    expect(before.phase).toBe('retrieving')
+  })
 })
