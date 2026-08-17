@@ -5,7 +5,7 @@ import { chatApi } from '@/modules/chat/api/chat.api'
 import { applyStreamEvent } from './chat-stream-reducer'
 import { FetchSseChatTransport } from '../transport/fetch-sse.transport'
 import { MockSseChatTransport } from '../transport/mock-sse.transport'
-import type { ChatMessage, ChatStreamEvent } from '../types/chat'
+import type { ChatMessage, ChatStreamEvent, MessagePhase } from '../types/chat'
 import type { ChatTransport, ChatStreamRequest } from '../transport/chat-transport'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
@@ -23,7 +23,7 @@ export function useChatMessages(sessionId: MaybeRef<string>) {
   return useQuery({
     // 传 ref（非 toValue 快照）让 vue-query 跟踪并按解包值 hash；done 失效 ['chat-messages', sid] 可命中
     queryKey: ['chat-messages', sessionId],
-    queryFn: () => chatApi.getMessages(toValue(sessionId) as string),
+    queryFn: () => chatApi.getMessages(toValue(sessionId)),
     enabled: () => !!toValue(sessionId) && toValue(sessionId) !== 'new',
   })
 }
@@ -42,7 +42,7 @@ export function useSendMessage() {
 export interface ChatStreamHandle {
   messages: Ref<ChatMessage[]>
   streamingMessage: Ref<ChatMessage | null>
-  phase: Ref<string>
+  phase: Ref<MessagePhase>
   isStreaming: Ref<boolean>
   error: Ref<string | null>
   send: (content: string) => Promise<void>
@@ -58,7 +58,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   const history = useChatMessages(sessionId)
   const messages = ref<ChatMessage[]>([]) as Ref<ChatMessage[]>
   const streamingMessage = ref<ChatMessage | null>(null)
-  const phase = ref<string>('idle')
+  const phase = ref<MessagePhase>('idle')
   const error = ref<string | null>(null)
   const isStreaming = computed(
     () => phase.value === 'pendingCreate' || phase.value === 'retrieving' || phase.value === 'reranking' || phase.value === 'generating',
@@ -70,8 +70,8 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     () => history.data.value,
     (data) => {
       // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容（spec §3.4，避免清空刚生成内容）
-      if (!isStreaming.value && data && (data as ChatMessage[]).length) {
-        messages.value = (data as ChatMessage[]).map((m) => ({ ...m }))
+      if (!isStreaming.value && data && data.length) {
+        messages.value = data.map((m) => ({ ...m }))
         streamingMessage.value = null
       }
     },
@@ -105,7 +105,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询（避免路由尚未更新时命中 'new'）
     const handleEvent = (ev: ChatStreamEvent) => {
       if (!streamingMessage.value) return
-      const state = applyStreamEvent({ message: streamingMessage.value, phase: phase.value as any }, ev)
+      const state = applyStreamEvent({ message: streamingMessage.value, phase: phase.value }, ev)
       phase.value = state.phase
       streamingMessage.value = state.message
       syncLast(state.message)
