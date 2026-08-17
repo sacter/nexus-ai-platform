@@ -58,15 +58,15 @@ const { data: sessions, isLoading } = useChatSessions()
       >
         <button
           v-for="s in sessions"
-          :key="(s as Record<string,string>).id"
+          :key="s.id"
           class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left w-full transition-colors"
-          :class="(s as Record<string,string>).id === activeId ? 'bg-accent/10 text-accent' : 'text-foreground/60 hover:bg-surface-secondary'"
-          @click="emit('select', (s as Record<string,string>).id)"
+          :class="s.id === activeId ? 'bg-accent/10 text-accent' : 'text-foreground/60 hover:bg-surface-secondary'"
+          @click="emit('select', s.id)"
         >
           <el-icon :size="14">
             <ChatDotRound />
           </el-icon>
-          <span class="truncate">{{ (s as Record<string,string>).title || '对话' }}</span>
+          <span class="truncate">{{ s.title || '对话' }}</span>
         </button>
       </div>
       <el-empty
