@@ -15,7 +15,7 @@ const sessions = computed(() => data.value ?? [])
 </script>
 
 <template>
-  <aside class="flex h-full w-[260px] flex-col border-r" :style="{ borderColor: 'var(--border)' }">
+  <aside class="flex h-full w-[260px] flex-col border-r" :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-secondary)' }">
     <div class="p-3">
       <el-button type="primary" class="w-full" :icon="Plus" @click="emit('new')">新会话</el-button>
     </div>
@@ -33,10 +33,8 @@ const sessions = computed(() => data.value ?? [])
         <li
           v-for="s in sessions"
           :key="s.id"
-          class="group cursor-pointer rounded-lg px-3 py-2 transition-colors"
-          :style="s.id === activeId
-            ? { backgroundColor: 'var(--accent-soft)' }
-            : {}"
+          class="session-item cursor-pointer rounded-lg px-3 py-2"
+          :class="{ active: s.id === activeId }"
           @click="emit('select', s.id)"
         >
           <div class="flex items-center justify-between gap-2">
@@ -52,3 +50,18 @@ const sessions = computed(() => data.value ?? [])
     </div>
   </aside>
 </template>
+
+<style scoped>
+.session-item {
+  transition: background-color var(--dur-fast) ease,
+              box-shadow var(--dur-fast) ease;
+}
+.session-item:hover {
+  background-color: color-mix(in oklch, var(--accent) 5%, transparent);
+}
+/* active: accent-soft 底 + 左侧 2px accent 指示条 */
+.session-item.active {
+  background-color: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+</style>
