@@ -10,14 +10,13 @@ function onSuggest() { onNew() }
 </script>
 
 <template>
-  <div class="flex h-full -m-6">
+  <div
+    class="chat-island flex h-full min-h-[480px] overflow-hidden rounded-xl border"
+    :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
+  >
     <ChatSessionList @select="onSelect" @new="onNew" />
-    <section class="flex flex-1 items-center justify-center">
-      <ChatEmptyState
-        title="开始一个新的对话"
-        :suggestions="['新建会话', '查看历史对话', '了解知识库内容']"
-        @suggest="onSuggest"
-      />
+    <section class="flex min-w-0 flex-1 items-center justify-center">
+      <ChatEmptyState title="开始一个新的对话" @suggest="onSuggest" />
     </section>
   </div>
 </template>
