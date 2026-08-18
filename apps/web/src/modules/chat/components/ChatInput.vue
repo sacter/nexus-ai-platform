@@ -44,43 +44,57 @@ onMounted(() => autosize())
 
 <template>
   <div
-    class="flex items-end gap-2 border-t p-3"
+    class="border-t p-3"
     :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
   >
-    <textarea
-      ref="textareaRef"
-      v-model="content"
-      rows="1"
-      placeholder="输入问题，Enter 发送，Shift+Enter 换行"
-      class="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-      :style="{
-        backgroundColor: 'var(--surface-secondary)',
-        color: 'var(--foreground)',
-        border: '1px solid var(--border)',
-      }"
-      :disabled="streaming"
-      @input="onInput"
-      @keydown="onEnter"
-    />
-    <button
-      v-if="!streaming"
-      aria-label="发送"
-      class="flex h-9 w-9 items-center justify-center rounded-lg text-white transition-opacity disabled:opacity-40"
-      :style="{ backgroundColor: 'var(--accent)' }"
-      :disabled="!content.trim()"
-      @click="submit"
-    >
-      <el-icon :size="16"><Promotion /></el-icon>
-    </button>
-    <button
-      v-else
-      data-testid="stop-btn"
-      aria-label="停止"
-      class="flex h-9 w-9 items-center justify-center rounded-lg"
-      :style="{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }"
-      @click="emit('stop')"
-    >
-      <el-icon :size="16"><VideoPause /></el-icon>
-    </button>
+    <div class="mx-auto flex w-full max-w-[760px] items-end gap-2">
+      <textarea
+        ref="textareaRef"
+        v-model="content"
+        rows="1"
+        placeholder="输入问题，Enter 发送，Shift+Enter 换行"
+        class="chat-textarea flex-1 resize-none rounded-xl px-3 py-2 text-sm outline-none"
+        :style="{
+          backgroundColor: 'var(--surface-secondary)',
+          color: 'var(--foreground)',
+          border: '1px solid var(--border)',
+        }"
+        :disabled="streaming"
+        @input="onInput"
+        @keydown="onEnter"
+      />
+      <button
+        v-if="!streaming"
+        aria-label="发送"
+        class="flex h-9 w-9 items-center justify-center rounded-lg transition-opacity disabled:opacity-40"
+        :style="{ backgroundColor: 'var(--accent)', color: 'var(--accent-foreground)' }"
+        :disabled="!content.trim()"
+        @click="submit"
+      >
+        <el-icon :size="16"><Promotion /></el-icon>
+      </button>
+      <button
+        v-else
+        data-testid="stop-btn"
+        aria-label="停止"
+        class="flex h-9 w-9 items-center justify-center rounded-lg"
+        :style="{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }"
+        @click="emit('stop')"
+      >
+        <el-icon :size="16"><VideoPause /></el-icon>
+      </button>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.chat-textarea {
+  transition:
+    box-shadow var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+.chat-textarea:focus {
+  border-color: color-mix(in oklch, var(--accent) 32%, var(--border));
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+</style>
