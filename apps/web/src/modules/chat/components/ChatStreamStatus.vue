@@ -18,7 +18,7 @@ const label = computed(() => props.message || labelMap[props.phase] || '')
 <template>
   <div
     v-if="visible"
-    class="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs"
+    class="rise-in inline-flex items-center gap-2 self-start rounded-full px-3 py-1.5 text-xs"
     :style="{ backgroundColor: 'var(--accent-soft)', color: 'var(--accent)' }"
   >
     <span class="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
