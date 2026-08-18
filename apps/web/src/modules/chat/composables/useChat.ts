@@ -1,4 +1,4 @@
-import { computed, ref, watch, type MaybeRef, toValue, type Ref } from 'vue'
+import { computed, onScopeDispose, ref, watch, type MaybeRef, toValue, type Ref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { chatApi } from '@/modules/chat/api/chat.api'
@@ -177,6 +177,10 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     const m = messages.value.find((x) => x.id === messageId)
     if (m) m.feedback = action
   }
+
+  // 离开页面/组件卸载时中止进行中的流：触发 AbortController → fetch-sse finally 的 reader.cancel()，
+  // 避免导航离开后残留 SSE 连接，以及生成器继续向已分离的 ref 写入（最终评审发现的 Important 泄漏）
+  onScopeDispose(() => stop())
 
   return { messages, streamingMessage, phase, isStreaming, error, send, stop, sendFeedback }
 }

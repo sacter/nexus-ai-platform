@@ -64,4 +64,14 @@ describe('ChatMessage', () => {
     })
     expect(wrapper.html()).not.toContain('<script')
   })
+
+  it('opens markdown links in a new tab (spec §4.1 链接新标签)', () => {
+    const wrapper = mount(ChatMessage, {
+      props: { message: { ...base, content: '[docs](https://example.com)' } },
+    })
+    const a = wrapper.find('a')
+    expect(a.exists()).toBe(true)
+    expect(a.attributes('target')).toBe('_blank')
+    expect(a.attributes('rel')).toBe('noopener noreferrer')
+  })
 })

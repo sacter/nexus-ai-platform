@@ -18,15 +18,15 @@ function fakeTransport(events: ChatStreamEvent[]): ChatTransport {
   }
 }
 
-// 挂载一个提供 useChatStream 的宿主组件；返回 handle 供断言
-function mountStream(sessionId: Ref<string>, transport: ChatTransport): any {
+// 挂载一个提供 useChatStream 的宿主组件；返回 handle 与 wrapper（后者用于 unmount 清理测试）
+function mountStream(sessionId: Ref<string>, transport: ChatTransport): { handle: any; wrapper: any } {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: '/', component: { render: () => h('div') } }],
   })
   let handle: any
-  mount(
+  const wrapper = mount(
     defineComponent({
       setup() {
         handle = useChatStream(sessionId, { transport })
@@ -35,7 +35,7 @@ function mountStream(sessionId: Ref<string>, transport: ChatTransport): any {
     }),
     { global: { plugins: [router, [VueQueryPlugin, { queryClient: qc }]] } },
   )
-  return handle
+  return { handle, wrapper }
 }
 
 describe('useChatStream', () => {
@@ -47,7 +47,7 @@ describe('useChatStream', () => {
       { type: 'delta', data: { content: 'lo' } },
       { type: 'done', data: { messageId: 'm1', usage: { promptTokens: 1, completionTokens: 2, totalTokens: 3 } } },
     ])
-    const handle = mountStream(sessionId, transport)
+    const { handle } = mountStream(sessionId, transport)
     // 等待初始历史查询 settle（无后端 → 失败，不影响断言）
     await flush()
     await handle.send('hi')
@@ -65,7 +65,7 @@ describe('useChatStream', () => {
         throw new DOMException('Aborted', 'AbortError')
       },
     }
-    const handle = mountStream(sessionId, transport)
+    const { handle } = mountStream(sessionId, transport)
     await flush()
     await handle.send('hi')
     await flush()
@@ -81,7 +81,7 @@ describe('useChatStream', () => {
         throw new Error('boom')
       },
     }
-    const handle = mountStream(sessionId, transport)
+    const { handle } = mountStream(sessionId, transport)
     await flush()
     await handle.send('hi')
     await flush()
@@ -100,10 +100,30 @@ describe('useChatStream', () => {
       { type: 'delta', data: { content: 'hi' } },
       { type: 'done', data: { messageId: 'm1', citations } },
     ])
-    const handle = mountStream(sessionId, transport)
+    const { handle } = mountStream(sessionId, transport)
     await flush()
     await handle.send('hi')
     await flush()
     expect(handle.messages.value[1].citations).toEqual(citations)
+  })
+
+  it('aborts the in-flight stream on unmount (no SSE/fetch leak)', async () => {
+    const sessionId = ref('s1')
+    let signal: AbortSignal | undefined
+    const transport: ChatTransport = {
+      async *stream(req: ChatStreamRequest): AsyncGenerator<ChatStreamEvent> {
+        signal = req.signal
+        yield { type: 'step', data: { step: 'retrieval' } }
+        // 阻塞直至被 abort；真实 fetch-sse 在 abort 时抛 AbortError，此处仅阻塞以保持流进行
+        await new Promise<void>((resolve) => req.signal?.addEventListener('abort', () => resolve()))
+      },
+    }
+    const { handle, wrapper } = mountStream(sessionId, transport)
+    await flush()
+    void handle.send('hi')                 // 不 await：让流保持进行
+    await flush()
+    expect(signal?.aborted).toBe(false)    // 流进行中尚未 abort
+    wrapper.unmount()                      // 触发 onScopeDispose → stop() → abortController.abort()
+    expect(signal?.aborted).toBe(true)     // 卸载即中止：无残留 SSE 连接
   })
 })

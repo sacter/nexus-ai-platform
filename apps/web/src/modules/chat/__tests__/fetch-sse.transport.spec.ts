@@ -68,4 +68,22 @@ describe('FetchSseChatTransport', () => {
     expect((events[0].data as any).step).toBe('retrieval')
     expect((events[1].data as any).messageId).toBe('m9')
   })
+
+  it('yields the final event even without a trailing blank line (decoder flush + tail recovery)', async () => {
+    // 服务器在最后一个事件后直接关闭流（无 [DONE]、无尾随 \n\n）：
+    // 兜底分支须 flush TextDecoder 并解析 buffer 拋留，否则 done 丢失致 UI 卡在流式态
+    const payload = 'data: {"type":"done","data":{"messageId":"m7"}}'
+    const fakeFetch = (() => Promise.resolve({
+      ok: true,
+      body: sseBody([payload]),
+    } as unknown as Response)) as unknown as typeof fetch
+    const transport = new FetchSseChatTransport(
+      { baseUrl: 'http://x', getToken: () => null },
+      fakeFetch,
+    )
+    const events = []
+    for await (const ev of transport.stream({ sessionId: 's1', content: 'hi' })) events.push(ev)
+    expect(events.map(e => e.type)).toEqual(['done'])
+    expect((events[0].data as any).messageId).toBe('m7')
+  })
 })

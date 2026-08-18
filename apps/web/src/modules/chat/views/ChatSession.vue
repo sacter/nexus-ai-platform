@@ -30,6 +30,17 @@ async function scrollToBottom() {
   if (el && isNearBottom.value) el.scrollTop = el.scrollHeight
 }
 
+// 用户点击「回到底部」浮动按钮：强制滚动并恢复贴底状态。
+// scrollToBottom 的 isNearBottom 守卫会让按钮点击变成 no-op——按钮只在 isNearBottom=false 时渲染，
+// 直接复用 scrollToBottom 会因守卫失败而不滚动（最终评审发现的 Important 回归）。
+async function backToBottom() {
+  isNearBottom.value = true
+  showScrollBtn.value = false
+  await nextTick()
+  const el = threadRef.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
 watch(() => messages.value.length, scrollToBottom)
 // 流式增量时也贴底
 watch(
@@ -90,7 +101,7 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
         v-if="showScrollBtn"
         class="absolute bottom-24 right-6 rounded-full border px-3 py-1 text-xs shadow"
         :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
-        @click="scrollToBottom"
+        @click="backToBottom"
       >↓ 回到底部</button>
 
       <ChatInput :streaming="isStreaming" @send="send" @stop="stop" />
