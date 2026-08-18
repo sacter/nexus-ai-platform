@@ -223,7 +223,7 @@ export function usePagedDocuments(
 - [ ] **Step 3: 类型检查**
 
 ```bash
-pnpm --filter @nexus/web-v2 check-types
+pnpm --filter @nexus/web check-types
 ```
 
 Expected: 通过，无 TS 错误。
@@ -291,7 +291,7 @@ const emptyText = computed(() =>
 - [ ] **Step 3: 类型检查**
 
 ```bash
-pnpm --filter @nexus/web-v2 check-types
+pnpm --filter @nexus/web check-types
 ```
 
 Expected: 通过。
@@ -365,7 +365,7 @@ watch(searchQuery, (val) => {
 - [ ] **Step 3: 类型检查**
 
 ```bash
-pnpm --filter @nexus/web-v2 check-types
+pnpm --filter @nexus/web check-types
 ```
 
 Expected: 通过。
@@ -396,15 +396,15 @@ Expected: 全部通过（含 document.service.spec.ts 的 7 个用例）。
 - [ ] **Step 2: 前端类型检查 + 构建**
 
 ```bash
-pnpm --filter @nexus/web-v2 check-types
-pnpm --filter @nexus/web-v2 build
+pnpm --filter @nexus/web check-types
+pnpm --filter @nexus/web build
 ```
 
 Expected: 均成功。
 
 - [ ] **Step 3: 手动 E2E（无法自动化的部分）**
 
-1. `pnpm --filter @nexus/web-v2 dev`（vite，端口 3034）+ 后端 dev 起服务。
+1. `pnpm --filter @nexus/web dev`（vite，端口 3034）+ 后端 dev 起服务。
 2. 进入某知识库详情 →「原始文档」标签页。
 3. 在搜索框输入不存在的名称（如 `zzzz`）→ 停顿 300ms 后表格显示"未找到匹配的文档"，分页条隐藏。
 4. 输入已有文档名的一部分（如 `系统`）→ 表格仅显示匹配文档，total 变为过滤后数量。

@@ -11,7 +11,7 @@
 **Spec:** `docs/superpowers/specs/2026-08-17-chat-frontend-design.md`（分支 `feat/chat-frontend-design`，已提交）。
 
 **横切：**
-- 包名 `@nexus/web-v2`；用 `pnpm --filter @nexus/web-v2 <cmd>` 跑命令，避免 `cd`。
+- 包名 `@nexus/web`；用 `pnpm --filter @nexus/web <cmd>` 跑命令，避免 `cd`。
 - 现有 `api/client.ts` 的 axios 拦截器**不覆盖** SSE 路径（fetch 直连，手动注入 Bearer）。
 - 主题 token：`--accent` `--surface` `--surface-secondary` `--foreground` `--border` `--accent-soft` `--accent-glow`；Tailwind 工具类 `bg-accent` `text-foreground` `bg-accent/10` 等可用。
 
@@ -59,7 +59,7 @@ apps/web/
 
 - [ ] **Step 1: 安装测试依赖**
 
-Run: `pnpm --filter @nexus/web-v2 add -D vitest @vue/test-utils happy-dom`
+Run: `pnpm --filter @nexus/web add -D vitest @vue/test-utils happy-dom`
 Expected: 依赖写入 `package.json` devDependencies。
 
 - [ ] **Step 2: 写 vitest 配置**
@@ -108,7 +108,7 @@ describe('smoke', () => {
 
 - [ ] **Step 5: 跑测试验证通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/smoke.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/smoke.spec.ts`
 Expected: 1 passed。
 
 - [ ] **Step 6: Commit**
@@ -127,12 +127,12 @@ git commit -m "test(web): 引入 vitest 测试基础设施"
 
 - [ ] **Step 1: 安装运行时依赖**
 
-Run: `pnpm --filter @nexus/web-v2 add markdown-it dompurify && pnpm --filter @nexus/web-v2 add -D @types/markdown-it`
+Run: `pnpm --filter @nexus/web add markdown-it dompurify && pnpm --filter @nexus/web add -D @types/markdown-it`
 Expected: `markdown-it`、`dompurify` 入 dependencies，`@types/markdown-it` 入 devDependencies。
 
 - [ ] **Step 2: 验证类型可解析**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无新增类型错误（既有错误数不增）。
 
 - [ ] **Step 3: Commit**
@@ -213,7 +213,7 @@ export interface ChatSession {
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误（纯类型新增）。
 
 - [ ] **Step 3: Commit**
@@ -248,7 +248,7 @@ export interface ChatTransport {
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误。
 
 - [ ] **Step 3: Commit**
@@ -325,7 +325,7 @@ describe('applyStreamEvent', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/chat-stream-reducer.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/chat-stream-reducer.spec.ts`
 Expected: FAIL — `applyStreamEvent` 未定义（模块不存在）。
 
 - [ ] **Step 3: 写实现**
@@ -397,7 +397,7 @@ export function applyStreamEvent(prev: ReduceState, ev: ChatStreamEvent): Reduce
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/chat-stream-reducer.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/chat-stream-reducer.spec.ts`
 Expected: 5 passed。
 
 - [ ] **Step 5: Commit**
@@ -472,7 +472,7 @@ describe('FetchSseChatTransport', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/fetch-sse.transport.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/fetch-sse.transport.spec.ts`
 Expected: FAIL — 模块不存在。
 
 - [ ] **Step 3: 写实现**
@@ -549,7 +549,7 @@ export class FetchSseChatTransport implements ChatTransport {
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/fetch-sse.transport.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/fetch-sse.transport.spec.ts`
 Expected: 2 passed。
 
 - [ ] **Step 5: Commit**
@@ -610,7 +610,7 @@ describe('MockSseChatTransport', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/mock-sse.transport.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/mock-sse.transport.spec.ts`
 Expected: FAIL — 模块不存在。
 
 - [ ] **Step 3: 写实现**
@@ -675,7 +675,7 @@ export class MockSseChatTransport implements ChatTransport {
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/mock-sse.transport.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/mock-sse.transport.spec.ts`
 Expected: 2 passed。
 
 - [ ] **Step 5: Commit**
@@ -730,7 +730,7 @@ export const chatApi = {
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无新增错误。
 
 - [ ] **Step 3: Commit**
@@ -810,7 +810,7 @@ describe('useChatStream', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/useChatStream.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/useChatStream.spec.ts`
 Expected: FAIL — `useChatStream` 未导出。
 
 - [ ] **Step 3: 写实现（扩展 useChat.ts）**
@@ -985,7 +985,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/useChatStream.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/useChatStream.spec.ts`
 Expected: 1 passed。
 
 - [ ] **Step 5: Commit**
@@ -1018,7 +1018,7 @@ export function renderMarkdown(src: string): string {
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误。
 
 - [ ] **Step 3: Commit**
@@ -1070,7 +1070,7 @@ describe('CitationsCard', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/CitationsCard.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/CitationsCard.spec.ts`
 Expected: FAIL — 组件不存在。
 
 - [ ] **Step 3: 写实现**
@@ -1123,7 +1123,7 @@ const expanded = ref(false)
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/CitationsCard.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/CitationsCard.spec.ts`
 Expected: 2 passed。
 
 - [ ] **Step 5: Commit**
@@ -1174,7 +1174,7 @@ const label = computed(() => props.message || labelMap[props.phase] || '')
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误。
 
 - [ ] **Step 3: Commit**
@@ -1242,7 +1242,7 @@ describe('ChatMessage', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/ChatMessage.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/ChatMessage.spec.ts`
 Expected: FAIL — markdown 未渲染 / 组件行为不符旧版。
 
 - [ ] **Step 3: 重写组件**
@@ -1353,7 +1353,7 @@ function onFeedback(action: 'like' | 'dislike') {
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/ChatMessage.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/ChatMessage.spec.ts`
 Expected: 5 passed。
 
 - [ ] **Step 5: Commit**
@@ -1409,7 +1409,7 @@ describe('ChatInput', () => {
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/ChatInput.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/ChatInput.spec.ts`
 Expected: FAIL — 当前用 `el-input` 无 `<textarea>` 选择器命中 / 无 Stop。
 
 - [ ] **Step 3: 重写组件**
@@ -1505,7 +1505,7 @@ onMounted(() => autosize())
 
 - [ ] **Step 4: 跑测试确认通过**
 
-Run: `pnpm --filter @nexus/web-v2 test:run src/modules/chat/__tests__/ChatInput.spec.ts`
+Run: `pnpm --filter @nexus/web test:run src/modules/chat/__tests__/ChatInput.spec.ts`
 Expected: 3 passed。
 
 - [ ] **Step 5: Commit**
@@ -1585,7 +1585,7 @@ const sessions = computed(() => (data.value as any[]) ?? [])
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无新增错误。
 
 - [ ] **Step 3: Commit**
@@ -1635,7 +1635,7 @@ const list = props.suggestions?.length ? props.suggestions : fallback
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误。
 
 - [ ] **Step 3: Commit**
@@ -1759,7 +1759,7 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无新增错误。
 
 - [ ] **Step 3: Commit**
@@ -1808,7 +1808,7 @@ function onSuggest() { onNew() }
 
 - [ ] **Step 2: 验证类型**
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无新增错误。
 
 - [ ] **Step 3: Commit**
@@ -1847,15 +1847,15 @@ VITE_CHAT_MOCK=1
 
 - [ ] **Step 3: 跑全量测试 + 类型检查**
 
-Run: `pnpm --filter @nexus/web-v2 test:run`
+Run: `pnpm --filter @nexus/web test:run`
 Expected: 全部通过。
 
-Run: `pnpm --filter @nexus/web-v2 check-types`
+Run: `pnpm --filter @nexus/web check-types`
 Expected: 无错误。
 
 - [ ] **Step 4: 启动 dev server 手动验证（mock 模式）**
 
-Run: `pnpm --filter @nexus/web-v2 dev`
+Run: `pnpm --filter @nexus/web dev`
 手动验证（浏览器开 http://localhost:3034 ）：
 1. 进入 `/chat` → 看到会话列表 + 空态/建议。
 2. 点「新会话」→ 跳 `/chat/new`。

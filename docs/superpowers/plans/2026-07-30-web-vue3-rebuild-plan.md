@@ -72,7 +72,7 @@ Write `apps/web-v2/package.json`:
 
 ```json
 {
-  "name": "@nexus/web-v2",
+  "name": "@nexus/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -2340,7 +2340,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN corepack enable && pnpm install --frozen-lockfile
-RUN pnpm turbo run build --filter=@nexus/web-v2
+RUN pnpm turbo run build --filter=@nexus/web
 
 FROM nginx:alpine
 COPY --from=builder /app/apps/web-v2/dist /usr/share/nginx/html
@@ -2393,7 +2393,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 Write `apps/web-v2/README.md`:
 
 ```markdown
-# @nexus/web-v2
+# @nexus/web
 
 Nexus AI Platform — Vue 3 前端项目。
 

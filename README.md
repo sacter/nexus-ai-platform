@@ -8,7 +8,7 @@ A full-stack enterprise AI platform featuring Knowledge Base, RAG, Workflow, Mul
 nexus-ai-platform/
 ├── apps/
 │   ├── api/        # @nexus/api       NestJS 后端 API 服务
-│   ├── web/        # @nexus/web-v2    Vue + Vite 前端应用
+│   ├── web/        # @nexus/web    Vue + Vite 前端应用
 │   └── worker/     # @nexus/worker    BullMQ 后台任务 Worker
 └── packages/       # 共享 workspace 包（app 通过包名导入，消费 dist 产物）
     ├── database/   # @nexus/database   Prisma 数据库封装

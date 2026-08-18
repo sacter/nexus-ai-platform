@@ -1,4 +1,4 @@
-# @nexus/web-v2
+# @nexus/web
 
 Nexus AI Platform — Vue 3 前端项目。
 
