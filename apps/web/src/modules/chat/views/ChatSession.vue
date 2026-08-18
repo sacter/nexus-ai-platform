@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useChatStream } from '../composables/useChat'
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import { Bottom, ChatLineSquare, WarningFilled } from '@element-plus/icons-vue'
+import { useChatSessions, useChatStream } from '../composables/useChat'
 import ChatSessionList from '../components/ChatSessionList.vue'
 import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 import ChatStreamStatus from '../components/ChatStreamStatus.vue'
 import ChatEmptyState from '../components/ChatEmptyState.vue'
+
+dayjs.extend(relativeTime)
 
 const route = useRoute()
 const router = useRouter()
@@ -16,6 +21,18 @@ const router = useRouter()
 const sessionId = ref(String(route.params.sessionId ?? ''))
 watch(() => route.params.sessionId, (v) => { sessionId.value = String(v ?? '') })
 const { messages, phase, isStreaming, error, send, stop, sendFeedback } = useChatStream(sessionId)
+
+const { data: sessionsData } = useChatSessions()
+const currentSession = computed(() => (sessionsData.value ?? []).find((s) => s.id === sessionId.value))
+const headerTitle = computed(() =>
+  sessionId.value === 'new' ? '新会话' : (currentSession.value?.title ?? '对话'),
+)
+const headerMeta = computed(() => {
+  const parts: string[] = []
+  if (messages.value.length) parts.push(`${messages.value.length} 条消息`)
+  if (currentSession.value?.createdAt) parts.push(dayjs(currentSession.value.createdAt).fromNow())
+  return parts.join(' · ')
+})
 
 const threadRef = ref<HTMLElement | null>(null)
 const showScrollBtn = ref(false)
@@ -63,46 +80,77 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
 </script>
 
 <template>
-  <div class="flex h-full -m-6">
+  <div
+    class="chat-island flex h-full min-h-[480px] overflow-hidden rounded-xl border"
+    :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
+  >
     <ChatSessionList :active-id="sessionId" @select="onSelect" @new="onNew" />
 
-    <section class="relative flex flex-1 flex-col">
+    <section class="relative flex min-w-0 flex-1 flex-col">
       <header
-        class="flex items-center justify-between border-b px-4 py-3"
-        :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
+        class="flex items-center justify-between gap-3 border-b px-4 py-3"
+        :style="{ borderColor: 'var(--border)' }"
       >
-        <span class="text-sm font-medium" :style="{ color: 'var(--foreground)' }">
-          {{ sessionId === 'new' ? '新会话' : '对话' }}
-        </span>
+        <div class="flex min-w-0 items-center gap-2.5">
+          <span
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
+            style="background: var(--brand-gradient)"
+          >
+            <el-icon :size="13" color="var(--accent-foreground)" aria-hidden="true"><ChatLineSquare /></el-icon>
+          </span>
+          <h2 class="truncate text-sm font-semibold" :style="{ color: 'var(--foreground)' }">
+            {{ headerTitle }}
+          </h2>
+        </div>
+        <span
+          v-if="headerMeta"
+          class="num shrink-0 text-[11px]"
+          :style="{ color: 'var(--foreground)', opacity: 0.5 }"
+        >{{ headerMeta }}</span>
       </header>
 
       <div ref="threadRef" class="relative flex-1 overflow-y-auto px-4 py-4" @scroll="onScroll">
-        <div v-if="error" class="my-2 rounded-lg px-3 py-2 text-sm text-red-500" style="background: var(--accent-soft)">
-          {{ error }}
-          <button v-if="messages.length >= 2" class="underline" @click="send(messages[messages.length-2]?.content ?? '')">重试</button>
+        <div class="mx-auto w-full max-w-[760px]">
+          <div
+            v-if="error"
+            class="my-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm"
+            :style="{ backgroundColor: 'var(--el-color-error-light-9)', color: 'var(--el-color-error)' }"
+          >
+            <el-icon :size="14" aria-hidden="true"><WarningFilled /></el-icon>
+            <span class="min-w-0 flex-1">{{ error }}</span>
+            <el-button
+              v-if="messages.length >= 2"
+              size="small"
+              text
+              type="danger"
+              @click="send(messages[messages.length-2]?.content ?? '')"
+            >重试</el-button>
+          </div>
+
+          <ChatEmptyState v-if="isEmpty" @suggest="onSuggest" />
+
+          <template v-else>
+            <ChatStreamStatus :phase="phase" />
+            <TransitionGroup name="msg" tag="div">
+              <ChatMessage
+                v-for="m in messages"
+                :key="m.id ?? m.tempId"
+                :message="m"
+                @feedback="onFeedback"
+              />
+            </TransitionGroup>
+          </template>
         </div>
-
-        <ChatEmptyState v-if="isEmpty" @suggest="onSuggest" />
-
-        <template v-else>
-          <ChatStreamStatus :phase="phase" />
-          <TransitionGroup name="msg" tag="div">
-            <ChatMessage
-              v-for="m in messages"
-              :key="m.id ?? m.tempId"
-              :message="m"
-              @feedback="onFeedback"
-            />
-          </TransitionGroup>
-        </template>
       </div>
 
       <button
         v-if="showScrollBtn"
-        class="absolute bottom-24 right-6 rounded-full border px-3 py-1 text-xs shadow"
-        :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
+        class="absolute bottom-24 right-6 flex items-center gap-1 rounded-full border px-3 py-1 text-xs shadow"
+        :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)', color: 'var(--foreground)' }"
         @click="backToBottom"
-      >↓ 回到底部</button>
+      >
+        <el-icon :size="12" aria-hidden="true"><Bottom /></el-icon>回到底部
+      </button>
 
       <ChatInput :streaming="isStreaming" @send="send" @stop="stop" />
     </section>
@@ -110,6 +158,6 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
 </template>
 
 <style scoped>
-.msg-enter-active { transition: opacity 200ms ease-out, transform 200ms ease-out; }
+.msg-enter-active { transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
 .msg-enter-from { opacity: 0; transform: translateY(6px); }
 </style>
