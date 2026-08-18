@@ -28,7 +28,7 @@ describe('CitationsCard', () => {
     await wrapper.find('[data-testid="citations-toggle"]').trigger('click')
     expect(wrapper.text()).toContain('only.pdf')
     // 无 score 时不渲染对应 span（条件分支覆盖）
-    expect(wrapper.find('.font-mono').exists()).toBe(false)
+    expect(wrapper.find('.num').exists()).toBe(false)
   })
 
   it('toggles aria-expanded with the list', async () => {
