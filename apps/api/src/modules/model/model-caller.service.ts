@@ -1,11 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
 import { ApiKeyService } from '../api-key/api-key.service';
-import {
-  ChatProtocol,
-  ChatProvider,
-  createChatProvider,
-} from '@nexus/ai-core';
+import { ChatProtocol, ChatProvider, createChatProvider } from '@nexus/ai-core';
 
 /** 解析结果：client 可直接调用；baseConfig 为 DB 拆出的大众化参数 */
 export interface ResolvedChatModel {
@@ -72,6 +68,8 @@ export class ModelCallerService {
 
   /** 协议由 DB 数据驱动；缺省一律 openai-compatible（Ollama 通常也暴露兼容端点，确需原生才在 config 标 ollama-native） */
   private resolveProtocol(config: Record<string, unknown>): ChatProtocol {
-    return config.protocol === 'ollama-native' ? 'ollama-native' : 'openai-compatible';
+    return config.protocol === 'ollama-native'
+      ? 'ollama-native'
+      : 'openai-compatible';
   }
 }
