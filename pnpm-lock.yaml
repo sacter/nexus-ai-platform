@@ -53,12 +53,12 @@ importers:
       '@nexus/ai-core':
         specifier: workspace:*
         version: link:../../packages/ai-core
+      '@nexus/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@nexus/database':
         specifier: workspace:*
         version: link:../../packages/database
-      '@nexus/model-config':
-        specifier: workspace:*
-        version: link:../../packages/model-config
       '@nexus/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -201,9 +201,9 @@ importers:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.3.0
         version: 5.3.0
-      '@nexus/model-config':
+      '@nexus/config':
         specifier: workspace:*
-        version: link:../../packages/model-config
+        version: link:../../packages/config
       '@tailwindcss/vite':
         specifier: ^4.1.0
         version: 4.3.3(vite@6.4.3(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0))
@@ -415,6 +415,12 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/database:
     dependencies:
       '@nestjs/common':
@@ -426,12 +432,6 @@ importers:
       '@prisma/client':
         specifier: ^7.9.0
         version: 7.9.0(prisma@7.9.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@6.0.3))(typescript@6.0.3)
-    devDependencies:
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
-
-  packages/model-config:
     devDependencies:
       typescript:
         specifier: ^6.0.3

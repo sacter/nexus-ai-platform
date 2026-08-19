@@ -12,7 +12,7 @@ export const MODEL_TYPES = [
 
 export type ModelType = (typeof MODEL_TYPES)[number]['value']
 
-// 模型能力参数结构 / 默认值 / 取值范围 — 单一来源 @nexus/model-config（DATABASE.md 4.20 config）
+// 模型能力参数结构 / 默认值 / 取值范围 — 单一来源 @nexus/config（DATABASE.md 4.20 config）
 // 类型经 import type 本地绑定再 export type 导出，避免 Rollup 对 CJS 包的 `export type {} from` 报错
 import {
   MODEL_CONFIG_DEFAULTS,
@@ -21,12 +21,12 @@ import {
   type ModelConfig,
   type ModelEmbeddingConfig,
   type ModelRerankConfig,
-} from '@nexus/model-config'
+} from '@nexus/config'
 /** Provider 枚举（与 api_keys.provider 对应；brand 色用于品牌徽章，多主题下经 color-mix 混合保持协调） */
 export const PROVIDERS = MODELS_PROVIDERS;
 export type ModelProvider = (typeof PROVIDERS)[number]['value']
 export type { ModelChatConfig, ModelEmbeddingConfig, ModelRerankConfig, ModelConfig }
-export { MODEL_CONFIG_DEFAULTS, MODEL_CONFIG_LIMITS } from '@nexus/model-config'
+export { MODEL_CONFIG_DEFAULTS, MODEL_CONFIG_LIMITS } from '@nexus/config'
 
 /** 模型注册项（apiKeyName 由列表查询 LEFT JOIN api_keys 附带返回） */
 export interface Model {
@@ -62,7 +62,7 @@ export interface ModelUpdateInput extends ModelCreateInput {
   isActive: boolean
 }
 
-/** 按类型返回 config 默认模板（取自 @nexus/model-config MODEL_CONFIG_DEFAULTS） */
+/** 按类型返回 config 默认模板（取自 @nexus/config MODEL_CONFIG_DEFAULTS） */
 export function createDefaultConfig(type: ModelType): ModelConfig {
   return MODEL_CONFIG_DEFAULTS[type]
 }
