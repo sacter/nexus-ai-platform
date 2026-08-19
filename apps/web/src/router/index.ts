@@ -39,6 +39,7 @@ const routes: RouteRecordRaw[] = [
 
       // Chat
       { path: 'chat', name: 'Chat', component: () => import('@/modules/chat/views/ChatList.vue') },
+      { path: 'chat/new', redirect: '/chat' },
       { path: 'chat/:sessionId', name: 'ChatSession', component: () => import('@/modules/chat/views/ChatSession.vue') },
 
       // Workflow

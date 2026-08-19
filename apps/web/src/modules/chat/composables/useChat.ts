@@ -116,7 +116,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
       }
     }
     const sid = toValue(sessionId)
-    // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询（避免路由尚未更新时命中 'new'）
+    // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询
     const handleEvent = (ev: ChatStreamEvent) => {
       if (!streamingMessage.value) return
       const state = applyStreamEvent({ message: streamingMessage.value, phase: phase.value }, ev)

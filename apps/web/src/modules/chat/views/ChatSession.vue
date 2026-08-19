@@ -18,7 +18,7 @@ dayjs.extend(relativeTime)
 const route = useRoute()
 const router = useRouter()
 
-// 用 ref + watch 跟随路由（/chat/new → createSession 后 router.replace 切到真 id），
+// 用 ref + watch 跟随路由，
 // 保证 useChatStream 内部 toValue(sessionId) 在 done 失效时命中正确 query key
 const sessionId = ref(String(route.params.sessionId ?? ''))
 watch(() => route.params.sessionId, (v) => { sessionId.value = String(v ?? '') })
@@ -26,9 +26,7 @@ const { messages, phase, isStreaming, error, send, stop, sendFeedback } = useCha
 
 const { data: sessionsData } = useChatSessions()
 const currentSession = computed(() => (sessionsData.value ?? []).find((s) => s.id === sessionId.value))
-const headerTitle = computed(() =>
-  sessionId.value === 'new' ? '新会话' : (currentSession.value?.title ?? '对话'),
-)
+const headerTitle = computed(() => currentSession.value?.title ?? '对话')
 const headerMeta = computed(() => {
   const parts: string[] = []
   if (messages.value.length) parts.push(`${messages.value.length} 条消息`)
