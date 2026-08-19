@@ -19,5 +19,6 @@ import { CitationService } from './citation/citation.service';
     CohereRerankerService,
     CitationService,
   ],
+  exports: [RetrievalService],
 })
 export class RetrievalModule {}

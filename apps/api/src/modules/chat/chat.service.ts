@@ -5,6 +5,7 @@ import { PrismaService } from '@nexus/database';
 import { RetrievalService } from '../retrieval/retrieval.service';
 import { ModelCallerService } from '../model/model-caller.service';
 import { SessionLockService } from '../../common/services/session-lock.service';
+
 @Injectable()
 export class ChatService {
   constructor(
