@@ -1,5 +1,15 @@
 import http from '@/api/client'
+import type { WorkflowType } from '@nexus/config'
 import type { ChatMessage, ChatSession } from '../types/chat'
+
+export interface CreateSessionPayload {
+  title: string
+  kbId?: string
+  promptTemplateId?: string
+  aiApplicationId?: string
+  workflowId?: string
+  workflowType: WorkflowType
+}
 
 export const chatApi = {
   listSessions(): Promise<ChatSession[]> {
@@ -8,8 +18,8 @@ export const chatApi = {
   getSession(id: string): Promise<ChatSession> {
     return http.get(`/chat/sessions/${id}`)
   },
-  createSession(data?: Partial<ChatSession>): Promise<ChatSession> {
-    return http.post('/chat/sessions', data ?? {})
+  createSession(data: CreateSessionPayload): Promise<ChatSession> {
+    return http.post('/chat/sessions', data)
   },
   deleteSession(id: string): Promise<void> {
     return http.delete(`/chat/sessions/${id}`)

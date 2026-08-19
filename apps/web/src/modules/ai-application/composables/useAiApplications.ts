@@ -2,10 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toValue, type MaybeRef } from 'vue'
 import { aiApplicationsApi } from '@/modules/ai-application/api/ai-application.api'
 
-export function useAiApplications() {
+export function useAiApplications(enabled: MaybeRef<boolean> = true) {
   return useQuery({
     queryKey: ['ai-applications'],
     queryFn: () => aiApplicationsApi.list(),
+    enabled: () => toValue(enabled),
   })
 }
 

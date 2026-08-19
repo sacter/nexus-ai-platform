@@ -2,8 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toValue, type MaybeRef } from 'vue'
 import { workflowsApi } from '@/modules/workflow/api/workflow.api'
 
-export function useWorkflows() {
-  return useQuery({ queryKey: ['workflows'], queryFn: () => workflowsApi.list() })
+export function useWorkflows(enabled: MaybeRef<boolean> = true) {
+  return useQuery({
+    queryKey: ['workflows'],
+    queryFn: () => workflowsApi.list(),
+    enabled: () => toValue(enabled),
+  })
 }
 
 export function useWorkflow(id: MaybeRef<string>) {

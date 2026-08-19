@@ -1,5 +1,5 @@
 export type MessagePhase =
-  | 'idle' | 'pendingCreate' | 'retrieving' | 'reranking'
+  | 'idle' | 'retrieving' | 'reranking'
   | 'generating' | 'done' | 'error' | 'aborted'
 
 export interface TokenUsage {

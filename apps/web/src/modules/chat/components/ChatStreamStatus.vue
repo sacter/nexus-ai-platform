@@ -8,10 +8,9 @@ const labelMap: Record<string, string> = {
   retrieving: '正在检索知识库…',
   reranking: '正在精排结果…',
   generating: '正在生成回答…',
-  pendingCreate: '正在创建会话…',
 }
 
-const visible = computed(() => ['retrieving', 'reranking', 'generating', 'pendingCreate'].includes(props.phase))
+const visible = computed(() => ['retrieving', 'reranking', 'generating'].includes(props.phase))
 const label = computed(() => props.message || labelMap[props.phase] || '')
 </script>
 

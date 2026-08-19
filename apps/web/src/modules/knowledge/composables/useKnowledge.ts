@@ -2,10 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { toValue, type MaybeRef } from 'vue'
 import { knowledgeBasesApi } from '@/modules/knowledge/api/knowledge.api'
 
-export function useKnowledgeBases() {
+export function useKnowledgeBases(enabled: MaybeRef<boolean> = true) {
   return useQuery({
     queryKey: ['knowledge-base'],
     queryFn: () => knowledgeBasesApi.list(),
+    enabled: () => toValue(enabled),
   })
 }
 

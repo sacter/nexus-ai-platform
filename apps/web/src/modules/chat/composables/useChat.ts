@@ -1,7 +1,6 @@
 import { computed, onScopeDispose, ref, watch, type MaybeRef, toValue, type Ref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { useRouter } from 'vue-router'
-import { chatApi } from '@/modules/chat/api/chat.api'
+import { chatApi, type CreateSessionPayload } from '@/modules/chat/api/chat.api'
 import { applyStreamEvent } from './chat-stream-reducer'
 import { FetchSseChatTransport } from '../transport/fetch-sse.transport'
 import { MockSseChatTransport } from '../transport/mock-sse.transport'
@@ -19,12 +18,22 @@ export function useChatSessions() {
   return useQuery({ queryKey: ['chat-sessions'], queryFn: () => chatApi.listSessions() })
 }
 
+export function useCreateChatSession() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSessionPayload) => chatApi.createSession(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] })
+    },
+  })
+}
+
 export function useChatMessages(sessionId: MaybeRef<string>) {
   return useQuery({
     // 传 ref（非 toValue 快照）让 vue-query 跟踪并按解包值 hash；done 失效 ['chat-messages', sid] 可命中
     queryKey: ['chat-messages', sessionId],
     queryFn: () => chatApi.getMessages(toValue(sessionId)),
-    enabled: () => !!toValue(sessionId) && toValue(sessionId) !== 'new',
+    enabled: () => !!toValue(sessionId),
   })
 }
 
@@ -53,7 +62,6 @@ export interface ChatStreamHandle {
 export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: ChatTransport }): ChatStreamHandle {
   const transport = opts?.transport ?? createChatTransport()
   const qc = useQueryClient()
-  const router = useRouter()
 
   const history = useChatMessages(sessionId)
   const messages = ref<ChatMessage[]>([]) as Ref<ChatMessage[]>
@@ -61,7 +69,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   const phase = ref<MessagePhase>('idle')
   const error = ref<string | null>(null)
   const isStreaming = computed(
-    () => phase.value === 'pendingCreate' || phase.value === 'retrieving' || phase.value === 'reranking' || phase.value === 'generating',
+    () => phase.value === 'retrieving' || phase.value === 'reranking' || phase.value === 'generating',
   )
 
   let abortController: AbortController | null = null
@@ -107,19 +115,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
         messages.value = prev && prev.role === 'user' ? arr.slice(0, -2) : arr.slice(0, -1)
       }
     }
-    let sid = toValue(sessionId)
-    if (sid === 'new') {
-      phase.value = 'pendingCreate'
-      try {
-        const session = await chatApi.createSession()
-        sid = session.id
-        router.replace(`/chat/${sid}`)
-      } catch {
-        phase.value = 'error'
-        error.value = '创建会话失败'
-        return
-      }
-    }
+    const sid = toValue(sessionId)
     // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询（避免路由尚未更新时命中 'new'）
     const handleEvent = (ev: ChatStreamEvent) => {
       if (!streamingMessage.value) return
