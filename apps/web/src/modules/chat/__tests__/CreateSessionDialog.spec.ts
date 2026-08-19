@@ -126,6 +126,7 @@ describe('CreateSessionDialog', () => {
     await wrapper.find('input').setValue('我的会话')
     await submit(wrapper)
     expect(createSession).toHaveBeenCalledWith({ title: '我的会话', workflowType: 'rag' })
+    expect(wrapper.emitted('created')?.[0]?.[0]).toMatchObject({ id: 's-1', title: 'x' })
   })
 
   it('选择工作流后带 workflowId 与该工作流的 type', async () => {
