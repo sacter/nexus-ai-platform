@@ -8,10 +8,13 @@ import {
   Delete,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { CreateChatDto } from './dto/create-chat.dto';
+// import { CreateChatDto } from './dto/create-chat.dto';
+import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateChatDto } from './dto/update-chat.dto';
 import { SessionService } from './session.service';
 import { CitationService } from './citation.service';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../../common/decorators/current-user.decorator';
 
 @Controller('chat')
 export class ChatController {
@@ -21,19 +24,22 @@ export class ChatController {
     private readonly citation: CitationService,
   ) {}
 
-  @Post()
-  create(@Body() createChatDto: CreateChatDto) {
-    return this.chat.create(createChatDto);
+  @Post('/sessions')
+  create(
+    @Body() createSessionDto: CreateSessionDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.session.create(createSessionDto, user.sub);
+  }
+
+  @Get('/sessions')
+  findAllSessions(@CurrentUser() user: JwtPayload) {
+    return this.session.findAll(user.sub);
   }
 
   @Get()
   findAll() {
     return this.chat.findAll();
-  }
-
-  @Get('/sessions')
-  findAllSessions() {
-    return this.session.findAll();
   }
 
   @Get(':id')

@@ -15,11 +15,10 @@ export class CreateSessionDto {
   promptTemplateId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(32)
-  workflowType!: string;
+  @IsOptional()
+  aiApplicationId?: string;
 
   @IsString()
   @IsOptional()
-  workflowId!: string;
+  workflowId?: string;
 }
