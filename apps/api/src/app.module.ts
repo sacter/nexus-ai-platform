@@ -23,6 +23,7 @@ import { ModelModule } from './modules/model/model.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { AiApplicationModule } from './modules/ai-application/ai-application.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
+import { PromptTemplateModule } from './modules/prompt_template/prompt_template.module';
 
 import { QUEUE_NAMES } from '@nexus/shared';
 
@@ -74,6 +75,7 @@ import { QUEUE_NAMES } from '@nexus/shared';
     ChatModule,
     AiApplicationModule,
     WorkflowModule,
+    PromptTemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,9 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { PromptTemplateService } from './prompt_template.service';
 import { CreatePromptTemplateDto } from './dto/create-prompt_template.dto';
 import { UpdatePromptTemplateDto } from './dto/update-prompt_template.dto';
 
-@Controller('prompt-template')
+@Controller('prompt-templates')
 export class PromptTemplateController {
   constructor(private readonly promptTemplateService: PromptTemplateService) {}
 
@@ -19,16 +27,19 @@ export class PromptTemplateController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.promptTemplateService.findOne(+id);
+    return this.promptTemplateService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePromptTemplateDto: UpdatePromptTemplateDto) {
-    return this.promptTemplateService.update(+id, updatePromptTemplateDto);
+  update(
+    @Param('id') id: string,
+    @Body() updatePromptTemplateDto: UpdatePromptTemplateDto,
+  ) {
+    return this.promptTemplateService.update(id, updatePromptTemplateDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.promptTemplateService.remove(+id);
+    return this.promptTemplateService.remove(id);
   }
 }
