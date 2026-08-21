@@ -21,6 +21,7 @@ import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { ModelModule } from './modules/model/model.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { AiApplicationModule } from './modules/ai-application/ai-application.module';
 
 import { QUEUE_NAMES } from '@nexus/shared';
 
@@ -70,6 +71,7 @@ import { QUEUE_NAMES } from '@nexus/shared';
     ApiKeyModule,
     ModelModule,
     ChatModule,
+    AiApplicationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
