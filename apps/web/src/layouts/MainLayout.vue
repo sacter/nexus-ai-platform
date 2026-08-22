@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
-import AppSidebar from '@/components/layout/AppSidebar.vue'
-import AppHeader from '@/components/layout/AppHeader.vue'
+import AppHeader from './AppHeader.vue'
+import AppSidebar from './AppSidebar.vue'
 
 const route = useRoute()
 </script>

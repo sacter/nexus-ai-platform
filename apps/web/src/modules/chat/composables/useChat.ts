@@ -103,6 +103,8 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
 
   async function send(content: string) {
     const text = content.trim()
+    console.log('send:', text);
+    
     if (!text || isStreaming.value) return
     error.value = null
     // 重试清理：末尾若是失败/中断的助手占位（streaming 关、phase error/aborted），
