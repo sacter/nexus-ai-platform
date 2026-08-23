@@ -512,6 +512,7 @@ CREATE TABLE chat_sessions (
 
     -- ★ AI Application 关联 (V2)
     ai_application_id   UUID                  DEFAULT NULL,     -- 若通过 AI App 发起, 记录来源
+    model_id            UUID                  DEFAULT NULL,     -- 会话自带对话模型（快捷/自定义模式写入，使会话自包含）
 
     -- ★ Workflow 关联
     workflow_type       VARCHAR(32)  NOT NULL DEFAULT 'rag'
@@ -978,6 +979,38 @@ CREATE INDEX idx_ai_app_tools_tool_id ON ai_application_tools(tool_id);
 COMMENT ON TABLE ai_application_tools IS 'AI 应用与工具的 N:M 关联 — 一个应用可挂载多个工具';
 ```
 
+### 4.19b chat_session_tools — 会话工具绑定表 (★ V3 新增)
+
+```sql
+CREATE TABLE chat_session_tools (
+    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+    tool_id    UUID NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (session_id, tool_id)
+);
+
+CREATE INDEX idx_chat_session_tools_session_id ON chat_session_tools(session_id);
+CREATE INDEX idx_chat_session_tools_tool_id    ON chat_session_tools(tool_id);
+
+COMMENT ON TABLE chat_session_tools IS '会话与工具的 N:M 绑定 — 快捷模式从 AI 应用快照写入，自定义模式手动选择写入';
+```
+
+```prisma
+model ChatSessionTool {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  toolId    String   @map("tool_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tool      Tool        @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  @@unique([sessionId, toolId])
+  @@index([sessionId])
+  @@index([toolId])
+  @@map("chat_session_tools")
+}
+```
+
 ### 4.20 models — 模型注册表 (★ V2 核心新增)
 
 ```sql
@@ -1329,6 +1362,7 @@ model ChatSession {
   title             String   @default("New Chat") @db.VarChar(512)
   promptTemplateId  String?  @map("prompt_template_id") @db.Uuid
   aiApplicationId   String?  @map("ai_application_id") @db.Uuid      // ★ V2
+  modelId           String?  @map("model_id") @db.Uuid                          // ★ V3: 会话自带模型
   workflowType      String   @default("rag") @map("workflow_type") @db.VarChar(32)
   workflowId        String?  @map("workflow_id") @db.Uuid
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()

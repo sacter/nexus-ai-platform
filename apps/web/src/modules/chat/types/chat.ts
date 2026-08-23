@@ -46,6 +46,7 @@ export interface ChatSession {
   title: string
   workflowType?: string
   kbId?: string
+  modelId?: string
   aiApplicationId?: string
   lastMessage?: { content: string; role: string; createdAt: string }
   createdAt: string

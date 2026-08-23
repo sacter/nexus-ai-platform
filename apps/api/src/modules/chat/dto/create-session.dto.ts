@@ -1,4 +1,10 @@
-import { IsString, MaxLength, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsString,
+  MaxLength,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+} from 'class-validator';
 
 export class CreateSessionDto {
   @IsString()
@@ -17,6 +23,15 @@ export class CreateSessionDto {
   @IsString()
   @IsOptional()
   aiApplicationId?: string;
+
+  @IsString()
+  @IsOptional()
+  modelId?: string;
+
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  toolIds?: string[];
 
   @IsString()
   @IsOptional()
