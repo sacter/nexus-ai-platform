@@ -1,6 +1,4 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { CreateChatDto } from './dto/create-chat.dto';
-import { UpdateChatDto } from './dto/update-chat.dto';
 import { PrismaService } from '@nexus/database';
 import { RetrievalService } from '../retrieval/retrieval.service';
 import { ModelCallerService } from '../model/model-caller.service';
@@ -35,10 +33,6 @@ export class ChatService {
     private readonly sessionLock: SessionLockService,
   ) {}
 
-  create(createChatDto: CreateChatDto) {
-    return 'This action adds a new chat';
-  }
-
   // POST /chat/sessions/:id/messages —— 前置：只取会话锁。
   // 必须在写 SSE 头前调用：锁被占用抛 429（TooManyRequestsException → HttpExceptionFilter 返回 HTTP 状态码）；
   // 目标解析/流内错误由 streamMessage 发 {type:'error'} 事件兜底，不走 HTTP。
@@ -68,17 +62,28 @@ export class ChatService {
       });
 
       // ② 检索上下文（失败不阻断，降级为纯 LLM）
-      yield { type: 'step', data: { step: 'retrieval', message: '正在检索知识库…' } };
+      yield {
+        type: 'step',
+        data: { step: 'retrieval', message: '正在检索知识库…' },
+      };
       const citations = await this.searchContext(content, target.kbId);
       yield { type: 'citations', data: citations };
 
       // ③ 组装 messages：system（检索结果 + 角色设定 + 引用标注）+ 预算内历史 + 当前提问
-      yield { type: 'step', data: { step: 'generating', message: '正在生成回答…' } };
+      yield {
+        type: 'step',
+        data: { step: 'generating', message: '正在生成回答…' },
+      };
       const history = await this.loadHistory(sessionId);
       const messages = [
         {
           role: 'system' as const,
-          content: this.buildSystemPrompt(target.systemPrompt, citations, content, history),
+          content: this.buildSystemPrompt(
+            target.systemPrompt,
+            citations,
+            content,
+            history,
+          ),
         },
         ...history,
         { role: 'user' as const, content },
@@ -120,12 +125,15 @@ export class ChatService {
           promptTokens: usage?.promptTokens ?? 0,
           completionTokens: usage?.completionTokens ?? 0,
           totalTokens: usage?.totalTokens ?? 0,
-          metadata: { model: modelName } as unknown as Prisma.InputJsonValue,
+          metadata: { model: modelName },
         },
       });
 
       // ⑥ done（前端收到后重拉历史：此时 user/assistant 均已落库）
-      yield { type: 'done', data: { messageId: assistant.id, usage, citations } };
+      yield {
+        type: 'done',
+        data: { messageId: assistant.id, usage, citations },
+      };
     } catch (err) {
       // 客户端断开/超时：静默结束，不打扰已断开的连接
       if (signal?.aborted || (err as Error)?.name === 'AbortError') return;
@@ -133,7 +141,10 @@ export class ChatService {
         `chat streamMessage 失败: ${(err as Error)?.message}`,
         (err as Error)?.stack,
       );
-      yield { type: 'error', data: { message: (err as Error)?.message ?? '生成失败' } };
+      yield {
+        type: 'error',
+        data: { message: (err as Error)?.message ?? '生成失败' },
+      };
     } finally {
       await this.sessionLock.release(sessionId).catch(() => {});
     }
@@ -146,13 +157,14 @@ export class ChatService {
       select: { id: true, kbId: true, aiApplicationId: true },
     });
     if (!session) throw new BadRequestException('会话不存在');
-    if (!session.aiApplicationId) throw new BadRequestException('会话未绑定 AI 应用');
+    if (!session.aiApplicationId)
+      throw new BadRequestException('会话未绑定 AI 应用');
     const app = await this.prisma.aiApplication.findUnique({
       where: { id: session.aiApplicationId },
       select: { modelId: true, promptTemplateId: true, knowledgeBaseId: true },
     });
     if (!app) throw new BadRequestException('AI 应用不存在');
-    // kbId 优先会话自身的，其次应用默认知识库（不能把 session.id 当 kbId）
+    // kbId 优先会话自身的，其次应用默认知识库
     const kbId = session.kbId ?? app.knowledgeBaseId;
     if (!kbId) throw new BadRequestException('会话未配置知识库');
     const model = await this.modelCaller.resolveChatModel(app.modelId);
@@ -161,9 +173,16 @@ export class ChatService {
   }
 
   /** 检索上下文；失败降级为空（纯 LLM），不阻断生成 */
-  private async searchContext(query: string, kbId: string): Promise<CitationDto[]> {
+  private async searchContext(
+    query: string,
+    kbId: string,
+  ): Promise<CitationDto[]> {
     try {
-      const search = await this.retrieval.search({ query, kbId, strategy: 'vector' });
+      const search = await this.retrieval.search({
+        query,
+        kbId,
+        strategy: 'vector',
+      });
       return search.results.map((r) => ({
         documentName: r.documentName,
         page: r.page,
@@ -246,21 +265,5 @@ export class ChatService {
       select: { content: true },
     });
     return version?.content || DEFAULT_SYSTEM_PROMPT;
-  }
-
-  findAll() {
-    return `This action returns all chat`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} chat`;
-  }
-
-  update(id: number, updateChatDto: UpdateChatDto) {
-    return `This action updates a #${id} chat`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} chat`;
   }
 }

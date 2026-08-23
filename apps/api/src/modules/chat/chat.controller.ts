@@ -63,7 +63,7 @@ export class ChatController {
 
     const abort = new AbortController();
     return new Observable<MessageEvent>((subscriber) => {
-      (async () => {
+      void (async () => {
         try {
           for await (const ev of this.chat.streamMessage(
             id,

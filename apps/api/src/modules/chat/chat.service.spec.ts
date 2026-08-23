@@ -7,7 +7,8 @@ import type { ResolvedChatModel } from '../model/model-caller.service';
 import type { ChatStreamEvent } from './chat-stream.types';
 
 /** 捕获 provider.stream 收到的请求，用于断言 system 消息内容 */
-let capturedRequest: { messages: { role: string; content: string }[] } | undefined;
+let capturedRequest:
+  { messages: { role: string; content: string }[] } | undefined;
 
 const happyStream = async function* () {
   yield { delta: '你好', done: false };
@@ -20,7 +21,9 @@ const happyStream = async function* () {
 };
 
 /** mock 一个可流式 ChatProvider（默认 happyStream，可传自定义） */
-function mockModel(opts: { stream?: typeof happyStream } = {}): ResolvedChatModel {
+function mockModel(
+  opts: { stream?: typeof happyStream } = {},
+): ResolvedChatModel {
   const stream = opts.stream ?? happyStream;
   return {
     client: {
@@ -38,7 +41,9 @@ function mockModel(opts: { stream?: typeof happyStream } = {}): ResolvedChatMode
   } as unknown as ResolvedChatModel;
 }
 
-async function drain(gen: AsyncGenerator<ChatStreamEvent>): Promise<ChatStreamEvent[]> {
+async function drain(
+  gen: AsyncGenerator<ChatStreamEvent>,
+): Promise<ChatStreamEvent[]> {
   const events: ChatStreamEvent[] = [];
   for await (const ev of gen) events.push(ev);
   return events;
@@ -131,7 +136,9 @@ describe('ChatService', () => {
   describe('streamMessage', () => {
     it('happy path：step→citations→step→delta→done，system 注入 [1] 引用，用户/助手落库，finally 释放锁', async () => {
       mockTargetOk();
-      prisma.chatMessage.findMany.mockResolvedValue([{ role: 'user', content: '历史1' }]);
+      prisma.chatMessage.findMany.mockResolvedValue([
+        { role: 'user', content: '历史1' },
+      ]);
 
       const events = await drain(
         service.streamMessage('session-1', 'user-1', '你好'),
@@ -194,7 +201,9 @@ describe('ChatService', () => {
         'user',
         'user',
       ]);
-      expect(capturedRequest!.messages[0].content).toContain('[1] 《手册.pdf》');
+      expect(capturedRequest!.messages[0].content).toContain(
+        '[1] 《手册.pdf》',
+      );
       expect(capturedRequest!.messages[0].content).toContain('第3页');
 
       expect(sessionLock.release).toHaveBeenCalledWith('session-1');
@@ -205,7 +214,9 @@ describe('ChatService', () => {
 
       const events = await drain(service.streamMessage('s', 'u', 'hi'));
 
-      expect(events).toEqual([{ type: 'error', data: { message: '会话不存在' } }]);
+      expect(events).toEqual([
+        { type: 'error', data: { message: '会话不存在' } },
+      ]);
       expect(prisma.chatMessage.create).not.toHaveBeenCalled();
       expect(sessionLock.release).toHaveBeenCalledWith('s');
     });
@@ -229,9 +240,7 @@ describe('ChatService', () => {
       mockTargetOk();
       retrieval.search.mockRejectedValue(new Error('ES down'));
 
-      const events = await drain(
-        service.streamMessage('session-1', 'u', 'hi'),
-      );
+      const events = await drain(service.streamMessage('session-1', 'u', 'hi'));
 
       expect(events.some((e) => e.type === 'error')).toBe(false);
       expect(events.find((e) => e.type === 'citations')).toEqual({
@@ -266,7 +275,11 @@ describe('ChatService', () => {
       prisma.chatMessage.create.mockResolvedValue({ id: 'a-1' });
       retrieval.search.mockResolvedValue({
         results: [
-          { documentName: '手册.pdf', content: '片段', citation: { snippet: '片段' } },
+          {
+            documentName: '手册.pdf',
+            content: '片段',
+            citation: { snippet: '片段' },
+          },
         ],
         strategy: 'vector',
         totalCandidates: 1,
