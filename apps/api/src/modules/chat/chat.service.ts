@@ -189,7 +189,7 @@ export class ChatService {
 
     const model = await this.modelCaller.resolveChatModel(modelId);
     const systemPrompt = await this.resolveSystemPrompt(
-      session.promptTemplateId ?? app?.promptTemplateId,
+      session.promptTemplateId ?? app?.promptTemplateId ?? null,
     );
     return { kbId, model, systemPrompt };
   }

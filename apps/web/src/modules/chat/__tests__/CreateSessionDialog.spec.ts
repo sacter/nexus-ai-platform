@@ -183,6 +183,18 @@ describe('CreateSessionDialog', () => {
     })
   })
 
+  it('快捷模式：未选 AI 应用时不提交并提示', async () => {
+    const warningSpy = vi.spyOn(ElMessage, 'warning').mockImplementation(() => ({}) as never)
+    const wrapper = mountDialog()
+    await flushPromises()
+    await switchMode(wrapper, 'quick')
+    await setTitle(wrapper, '应用会话')
+    await submit(wrapper)
+    expect(createSession).not.toHaveBeenCalled()
+    expect(warningSpy).toHaveBeenCalledWith('请选择 AI 应用')
+    warningSpy.mockRestore()
+  })
+
   it('标题为空时校验失败，不提交', async () => {
     const wrapper = mountDialog()
     await flushPromises()

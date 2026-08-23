@@ -95,6 +95,11 @@ async function handleSubmit() {
   if (!formRef.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
+  // 快捷模式必须选 AI 应用，否则后端会走自定义分支生成无法对话的空会话
+  if (mode.value === 'quick' && !form.aiApplicationId) {
+    ElMessage.warning('请选择 AI 应用')
+    return
+  }
   submitting.value = true
   try {
     const payload: CreateSessionPayload =

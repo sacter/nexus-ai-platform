@@ -22,26 +22,30 @@ export class SessionService {
         },
       });
       if (!app) throw new NotFoundException('AI 应用不存在');
-      const session = await this.prisma.chatSession.create({
-        data: {
-          title: dto.title,
-          userId,
-          aiApplicationId: dto.aiApplicationId,
-          kbId: app.knowledgeBaseId,
-          workflowId: app.workflowId,
-          modelId: app.modelId,
-          promptTemplateId: app.promptTemplateId,
-          workflowType: app.workflow?.type ?? DEFAULT_WORKFLOW_TYPE,
-        },
-      });
-      if (app.tools.length) {
-        await this.prisma.chatSessionTool.createMany({
-          data: app.tools.map((t) => ({
-            sessionId: session.id,
-            toolId: t.toolId,
-          })),
+      // 会话 + 工具快照同一事务，避免工具写失败留下孤儿会话
+      const [session] = await this.prisma.$transaction(async (tx) => {
+        const s = await tx.chatSession.create({
+          data: {
+            title: dto.title,
+            userId,
+            aiApplicationId: dto.aiApplicationId,
+            kbId: app.knowledgeBaseId,
+            workflowId: app.workflowId,
+            modelId: app.modelId,
+            promptTemplateId: app.promptTemplateId,
+            workflowType: app.workflow?.type ?? DEFAULT_WORKFLOW_TYPE,
+          },
         });
-      }
+        if (app.tools.length) {
+          await tx.chatSessionTool.createMany({
+            data: app.tools.map((t) => ({
+              sessionId: s.id,
+              toolId: t.toolId,
+            })),
+          });
+        }
+        return [s];
+      });
       return session;
     }
 
@@ -59,14 +63,18 @@ export class SessionService {
     }
     // toolIds 是关联表数据，不能透传到 chatSession.create
     const { toolIds, ...sessionData } = dto;
-    const session = await this.prisma.chatSession.create({
-      data: { ...sessionData, userId, workflowType },
-    });
-    if (toolIds?.length) {
-      await this.prisma.chatSessionTool.createMany({
-        data: toolIds.map((toolId) => ({ sessionId: session.id, toolId })),
+    // 会话 + 工具关联同一事务，toolId 非法（P2003）时整体回滚，避免孤儿会话
+    const [session] = await this.prisma.$transaction(async (tx) => {
+      const s = await tx.chatSession.create({
+        data: { ...sessionData, userId, workflowType },
       });
-    }
+      if (toolIds?.length) {
+        await tx.chatSessionTool.createMany({
+          data: toolIds.map((toolId) => ({ sessionId: s.id, toolId })),
+        });
+      }
+      return [s];
+    });
     return session;
   }
 

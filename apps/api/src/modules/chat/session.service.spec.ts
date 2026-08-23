@@ -13,6 +13,8 @@ describe('SessionService.create', () => {
       workflow: { findUnique: jest.fn() },
       chatSession: { create: jest.fn() },
       chatSessionTool: { createMany: jest.fn() },
+      // 交互式事务：回调以 prisma 作为 tx，沿用上面的 create/createMany mock
+      $transaction: jest.fn((cb: (tx: any) => unknown) => cb(prisma)),
     };
     service = new SessionService(prisma as PrismaService);
   });
