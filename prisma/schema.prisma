@@ -330,6 +330,7 @@ model ChatSession {
 
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   kb             KnowledgeBase?    @relation(fields: [kbId], references: [id], onDelete: SetNull)
+  
   model          Model?            @relation(fields: [modelId], references: [id], onDelete: SetNull)   // ★
   aiApplication  AiApplication?    @relation(fields: [aiApplicationId], references: [id])  // ★
   workflow       Workflow?         @relation(fields: [workflowId], references: [id])

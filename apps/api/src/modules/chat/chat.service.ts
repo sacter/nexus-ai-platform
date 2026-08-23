@@ -165,17 +165,19 @@ export class ChatService {
     if (!session) throw new BadRequestException('会话不存在');
 
     // 旧会话兼容：会话自身缺 modelId/kbId 且带 aiApplicationId → 回退 AI 应用解析
-    let app:
-      | {
-          modelId: string;
-          promptTemplateId: string | null;
-          knowledgeBaseId: string | null;
-        }
-      | null = null;
+    let app: {
+      modelId: string;
+      promptTemplateId: string | null;
+      knowledgeBaseId: string | null;
+    } | null = null;
     if ((!session.modelId || !session.kbId) && session.aiApplicationId) {
       app = await this.prisma.aiApplication.findUnique({
         where: { id: session.aiApplicationId },
-        select: { modelId: true, promptTemplateId: true, knowledgeBaseId: true },
+        select: {
+          modelId: true,
+          promptTemplateId: true,
+          knowledgeBaseId: true,
+        },
       });
       if (!app) throw new BadRequestException('AI 应用不存在');
     }
