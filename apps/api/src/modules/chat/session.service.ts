@@ -8,8 +8,44 @@ export class SessionService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateSessionDto, userId: string) {
-    // workflowType 以后端为准：选了工作流就用它的 type（DTO 不含 workflowType，
-    // 前端直传的值会被 ValidationPipe whitelist 剥离，到不了这里）
+    // 快捷模式：选 AI 应用 → 后端把应用绑定快照到会话（session 自包含）
+    if (dto.aiApplicationId) {
+      const app = await this.prisma.aiApplication.findUnique({
+        where: { id: dto.aiApplicationId },
+        select: {
+          knowledgeBaseId: true,
+          workflowId: true,
+          modelId: true,
+          promptTemplateId: true,
+          workflow: { select: { type: true } },
+          tools: { select: { toolId: true } },
+        },
+      });
+      if (!app) throw new NotFoundException('AI 应用不存在');
+      const session = await this.prisma.chatSession.create({
+        data: {
+          title: dto.title,
+          userId,
+          aiApplicationId: dto.aiApplicationId,
+          kbId: app.knowledgeBaseId,
+          workflowId: app.workflowId,
+          modelId: app.modelId,
+          promptTemplateId: app.promptTemplateId,
+          workflowType: app.workflow?.type ?? DEFAULT_WORKFLOW_TYPE,
+        },
+      });
+      if (app.tools.length) {
+        await this.prisma.chatSessionTool.createMany({
+          data: app.tools.map((t) => ({
+            sessionId: session.id,
+            toolId: t.toolId,
+          })),
+        });
+      }
+      return session;
+    }
+
+    // 自定义模式：手动选择 kb/workflow/model/prompt/tools
     let workflowType: string = DEFAULT_WORKFLOW_TYPE;
     if (dto.workflowId) {
       const workflow = await this.prisma.workflow.findUnique({
@@ -21,9 +57,17 @@ export class SessionService {
       }
       workflowType = workflow.type;
     }
-    return this.prisma.chatSession.create({
-      data: { ...dto, userId, workflowType },
+    // toolIds 是关联表数据，不能透传到 chatSession.create
+    const { toolIds, ...sessionData } = dto;
+    const session = await this.prisma.chatSession.create({
+      data: { ...sessionData, userId, workflowType },
     });
+    if (toolIds?.length) {
+      await this.prisma.chatSessionTool.createMany({
+        data: toolIds.map((toolId) => ({ sessionId: session.id, toolId })),
+      });
+    }
+    return session;
   }
 
   findAll(userId: string) {
