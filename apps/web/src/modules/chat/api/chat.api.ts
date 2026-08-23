@@ -6,8 +6,10 @@ export interface CreateSessionPayload {
   title: string
   kbId?: string
   promptTemplateId?: string
+  modelId?: string
   aiApplicationId?: string
   workflowId?: string
+  toolIds?: string[]
   workflowType: WorkflowType
 }
 
