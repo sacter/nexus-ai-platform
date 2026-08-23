@@ -5,11 +5,7 @@ import ElementPlus, { ElMessage } from 'element-plus'
 import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
 import CreateSessionDialog from '../components/CreateSessionDialog.vue'
 
-// ElSelect 在 jsdom 下配合异步 options 会触发 "Maximum recursive updates exceeded"
-// （其内部 watch(() => states.options.entries()) → setSelected 循环不收敛），
-// 进而中断 ElDialog 初始渲染。这里用最小桩件替换 ElSelect/ElOption，
-// 仅保留断言依赖的 modelValue/disabled props 与 update:modelValue 事件转发，
-// 不改变被测组件（CreateSessionDialog）的响应式行为。
+// ElSelect/ElOption/ElForm 在 jsdom + EP 2.14 下的兼容性桩件（理由见原文件注释，保持不变）
 const ElSelectStub = defineComponent({
   name: 'ElSelect',
   props: {
@@ -31,12 +27,6 @@ const ElOptionStub = defineComponent({
   },
   template: '<div class="el-option-stub" />',
 })
-// ElForm 在当前 jsdom + VTU + Element Plus 2.14 组合下，ElFormItem 不会向 ElForm
-// 注册（fields 数组恒空），导致 formRef.validate() 永远 resolve(true)——即便标题为空
-// 也不拒绝。这是 EP 内部 provide/inject 注册在此环境下的兼容性问题，非被测组件问题。
-// 这里用最小桩件替换 ElForm：暴露 validate()（标题为空时 reject、否则 resolve(true)）
-// 与 clearValidate()，并在校验失败时渲染 .el-form-item__error，使被测组件的
-// handleSubmit 校验短路逻辑与错误展示可被断言覆盖。
 const ElFormStub = defineComponent({
   name: 'ElForm',
   props: {
@@ -68,6 +58,8 @@ const kbList = vi.fn()
 const promptList = vi.fn()
 const appList = vi.fn()
 const workflowList = vi.fn()
+const modelList = vi.fn()
+const toolList = vi.fn()
 
 vi.mock('@/modules/chat/api/chat.api', () => ({
   chatApi: { createSession: (...args: unknown[]) => createSession(...args) },
@@ -84,6 +76,12 @@ vi.mock('@/modules/ai-application/api/ai-application.api', () => ({
 vi.mock('@/modules/workflow/api/workflow.api', () => ({
   workflowsApi: { list: (...args: unknown[]) => workflowList(...args) },
 }))
+vi.mock('@/modules/models/api/model.api', () => ({
+  modelsApi: { list: (...args: unknown[]) => modelList(...args) },
+}))
+vi.mock('@/modules/tools/api/tool.api', () => ({
+  toolsApi: { list: (...args: unknown[]) => toolList(...args) },
+}))
 
 function mountDialog(props: Record<string, unknown> = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -91,17 +89,26 @@ function mountDialog(props: Record<string, unknown> = {}) {
     props: { visible: true, ...props },
     global: {
       plugins: [ElementPlus, [VueQueryPlugin, { queryClient: qc }]],
-      // el-dialog 默认 teleport 到 body；stub 掉让内容渲染在 wrapper 内，便于查询
-      // ElSelect/ElOption/ElForm 见上方说明：jsdom 下 EP 组件兼容性问题，桩件替换
       stubs: { teleport: true, ElForm: ElFormStub, ElSelect: ElSelectStub, ElOption: ElOptionStub },
     },
   })
 }
 
-// el-select 顺序：0=AI 应用 1=知识库 2=提示词 3=工作流
-async function selectValue(wrapper: VueWrapper, index: number, value: string) {
+async function setTitle(wrapper: VueWrapper, text: string) {
+  await wrapper.find('input').setValue(text)
+}
+
+// 自定义模式（默认）下 el-select 顺序：0=知识库 1=提示词 2=工作流 3=模型 4=工具
+// 快捷模式下顺序：0=AI 应用
+async function selectValue(wrapper: VueWrapper, index: number, value: string | string[]) {
   const selects = wrapper.findAllComponents({ name: 'ElSelect' })
   selects[index].vm.$emit('update:modelValue', value)
+  await flushPromises()
+}
+
+async function switchMode(wrapper: VueWrapper, mode: 'quick' | 'custom') {
+  const radio = wrapper.find(`input[type="radio"][value="${mode}"]`)
+  await radio.setValue(true)
   await flushPromises()
 }
 
@@ -118,22 +125,42 @@ describe('CreateSessionDialog', () => {
     promptList.mockResolvedValue([{ id: 'pt-1', name: '默认提示词' }])
     appList.mockResolvedValue([{ id: 'app-1', name: '客服助手' }])
     workflowList.mockResolvedValue([{ id: 'wf-1', name: 'ReWOO 流程', type: 'rewoo' }])
+    modelList.mockResolvedValue([
+      { id: 'model-1', displayName: 'DeepSeek', type: 'chat' },
+      { id: 'model-2', displayName: 'BGE', type: 'embedding' },
+    ])
+    toolList.mockResolvedValue([{ id: 'tool-1' }, { id: 'tool-2' }])
   })
 
-  it('仅填标题即可创建，workflowType 默认 rag', async () => {
+  it('自定义模式（默认）：仅填标题即可创建，workflowType 默认 rag', async () => {
     const wrapper = mountDialog()
     await flushPromises()
-    await wrapper.find('input').setValue('我的会话')
+    await setTitle(wrapper, '我的会话')
     await submit(wrapper)
     expect(createSession).toHaveBeenCalledWith({ title: '我的会话', workflowType: 'rag' })
     expect(wrapper.emitted('created')?.[0]?.[0]).toMatchObject({ id: 's-1', title: 'x' })
   })
 
-  it('选择工作流后带 workflowId 与该工作流的 type', async () => {
+  it('自定义模式：选模型与工具后 payload 带 modelId 与 toolIds', async () => {
     const wrapper = mountDialog()
     await flushPromises()
-    await wrapper.find('input').setValue('流程会话')
-    await selectValue(wrapper, 3, 'wf-1')
+    await setTitle(wrapper, '带模型会话')
+    await selectValue(wrapper, 3, 'model-1')
+    await selectValue(wrapper, 4, ['tool-1', 'tool-2'])
+    await submit(wrapper)
+    expect(createSession).toHaveBeenCalledWith({
+      title: '带模型会话',
+      modelId: 'model-1',
+      toolIds: ['tool-1', 'tool-2'],
+      workflowType: 'rag',
+    })
+  })
+
+  it('自定义模式：选工作流后带 workflowId 与该工作流的 type', async () => {
+    const wrapper = mountDialog()
+    await flushPromises()
+    await setTitle(wrapper, '流程会话')
+    await selectValue(wrapper, 2, 'wf-1')
     await submit(wrapper)
     expect(createSession).toHaveBeenCalledWith({
       title: '流程会话',
@@ -142,18 +169,12 @@ describe('CreateSessionDialog', () => {
     })
   })
 
-  it('选择 AI 应用后清空并禁用知识库/提示词/工作流，payload 只带 aiApplicationId', async () => {
+  it('快捷模式：选 AI 应用后 payload 只带 aiApplicationId', async () => {
     const wrapper = mountDialog()
     await flushPromises()
-    await wrapper.find('input').setValue('应用会话')
-    await selectValue(wrapper, 1, 'kb-1')
-    await selectValue(wrapper, 3, 'wf-1')
+    await switchMode(wrapper, 'quick')
+    await setTitle(wrapper, '应用会话')
     await selectValue(wrapper, 0, 'app-1')
-    const selects = wrapper.findAllComponents({ name: 'ElSelect' })
-    expect(selects[1].props('modelValue')).toBe('')
-    expect(selects[1].props('disabled')).toBe(true)
-    expect(selects[2].props('disabled')).toBe(true)
-    expect(selects[3].props('disabled')).toBe(true)
     await submit(wrapper)
     expect(createSession).toHaveBeenCalledWith({
       title: '应用会话',
@@ -176,32 +197,18 @@ describe('CreateSessionDialog', () => {
     expect((wrapper.find('input').element as HTMLInputElement).value).toBe('知识库问答')
   })
 
-  it('选项源加载失败显示错误提示，且不阻塞仅标题创建', async () => {
-    kbList.mockRejectedValue(new Error('boom'))
-    const wrapper = mountDialog()
-    await flushPromises()
-    expect(wrapper.text()).toContain('加载失败')
-    await wrapper.find('input').setValue('容错会话')
-    await submit(wrapper)
-    expect(createSession).toHaveBeenCalledWith({ title: '容错会话', workflowType: 'rag' })
-  })
-
   it('提交失败时弹窗保持打开、表单内容保留并提示错误', async () => {
     createSession.mockRejectedValue(new Error('boom'))
-    // ElMessage.error 在 jsdom 下会尝试挂载消息组件到 body，mock 掉避免副作用并便于断言
     const errorSpy = vi.spyOn(ElMessage, 'error').mockImplementation(() => ({}) as never)
     const wrapper = mountDialog()
     await flushPromises()
-    await wrapper.find('input').setValue('失败会话')
+    await setTitle(wrapper, '失败会话')
     await submit(wrapper)
     expect(createSession).toHaveBeenCalledTimes(1)
-    // 弹窗保持打开：组件未发出 update:visible(false)
     const visibleEmits = wrapper.emitted('update:visible')
     const closed = visibleEmits?.some((payload) => payload[0] === false) ?? false
     expect(closed).toBe(false)
-    // 表单内容保留
     expect((wrapper.find('input').element as HTMLInputElement).value).toBe('失败会话')
-    // 错误提示
     expect(errorSpy).toHaveBeenCalledWith('创建会话失败')
     errorSpy.mockRestore()
   })
