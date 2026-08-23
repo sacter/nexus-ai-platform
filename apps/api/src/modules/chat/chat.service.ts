@@ -154,21 +154,43 @@ export class ChatService {
   private async resolveTarget(sessionId: string, userId: string) {
     const session = await this.prisma.chatSession.findFirst({
       where: { id: sessionId, userId },
-      select: { id: true, kbId: true, aiApplicationId: true },
+      select: {
+        id: true,
+        kbId: true,
+        modelId: true,
+        promptTemplateId: true,
+        aiApplicationId: true,
+      },
     });
     if (!session) throw new BadRequestException('会话不存在');
-    if (!session.aiApplicationId)
-      throw new BadRequestException('会话未绑定 AI 应用');
-    const app = await this.prisma.aiApplication.findUnique({
-      where: { id: session.aiApplicationId },
-      select: { modelId: true, promptTemplateId: true, knowledgeBaseId: true },
-    });
-    if (!app) throw new BadRequestException('AI 应用不存在');
+
+    // 旧会话兼容：会话自身缺 modelId/kbId 且带 aiApplicationId → 回退 AI 应用解析
+    let app:
+      | {
+          modelId: string;
+          promptTemplateId: string | null;
+          knowledgeBaseId: string | null;
+        }
+      | null = null;
+    if ((!session.modelId || !session.kbId) && session.aiApplicationId) {
+      app = await this.prisma.aiApplication.findUnique({
+        where: { id: session.aiApplicationId },
+        select: { modelId: true, promptTemplateId: true, knowledgeBaseId: true },
+      });
+      if (!app) throw new BadRequestException('AI 应用不存在');
+    }
+
+    const modelId = session.modelId ?? app?.modelId;
+    if (!modelId) throw new BadRequestException('会话未配置模型');
+
     // kbId 优先会话自身的，其次应用默认知识库
-    const kbId = session.kbId ?? app.knowledgeBaseId;
+    const kbId = session.kbId ?? app?.knowledgeBaseId;
     if (!kbId) throw new BadRequestException('会话未配置知识库');
-    const model = await this.modelCaller.resolveChatModel(app.modelId);
-    const systemPrompt = await this.resolveSystemPrompt(app.promptTemplateId);
+
+    const model = await this.modelCaller.resolveChatModel(modelId);
+    const systemPrompt = await this.resolveSystemPrompt(
+      session.promptTemplateId ?? app?.promptTemplateId,
+    );
     return { kbId, model, systemPrompt };
   }
 

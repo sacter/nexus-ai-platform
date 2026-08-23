@@ -221,17 +221,19 @@ describe('ChatService', () => {
       expect(sessionLock.release).toHaveBeenCalledWith('s');
     });
 
-    it('会话未绑定 AI 应用 → error 事件', async () => {
+    it('旧会话回退 AI 应用失败（应用不存在）→ error 事件', async () => {
       prisma.chatSession.findFirst.mockResolvedValue({
         id: 's',
         kbId: null,
-        aiApplicationId: null,
+        modelId: null,
+        aiApplicationId: 'app-1',
       });
+      prisma.aiApplication.findUnique.mockResolvedValue(null);
 
       const events = await drain(service.streamMessage('s', 'u', 'hi'));
 
       expect(events).toEqual([
-        { type: 'error', data: { message: '会话未绑定 AI 应用' } },
+        { type: 'error', data: { message: 'AI 应用不存在' } },
       ]);
       expect(sessionLock.release).toHaveBeenCalledWith('s');
     });
@@ -330,6 +332,46 @@ describe('ChatService', () => {
 
       expect(events.some((e) => e.type === 'error')).toBe(false);
       expect(sessionLock.release).toHaveBeenCalledWith('session-1');
+    });
+
+    it('会话自带 modelId/kbId、无 aiApplicationId → 直接用会话字段，不再查 AI 应用', async () => {
+      prisma.chatSession.findFirst.mockResolvedValue({
+        id: 's',
+        kbId: 'kb-1',
+        modelId: 'model-1',
+        promptTemplateId: null,
+        aiApplicationId: null,
+      });
+      modelCaller.resolveChatModel.mockResolvedValue(mockModel());
+      prisma.chatMessage.findMany.mockResolvedValue([]);
+      prisma.chatMessage.create.mockResolvedValue({ id: 'a-1' });
+      retrieval.search.mockResolvedValue({
+        results: [],
+        strategy: 'vector',
+        totalCandidates: 0,
+      });
+
+      await drain(service.streamMessage('s', 'u', 'hi'));
+
+      expect(prisma.aiApplication.findUnique).not.toHaveBeenCalled();
+      expect(modelCaller.resolveChatModel).toHaveBeenCalledWith('model-1');
+    });
+
+    it('无 modelId 且无 aiApplicationId → error 事件提示未配置模型', async () => {
+      prisma.chatSession.findFirst.mockResolvedValue({
+        id: 's',
+        kbId: 'kb-1',
+        modelId: null,
+        promptTemplateId: null,
+        aiApplicationId: null,
+      });
+
+      const events = await drain(service.streamMessage('s', 'u', 'hi'));
+
+      expect(events[events.length - 1]).toEqual({
+        type: 'error',
+        data: { message: '会话未配置模型' },
+      });
     });
   });
 });
