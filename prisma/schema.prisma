@@ -537,6 +537,7 @@ model ChatSessionTool {
 
   @@unique([sessionId, toolId])
   @@index([sessionId])
+  @@index([toolId])
   @@map("chat_session_tools")
 }
 
