@@ -77,7 +77,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   watch(
     () => history.data.value,
     (data) => {
-      // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容（spec §3.4，避免清空刚生成内容）
+      // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容
       if (!isStreaming.value && data && data.length) {
         // done 后历史失效会回流与当前一致的线程；长度+末条 id 相同时跳过替换，
         // 避免 TransitionGroup 因对象引用全换而重放进入动画（用户气泡 tempId→id 闪动）
@@ -102,9 +102,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   }
 
   async function send(content: string) {
-    const text = content.trim()
-    console.log('send:', text);
-    
+    const text = content.trim()    
     if (!text || isStreaming.value) return
     error.value = null
     // 重试清理：末尾若是失败/中断的助手占位（streaming 关、phase error/aborted），
@@ -133,19 +131,28 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     abortController = new AbortController()
     const tempId = `temp-${Math.random().toString(36).slice(2)}`
     const placeholder: ChatMessage = {
-      tempId, sessionId: sid, role: 'assistant', content: '',
-      streaming: true, phase: 'retrieving', citations: [],
+      tempId,
+      sessionId: sid,
+      role: 'assistant',
+      content: '',
+      streaming: true,
+      phase: 'retrieving',
+      citations: [],
     }
     const userMsg: ChatMessage = {
-      tempId: `u-${Math.random().toString(36).slice(2)}`, sessionId: sid, role: 'user', content: text,
+      tempId: `u-${Math.random().toString(36).slice(2)}`,
+      sessionId: sid,
+      role: 'user',
+      content: text,
     }
     messages.value = [...messages.value, userMsg, placeholder]
     streamingMessage.value = placeholder
     phase.value = 'retrieving'
     try {
       const req: ChatStreamRequest = { sessionId: sid, content: text, signal: abortController.signal }
+      console.log('send:', req);
       for await (const ev of transport.stream(req)) handleEvent(ev)
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e?.name === 'AbortError') {
         phase.value = 'aborted'
         if (streamingMessage.value) {

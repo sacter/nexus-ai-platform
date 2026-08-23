@@ -32,4 +32,19 @@ export class SessionService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  // GET /chat/sessions/:id/messages —— 会话历史，按创建时间升序（对话流方向）
+  async findMessages(sessionId: string, userId: string) {
+    const session = await this.prisma.chatSession.findFirst({
+      where: { id: sessionId, userId },
+      select: { id: true },
+    });
+    if (!session) {
+      throw new NotFoundException('会话不存在');
+    }
+    return this.prisma.chatMessage.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
 }
