@@ -25,6 +25,7 @@ import { AiApplicationModule } from './modules/ai-application/ai-application.mod
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { PromptTemplateModule } from './modules/prompt_template/prompt_template.module';
 import { ToolModule } from './modules/tool/tool.module';
+import { JobModule } from './modules/job/job.module';
 
 import { QUEUE_NAMES } from '@nexus/shared';
 
@@ -78,6 +79,7 @@ import { QUEUE_NAMES } from '@nexus/shared';
     WorkflowModule,
     PromptTemplateModule,
     ToolModule,
+    JobModule,
   ],
   controllers: [AppController],
   providers: [AppService],
