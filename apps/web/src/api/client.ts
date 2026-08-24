@@ -52,6 +52,7 @@ instance.interceptors.response.use(
 const http = instance as unknown as {
   get<T = unknown>(url: string, config?: Record<string, unknown>): Promise<T>
   post<T = unknown>(url: string, data?: unknown, config?: Record<string, unknown>): Promise<T>
+  put<T = unknown>(url: string, data?: unknown, config?: Record<string, unknown>): Promise<T>
   patch<T = unknown>(url: string, data?: unknown, config?: Record<string, unknown>): Promise<T>
   delete<T = unknown>(url: string, config?: Record<string, unknown>): Promise<T>
 }
