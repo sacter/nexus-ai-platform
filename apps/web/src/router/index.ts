@@ -35,7 +35,9 @@ const routes: RouteRecordRaw[] = [
 
       // AI Applications
       { path: 'ai-applications', name: 'AiApplications', component: () => import('@/modules/ai-application/views/AppList.vue') },
+      { path: 'ai-applications/new', name: 'AiApplicationCreate', component: () => import('@/modules/ai-application/views/AppForm.vue') },
       { path: 'ai-applications/:appId', name: 'AiApplicationDetail', component: () => import('@/modules/ai-application/views/AppDetail.vue') },
+      { path: 'ai-applications/:appId/edit', name: 'AiApplicationEdit', component: () => import('@/modules/ai-application/views/AppForm.vue') },
 
       // Chat
       { path: 'chat', name: 'Chat', component: () => import('@/modules/chat/views/ChatList.vue') },

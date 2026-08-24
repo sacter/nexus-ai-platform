@@ -22,6 +22,8 @@ const ROUTE_LABELS: Record<string, string> = {
   prompts: '提示词',
   documents: '文档',
   designer: '设计器',
+  new: '新建',
+  edit: '编辑',
 }
 
 const HIDDEN_BREADCRUMBS = new Set(['/login', '/register'])

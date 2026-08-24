@@ -1,10 +1,13 @@
 import {
+  IsArray,
+  IsEnum,
   IsNotEmpty,
-  IsString,
   IsObject,
-  MaxLength,
   IsOptional,
+  IsString,
+  MaxLength,
 } from 'class-validator';
+import { ApplicationStatus } from '@prisma/client';
 
 export class CreateAiApplicationDto {
   @IsString()
@@ -16,9 +19,10 @@ export class CreateAiApplicationDto {
   @IsOptional()
   description?: string;
 
+  /** 图标标识（前端按 key 渲染）；缺省 'bot' */
   @IsString()
-  @IsNotEmpty()
-  icon!: string;
+  @IsOptional()
+  icon?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -32,15 +36,24 @@ export class CreateAiApplicationDto {
   @IsNotEmpty()
   modelId!: string;
 
+  /** 不绑定 = 使用系统默认 Prompt；null 显式解除绑定（PATCH 时） */
   @IsString()
   @IsOptional()
-  promptTemplateId?: string;
+  promptTemplateId?: string | null;
 
-  @IsString()
-  @IsNotEmpty()
-  status!: string;
+  /** 发布状态；缺省 draft */
+  @IsEnum(ApplicationStatus)
+  @IsOptional()
+  status?: ApplicationStatus;
 
+  /** 运行配置（temperature/maxTokens/welcomeMessage/suggestedQuestions）；缺省 {} */
   @IsObject()
-  @IsNotEmpty()
-  config!: Record<string, unknown>;
+  @IsOptional()
+  config?: Record<string, unknown>;
+
+  /** 创建时一次性绑定工具；与 POST /:id/tools 等价 */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  toolIds?: string[];
 }
