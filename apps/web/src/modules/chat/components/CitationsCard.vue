@@ -13,7 +13,7 @@ const expanded = ref(false)
       data-testid="citations-toggle"
       type="button"
       :aria-expanded="expanded"
-      class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors"
+      class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition-colors cursor-pointer"
       :style="{
         backgroundColor: expanded ? 'var(--accent-soft)' : 'var(--surface-secondary)',
         color: 'var(--foreground)',

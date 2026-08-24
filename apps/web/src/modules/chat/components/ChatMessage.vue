@@ -59,7 +59,7 @@ function onFeedback(action: 'like' | 'dislike') {
           data-testid="feedback-like"
           aria-label="赞"
           :aria-pressed="message.feedback === 'like'"
-          class="transition-opacity hover:opacity-100"
+          class="transition-opacity hover:opacity-100 cursor-pointer"
           :class="message.feedback === 'like' ? 'opacity-100' : 'opacity-40'"
           :style="message.feedback === 'like' ? { color: 'var(--accent)' } : {}"
           @click="onFeedback('like')"
@@ -70,7 +70,7 @@ function onFeedback(action: 'like' | 'dislike') {
           data-testid="feedback-dislike"
           aria-label="踩"
           :aria-pressed="message.feedback === 'dislike'"
-          class="transition-opacity hover:opacity-100"
+          class="transition-opacity hover:opacity-100 cursor-pointer"
           :class="message.feedback === 'dislike' ? 'opacity-100' : 'opacity-40'"
           :style="message.feedback === 'dislike' ? { color: 'var(--accent)' } : {}"
           @click="onFeedback('dislike')"
@@ -79,7 +79,7 @@ function onFeedback(action: 'like' | 'dislike') {
         </button>
         <button
           :aria-label="copied ? '已复制' : '复制'"
-          class="flex items-center gap-1 opacity-40 transition-opacity hover:opacity-100"
+          class="flex items-center gap-1 opacity-40 transition-opacity hover:opacity-100 cursor-pointer"
           @click="onCopy"
         >
           <el-icon :size="13"><CopyDocument /></el-icon>
