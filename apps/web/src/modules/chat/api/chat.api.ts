@@ -33,7 +33,6 @@ export const chatApi = {
     return http.post(`/chat/sessions/${sessionId}/messages`, { content })
   },
   sendFeedback(messageId: string, action: 'like' | 'dislike', comment?: string): Promise<void> {
-    // 线字段为 rating（对齐后端契约 POST /chat/messages/:id/feedback body {rating, comment?}）
     return http.post(`/chat/messages/${messageId}/feedback`, { rating: action, comment })
   },
 }

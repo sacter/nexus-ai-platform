@@ -56,11 +56,15 @@ const routes: RouteRecordRaw[] = [
       { path: 'tools', name: 'Tools', component: () => import('@/modules/tools/views/ToolList.vue') },
 
       // Prompt
-      { path: 'settings/prompts', name: 'Prompts', component: () => import('@/modules/prompt/views/PromptList.vue') },
+      { path: 'prompts', name: 'Prompts', component: () => import('@/modules/prompt/views/PromptList.vue') },
 
       // System
       { path: 'settings', name: 'Settings', component: () => import('@/modules/system/views/Settings.vue') },
+
+      // API Keys
       { path: 'api-keys', name: 'ApiKeys', component: () => import('@/modules/api-keys/views/ApiKeys.vue') },
+
+      // Audit Logs
       { path: 'audit-logs', name: 'AuditLogs', component: () => import('@/modules/system/views/AuditLogs.vue') },
     ],
   },

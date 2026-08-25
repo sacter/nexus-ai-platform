@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
 import { RetrievalService } from '../retrieval/retrieval.service';
 import { ModelCallerService } from '../model/model-caller.service';
@@ -32,6 +37,23 @@ export class ChatService {
     private readonly modelCaller: ModelCallerService,
     private readonly sessionLock: SessionLockService,
   ) {}
+
+  async setFeedback(sessionId: string, rating: string) {
+    const result = await this.prisma.chatMessage.findUnique({
+      where: { id: sessionId },
+    });
+    if (!result) {
+      throw new NotFoundException('会话不存在');
+    }
+    const metadata = {
+      ...(result.metadata as Record<string, unknown>),
+      feedback: rating,
+    };
+    await this.prisma.chatMessage.update({
+      where: { id: sessionId },
+      data: { metadata },
+    });
+  }
 
   // POST /chat/sessions/:id/messages —— 前置：只取会话锁。
   // 必须在写 SSE 头前调用：锁被占用抛 429（TooManyRequestsException → HttpExceptionFilter 返回 HTTP 状态码）；

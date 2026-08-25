@@ -15,6 +15,7 @@ import {
   Key,
   Fold,
   Expand,
+  EditPen,
 } from '@element-plus/icons-vue'
 
 const navItems = [
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/chat', label: '对话', icon: ChatDotSquare },
   { href: '/workflows', label: 'Workflow', icon: Share },
   { href: '/models', label: '模型', icon: Coin },
+  { href: '/prompts', label: '提示词', icon: EditPen },
   { href: '/tools', label: '工具', icon: Switch },
   { href: '/api-keys', label: 'API Key', icon: Key },
   { href: '/jobs', label: 'Job', icon: Timer },

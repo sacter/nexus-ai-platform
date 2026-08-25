@@ -86,4 +86,9 @@ export class ChatController {
       return () => abort.abort();
     });
   }
+
+  @Post('messages/:id/feedback')
+  getFeedback(@Param('id') id: string, @Body('rating') rating: string) {
+    return this.chat.setFeedback(id, rating);
+  }
 }

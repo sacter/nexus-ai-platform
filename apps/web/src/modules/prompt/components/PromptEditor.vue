@@ -43,7 +43,7 @@ function syncScroll() {
 
 <template>
   <div
-    class="prompt-editor"
+    class="prompt-editor w-full"
     :class="{ 'prompt-editor--readonly': readonly }"
     :style="{ '--editor-rows': rows }"
   >

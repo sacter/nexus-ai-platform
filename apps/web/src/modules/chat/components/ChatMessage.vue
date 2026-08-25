@@ -58,10 +58,10 @@ function onFeedback(action: 'like' | 'dislike') {
         <button
           data-testid="feedback-like"
           aria-label="赞"
-          :aria-pressed="message.feedback === 'like'"
+          :aria-pressed="message.metadata?.feedback === 'like'"
           class="transition-opacity hover:opacity-100 cursor-pointer"
-          :class="message.feedback === 'like' ? 'opacity-100' : 'opacity-40'"
-          :style="message.feedback === 'like' ? { color: 'var(--accent)' } : {}"
+          :class="message.metadata?.feedback === 'like' ? 'opacity-100' : 'opacity-40'"
+          :style="message.metadata?.feedback === 'like' ? { color: 'var(--accent)' } : {}"
           @click="onFeedback('like')"
         >
           <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
@@ -69,10 +69,10 @@ function onFeedback(action: 'like' | 'dislike') {
         <button
           data-testid="feedback-dislike"
           aria-label="踩"
-          :aria-pressed="message.feedback === 'dislike'"
+          :aria-pressed="message.metadata?.feedback === 'dislike'"
           class="transition-opacity hover:opacity-100 cursor-pointer"
-          :class="message.feedback === 'dislike' ? 'opacity-100' : 'opacity-40'"
-          :style="message.feedback === 'dislike' ? { color: 'var(--accent)' } : {}"
+          :class="message.metadata?.feedback === 'dislike' ? 'opacity-100' : 'opacity-40'"
+          :style="message.metadata?.feedback === 'dislike' ? { color: 'var(--accent)' } : {}"
           @click="onFeedback('dislike')"
         >
           <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 rotate-180"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
