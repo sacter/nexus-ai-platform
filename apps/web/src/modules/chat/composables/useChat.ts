@@ -150,10 +150,9 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     phase.value = 'retrieving'
     try {
       const req: ChatStreamRequest = { sessionId: sid, content: text, signal: abortController.signal }
-      console.log('send:', req);
       for await (const ev of transport.stream(req)) handleEvent(ev)
     } catch (e: unknown) {
-      if (e?.name === 'AbortError') {
+      if ((e as Error)?.name === 'AbortError') {
         phase.value = 'aborted'
         if (streamingMessage.value) {
           streamingMessage.value = { ...streamingMessage.value, streaming: false, phase: 'aborted' }
@@ -161,7 +160,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
         }
       } else {
         phase.value = 'error'
-        error.value = e?.message ?? '网络错误'
+        error.value = (e as Error)?.message ?? '网络错误'
         if (streamingMessage.value) {
           const updated: ChatMessage = { ...streamingMessage.value, streaming: false, phase: 'error', error: error.value ?? undefined }
           streamingMessage.value = updated

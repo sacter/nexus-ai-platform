@@ -30,7 +30,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   citations?: Citation[]
-  metadata?: { latencyMs?: number; model?: string; executionId?: string; truncated?: boolean }
+  metadata?: { latencyMs?: number; model?: string; executionId?: string; truncated?: boolean; feedback?: 'like' | 'dislike' | null }
   promptTokens?: number
   completionTokens?: number
   totalTokens?: number
