@@ -1,5 +1,5 @@
 /** Provider 可选值（与 api_keys.provider 列一致） */
-import { PROVIDERS as MODELS_PROVIDERS } from '@nexus/model-config'
+import { PROVIDERS as MODELS_PROVIDERS } from '@nexus/config'
 export const PROVIDERS = MODELS_PROVIDERS;
 export type ProviderId = (typeof PROVIDERS)[number]['value']
 

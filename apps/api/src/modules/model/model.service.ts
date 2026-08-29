@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
-import { MODEL_CONFIG_LIMITS } from '@nexus/model-config';
+import { MODEL_CONFIG_LIMITS } from '@nexus/config';
 import { ModelType, Prisma } from '@prisma/client';
 import { CreateModelDto } from './dto/create-model.dto';
 import { UpdateModelDto } from './dto/update-model.dto';
@@ -149,7 +149,7 @@ export class ModelService {
     }
   }
 
-  /** 按类型校验 config 能力参数范围（边界取 @nexus/model-config 单一来源，见 DATABASE.md 4.20） */
+  /** 按类型校验 config 能力参数范围（边界取 @nexus/config 单一来源，见 DATABASE.md 4.20） */
   private validateConfig(type: ModelType, config: Record<string, unknown>) {
     const num = (v: unknown): v is number =>
       typeof v === 'number' && !Number.isNaN(v);

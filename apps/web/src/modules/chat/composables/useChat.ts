@@ -1,7 +1,6 @@
 import { computed, onScopeDispose, ref, watch, type MaybeRef, toValue, type Ref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { useRouter } from 'vue-router'
-import { chatApi } from '@/modules/chat/api/chat.api'
+import { chatApi, type CreateSessionPayload } from '@/modules/chat/api/chat.api'
 import { applyStreamEvent } from './chat-stream-reducer'
 import { FetchSseChatTransport } from '../transport/fetch-sse.transport'
 import { MockSseChatTransport } from '../transport/mock-sse.transport'
@@ -19,12 +18,22 @@ export function useChatSessions() {
   return useQuery({ queryKey: ['chat-sessions'], queryFn: () => chatApi.listSessions() })
 }
 
+export function useCreateChatSession() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSessionPayload) => chatApi.createSession(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-sessions'] })
+    },
+  })
+}
+
 export function useChatMessages(sessionId: MaybeRef<string>) {
   return useQuery({
     // 传 ref（非 toValue 快照）让 vue-query 跟踪并按解包值 hash；done 失效 ['chat-messages', sid] 可命中
     queryKey: ['chat-messages', sessionId],
     queryFn: () => chatApi.getMessages(toValue(sessionId)),
-    enabled: () => !!toValue(sessionId) && toValue(sessionId) !== 'new',
+    enabled: () => !!toValue(sessionId),
   })
 }
 
@@ -53,7 +62,6 @@ export interface ChatStreamHandle {
 export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: ChatTransport }): ChatStreamHandle {
   const transport = opts?.transport ?? createChatTransport()
   const qc = useQueryClient()
-  const router = useRouter()
 
   const history = useChatMessages(sessionId)
   const messages = ref<ChatMessage[]>([]) as Ref<ChatMessage[]>
@@ -61,7 +69,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   const phase = ref<MessagePhase>('idle')
   const error = ref<string | null>(null)
   const isStreaming = computed(
-    () => phase.value === 'pendingCreate' || phase.value === 'retrieving' || phase.value === 'reranking' || phase.value === 'generating',
+    () => phase.value === 'retrieving' || phase.value === 'reranking' || phase.value === 'generating',
   )
 
   let abortController: AbortController | null = null
@@ -69,7 +77,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   watch(
     () => history.data.value,
     (data) => {
-      // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容（spec §3.4，避免清空刚生成内容）
+      // 仅当后端历史非空到达才替换线程；流式期间或历史拉取失败（无后端）时保留当前内容
       if (!isStreaming.value && data && data.length) {
         // done 后历史失效会回流与当前一致的线程；长度+末条 id 相同时跳过替换，
         // 避免 TransitionGroup 因对象引用全换而重放进入动画（用户气泡 tempId→id 闪动）
@@ -94,7 +102,7 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
   }
 
   async function send(content: string) {
-    const text = content.trim()
+    const text = content.trim()    
     if (!text || isStreaming.value) return
     error.value = null
     // 重试清理：末尾若是失败/中断的助手占位（streaming 关、phase error/aborted），
@@ -107,20 +115,8 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
         messages.value = prev && prev.role === 'user' ? arr.slice(0, -2) : arr.slice(0, -1)
       }
     }
-    let sid = toValue(sessionId)
-    if (sid === 'new') {
-      phase.value = 'pendingCreate'
-      try {
-        const session = await chatApi.createSession()
-        sid = session.id
-        router.replace(`/chat/${sid}`)
-      } catch {
-        phase.value = 'error'
-        error.value = '创建会话失败'
-        return
-      }
-    }
-    // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询（避免路由尚未更新时命中 'new'）
+    const sid = toValue(sessionId)
+    // 局部闭包捕获 sid：done 时按真实 sid 失效历史查询
     const handleEvent = (ev: ChatStreamEvent) => {
       if (!streamingMessage.value) return
       const state = applyStreamEvent({ message: streamingMessage.value, phase: phase.value }, ev)
@@ -135,19 +131,28 @@ export function useChatStream(sessionId: MaybeRef<string>, opts?: { transport?: 
     abortController = new AbortController()
     const tempId = `temp-${Math.random().toString(36).slice(2)}`
     const placeholder: ChatMessage = {
-      tempId, sessionId: sid, role: 'assistant', content: '',
-      streaming: true, phase: 'retrieving', citations: [],
+      tempId,
+      sessionId: sid,
+      role: 'assistant',
+      content: '',
+      streaming: true,
+      phase: 'retrieving',
+      citations: [],
     }
     const userMsg: ChatMessage = {
-      tempId: `u-${Math.random().toString(36).slice(2)}`, sessionId: sid, role: 'user', content: text,
+      tempId: `u-${Math.random().toString(36).slice(2)}`,
+      sessionId: sid,
+      role: 'user',
+      content: text,
     }
     messages.value = [...messages.value, userMsg, placeholder]
     streamingMessage.value = placeholder
     phase.value = 'retrieving'
     try {
       const req: ChatStreamRequest = { sessionId: sid, content: text, signal: abortController.signal }
+      console.log('send:', req);
       for await (const ev of transport.stream(req)) handleEvent(ev)
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e?.name === 'AbortError') {
         phase.value = 'aborted'
         if (streamingMessage.value) {

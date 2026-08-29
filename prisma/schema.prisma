@@ -321,6 +321,7 @@ model ChatSession {
   kbId              String?  @map("kb_id") @db.Uuid
   title             String   @default("New Chat") @db.VarChar(512)
   promptTemplateId  String?  @map("prompt_template_id") @db.Uuid
+  modelId           String?  @map("model_id") @db.Uuid                          // ★ V3: 会话自带模型（自包含）
   aiApplicationId   String?  @map("ai_application_id") @db.Uuid      // ★ V2
   workflowType      String   @default("rag") @map("workflow_type") @db.VarChar(32)
   workflowId        String?  @map("workflow_id") @db.Uuid
@@ -329,14 +330,18 @@ model ChatSession {
 
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   kb             KnowledgeBase?    @relation(fields: [kbId], references: [id], onDelete: SetNull)
+  
+  model          Model?            @relation(fields: [modelId], references: [id], onDelete: SetNull)   // ★
   aiApplication  AiApplication?    @relation(fields: [aiApplicationId], references: [id])  // ★
   workflow       Workflow?         @relation(fields: [workflowId], references: [id])
   messages       ChatMessage[]
   executions     WorkflowExecution[]  // ★
+  tools          ChatSessionTool[]    // ★
 
   @@index([userId])
   @@index([kbId])
   @@index([aiApplicationId])  // ★
+  @@index([modelId])               // ★
   @@map("chat_sessions")
 }
 
@@ -521,6 +526,22 @@ model AiApplicationTool {
   @@map("ai_application_tools")
 }
 
+// ★ V3: 会话绑定工具（自定义/快捷模式都写到这里，仿 AiApplicationTool）
+model ChatSessionTool {
+  id        String   @id @default(uuid()) @db.Uuid
+  sessionId String   @map("session_id") @db.Uuid
+  toolId    String   @map("tool_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tool    Tool        @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, toolId])
+  @@index([sessionId])
+  @@index([toolId])
+  @@map("chat_session_tools")
+}
+
 // ★ V2: Model Center
 model Model {
   id          String    @id @default(uuid()) @db.Uuid
@@ -539,6 +560,7 @@ model Model {
   apiKey         ApiKey?          @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
   createdByUser  User             @relation(fields: [createdBy], references: [id])
   aiApplications AiApplication[]
+  chatSessions    ChatSession[]
 
   @@unique([provider, modelName])
   @@index([provider])
@@ -637,6 +659,7 @@ model Tool {
   apiKey        ApiKey?              @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
   createdByUser User                 @relation(fields: [createdBy], references: [id])
   applications  AiApplicationTool[]
+  sessions        ChatSessionTool[]
 
   @@index([type])
   @@index([apiKeyId])

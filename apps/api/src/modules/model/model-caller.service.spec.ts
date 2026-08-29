@@ -97,9 +97,7 @@ describe('ModelCallerService', () => {
   });
 
   it('非对话模型 → NotFoundException', async () => {
-    prisma.model.findUnique.mockResolvedValue(
-      mockModel({ type: 'embedding' }),
-    );
+    prisma.model.findUnique.mockResolvedValue(mockModel({ type: 'embedding' }));
 
     await expect(service.resolveChatModel('model-1')).rejects.toThrow(
       NotFoundException,

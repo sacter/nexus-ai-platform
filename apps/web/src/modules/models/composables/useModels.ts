@@ -3,8 +3,12 @@ import { toValue, type MaybeRef } from 'vue'
 import { modelsApi } from '@/modules/models/api/model.api'
 import type { ModelUpdateInput } from '@/modules/models/types/model'
 
-export function useModels() {
-  return useQuery({ queryKey: ['models'], queryFn: () => modelsApi.list() })
+export function useModels(enabled: MaybeRef<boolean> = true) {
+  return useQuery({
+    queryKey: ['models'],
+    queryFn: () => modelsApi.list(),
+    enabled: () => toValue(enabled),
+  })
 }
 export function useModel(id: MaybeRef<string>) {
   return useQuery({ queryKey: ['models', id], queryFn: () => modelsApi.get(toValue(id)), enabled: () => !!toValue(id) })

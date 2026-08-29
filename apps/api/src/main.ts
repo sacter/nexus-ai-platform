@@ -39,6 +39,9 @@ async function bootstrap() {
   // ── 全局过滤器：统一异常响应格式 ──
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  // 监听 SIGTERM / SIGINT 信号，用优雅关闭
+  app.enableShutdownHooks();
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`🚀 API running at http://localhost:${port}`);

@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useChatSessions } from '../composables/useChat'
+import CreateSessionDialog from './CreateSessionDialog.vue'
+import type { ChatSession } from '../types/chat'
 
 dayjs.extend(relativeTime)
 
 defineProps<{ activeId?: string }>()
-const emit = defineEmits<{ (e: 'select', id: string): void; (e: 'new'): void }>()
+const emit = defineEmits<{
+  (e: 'select', id: string): void
+  (e: 'created', session: ChatSession): void
+}>()
 
 const { data, isLoading } = useChatSessions()
 const sessions = computed(() => data.value ?? [])
+
+const dialogVisible = ref(false)
+const prefillTitle = ref<string | undefined>()
+
+function openDialog(prefill?: { title?: string }) {
+  prefillTitle.value = prefill?.title
+  dialogVisible.value = true
+}
+defineExpose({ openDialog })
+
+function onCreated(session: ChatSession) {
+  emit('created', session)
+}
 </script>
 
 <template>
   <aside class="flex h-full w-[260px] flex-col border-r" :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-secondary)' }">
     <div class="p-3">
-      <el-button type="primary" class="w-full" :icon="Plus" @click="emit('new')">新会话</el-button>
+      <el-button type="primary" class="w-full" :icon="Plus" @click="openDialog()">新会话</el-button>
     </div>
 
     <div class="flex-1 overflow-y-auto px-2 pb-2">
@@ -48,6 +66,11 @@ const sessions = computed(() => data.value ?? [])
         </li>
       </ul>
     </div>
+    <CreateSessionDialog
+      v-model:visible="dialogVisible"
+      :prefill-title="prefillTitle"
+      @created="onCreated"
+    />
   </aside>
 </template>
 

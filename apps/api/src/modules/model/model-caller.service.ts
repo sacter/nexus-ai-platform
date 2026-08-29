@@ -32,7 +32,8 @@ export class ModelCallerService {
       include: { apiKey: { select: { baseUrl: true } } },
     });
     if (!model) throw new NotFoundException('模型不存在');
-    if (model.type !== 'chat') throw new NotFoundException('该模型不是对话模型');
+    if (model.type !== 'chat')
+      throw new NotFoundException('该模型不是对话模型');
 
     // 凭证：有 apiKeyId → 进程内解密明文（仅服务端内存，绝不外泄）；无 → 无鉴权调用（本地模型）
     const apiKey = model.apiKeyId

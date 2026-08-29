@@ -1,7 +1,7 @@
 {
-  "name": "@nexus/model-config",
+  "name": "@nexus/config",
   "version": "0.0.1",
-  "description": "Model Center 模型能力参数约束（类型/范围/默认值）— api 与 web 共用单一来源",
+  "description": "共享配置常量（model/workflow 等，不同 config 一个 ts 文件）— api、web、worker 共用单一来源",
   "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

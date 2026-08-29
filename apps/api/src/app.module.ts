@@ -21,6 +21,11 @@ import { RetrievalModule } from './modules/retrieval/retrieval.module';
 import { ApiKeyModule } from './modules/api-key/api-key.module';
 import { ModelModule } from './modules/model/model.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { AiApplicationModule } from './modules/ai-application/ai-application.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
+import { PromptTemplateModule } from './modules/prompt_template/prompt_template.module';
+import { ToolModule } from './modules/tool/tool.module';
+import { JobModule } from './modules/job/job.module';
 
 import { QUEUE_NAMES } from '@nexus/shared';
 
@@ -70,6 +75,11 @@ import { QUEUE_NAMES } from '@nexus/shared';
     ApiKeyModule,
     ModelModule,
     ChatModule,
+    AiApplicationModule,
+    WorkflowModule,
+    PromptTemplateModule,
+    ToolModule,
+    JobModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,13 +10,15 @@ import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 import ChatStreamStatus from '../components/ChatStreamStatus.vue'
 import ChatEmptyState from '../components/ChatEmptyState.vue'
+import type { ChatSuggestion } from '../components/suggestions'
+import type { ChatSession } from '../types/chat'
 
 dayjs.extend(relativeTime)
 
 const route = useRoute()
 const router = useRouter()
 
-// 用 ref + watch 跟随路由（/chat/new → createSession 后 router.replace 切到真 id），
+// 用 ref + watch 跟随路由，
 // 保证 useChatStream 内部 toValue(sessionId) 在 done 失效时命中正确 query key
 const sessionId = ref(String(route.params.sessionId ?? ''))
 watch(() => route.params.sessionId, (v) => { sessionId.value = String(v ?? '') })
@@ -24,9 +26,7 @@ const { messages, phase, isStreaming, error, send, stop, sendFeedback } = useCha
 
 const { data: sessionsData } = useChatSessions()
 const currentSession = computed(() => (sessionsData.value ?? []).find((s) => s.id === sessionId.value))
-const headerTitle = computed(() =>
-  sessionId.value === 'new' ? '新会话' : (currentSession.value?.title ?? '对话'),
-)
+const headerTitle = computed(() => currentSession.value?.title ?? '对话')
 const headerMeta = computed(() => {
   const parts: string[] = []
   if (messages.value.length) parts.push(`${messages.value.length} 条消息`)
@@ -74,8 +74,8 @@ function onScroll() {
 }
 
 function onSelect(id: string) { router.push(`/chat/${id}`) }
-function onNew() { router.push('/chat/new') }
-function onSuggest(text: string) { send(text) }
+function onCreated(session: ChatSession) { router.push(`/chat/${session.id}`) }
+function onSuggest(s: ChatSuggestion) { send(s.text) }
 function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedback(messageId, action) }
 </script>
 
@@ -84,7 +84,7 @@ function onFeedback(messageId: string, action: 'like' | 'dislike') { sendFeedbac
     class="chat-island flex h-full min-h-[480px] overflow-hidden rounded-xl border"
     :style="{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }"
   >
-    <ChatSessionList :active-id="sessionId" @select="onSelect" @new="onNew" />
+    <ChatSessionList :active-id="sessionId" @select="onSelect" @created="onCreated" />
 
     <section class="relative flex min-w-0 flex-1 flex-col">
       <header

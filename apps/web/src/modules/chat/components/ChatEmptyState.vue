@@ -8,7 +8,7 @@ const props = defineProps<{
   subtitle?: string
   suggestions?: ChatSuggestion[]
 }>()
-const emit = defineEmits<{ (e: 'suggest', text: string): void }>()
+const emit = defineEmits<{ (e: 'suggest', s: ChatSuggestion): void }>()
 
 const list = computed(() => props.suggestions?.length ? props.suggestions : DEFAULT_SUGGESTIONS)
 </script>
@@ -44,7 +44,7 @@ const list = computed(() => props.suggestions?.length ? props.suggestions : DEFA
           backgroundColor: 'var(--surface)',
           animationDelay: `${180 + i * 60}ms`,
         }"
-        @click="emit('suggest', s.text)"
+        @click="emit('suggest', s)"
       >
         <span class="flex items-center gap-2 text-sm font-medium" style="color: var(--foreground)">
           <span

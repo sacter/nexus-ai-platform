@@ -146,7 +146,7 @@ function buildConfig(): ModelConfig {
 }
 
 function validateConfig(): string | null {
-  // 边界取自 @nexus/model-config MODEL_CONFIG_LIMITS，与后端 validateConfig 一致
+  // 边界取自 @nexus/config MODEL_CONFIG_LIMITS，与后端 validateConfig 一致
   const range = (v: number | undefined, bound: { min: number; max: number }, label: string) =>
     v !== undefined && (v < bound.min || v > bound.max) ? `${label} 需在 ${bound.min} ~ ${bound.max} 之间` : null
   if (form.type === 'chat') {

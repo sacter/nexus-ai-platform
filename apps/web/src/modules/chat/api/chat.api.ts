@@ -1,5 +1,17 @@
 import http from '@/api/client'
+import type { WorkflowType } from '@nexus/config'
 import type { ChatMessage, ChatSession } from '../types/chat'
+
+export interface CreateSessionPayload {
+  title: string
+  kbId?: string
+  promptTemplateId?: string
+  modelId?: string
+  aiApplicationId?: string
+  workflowId?: string
+  toolIds?: string[]
+  workflowType: WorkflowType
+}
 
 export const chatApi = {
   listSessions(): Promise<ChatSession[]> {
@@ -8,8 +20,8 @@ export const chatApi = {
   getSession(id: string): Promise<ChatSession> {
     return http.get(`/chat/sessions/${id}`)
   },
-  createSession(data?: Partial<ChatSession>): Promise<ChatSession> {
-    return http.post('/chat/sessions', data ?? {})
+  createSession(data: CreateSessionPayload): Promise<ChatSession> {
+    return http.post('/chat/sessions', data)
   },
   deleteSession(id: string): Promise<void> {
     return http.delete(`/chat/sessions/${id}`)
@@ -21,7 +33,6 @@ export const chatApi = {
     return http.post(`/chat/sessions/${sessionId}/messages`, { content })
   },
   sendFeedback(messageId: string, action: 'like' | 'dislike', comment?: string): Promise<void> {
-    // 线字段为 rating（对齐后端契约 POST /chat/messages/:id/feedback body {rating, comment?}）
     return http.post(`/chat/messages/${messageId}/feedback`, { rating: action, comment })
   },
 }

@@ -35,15 +35,21 @@ const routes: RouteRecordRaw[] = [
 
       // AI Applications
       { path: 'ai-applications', name: 'AiApplications', component: () => import('@/modules/ai-application/views/AppList.vue') },
+      { path: 'ai-applications/new', name: 'AiApplicationCreate', component: () => import('@/modules/ai-application/views/AppForm.vue') },
       { path: 'ai-applications/:appId', name: 'AiApplicationDetail', component: () => import('@/modules/ai-application/views/AppDetail.vue') },
+      { path: 'ai-applications/:appId/edit', name: 'AiApplicationEdit', component: () => import('@/modules/ai-application/views/AppForm.vue') },
 
       // Chat
       { path: 'chat', name: 'Chat', component: () => import('@/modules/chat/views/ChatList.vue') },
+      { path: 'chat/new', redirect: '/chat' },
       { path: 'chat/:sessionId', name: 'ChatSession', component: () => import('@/modules/chat/views/ChatSession.vue') },
 
       // Workflow
       { path: 'workflows', name: 'Workflows', component: () => import('@/modules/workflow/views/WorkflowList.vue') },
+      { path: 'workflows/new', name: 'WorkflowCreate', component: () => import('@/modules/workflow/views/WorkflowForm.vue') },
       { path: 'workflows/:id', name: 'WorkflowDetail', component: () => import('@/modules/workflow/views/WorkflowDetail.vue') },
+      { path: 'workflows/:id/edit', name: 'WorkflowEdit', component: () => import('@/modules/workflow/views/WorkflowForm.vue') },
+      { path: 'workflows/:id/executions/:execId', name: 'WorkflowExecutionDetail', component: () => import('@/modules/workflow/views/ExecutionDetail.vue') },
       { path: 'workflows/designer', name: 'WorkflowDesigner', component: () => import('@/modules/workflow/views/WorkflowDesigner.vue') },
 
       // Models
@@ -53,11 +59,15 @@ const routes: RouteRecordRaw[] = [
       { path: 'tools', name: 'Tools', component: () => import('@/modules/tools/views/ToolList.vue') },
 
       // Prompt
-      { path: 'settings/prompts', name: 'Prompts', component: () => import('@/modules/prompt/views/PromptList.vue') },
+      { path: 'prompts', name: 'Prompts', component: () => import('@/modules/prompt/views/PromptList.vue') },
 
       // System
       { path: 'settings', name: 'Settings', component: () => import('@/modules/system/views/Settings.vue') },
+
+      // API Keys
       { path: 'api-keys', name: 'ApiKeys', component: () => import('@/modules/api-keys/views/ApiKeys.vue') },
+
+      // Audit Logs
       { path: 'audit-logs', name: 'AuditLogs', component: () => import('@/modules/system/views/AuditLogs.vue') },
     ],
   },
