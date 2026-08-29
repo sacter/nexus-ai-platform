@@ -46,7 +46,10 @@ const routes: RouteRecordRaw[] = [
 
       // Workflow
       { path: 'workflows', name: 'Workflows', component: () => import('@/modules/workflow/views/WorkflowList.vue') },
+      { path: 'workflows/new', name: 'WorkflowCreate', component: () => import('@/modules/workflow/views/WorkflowForm.vue') },
       { path: 'workflows/:id', name: 'WorkflowDetail', component: () => import('@/modules/workflow/views/WorkflowDetail.vue') },
+      { path: 'workflows/:id/edit', name: 'WorkflowEdit', component: () => import('@/modules/workflow/views/WorkflowForm.vue') },
+      { path: 'workflows/:id/executions/:execId', name: 'WorkflowExecutionDetail', component: () => import('@/modules/workflow/views/ExecutionDetail.vue') },
       { path: 'workflows/designer', name: 'WorkflowDesigner', component: () => import('@/modules/workflow/views/WorkflowDesigner.vue') },
 
       // Models
