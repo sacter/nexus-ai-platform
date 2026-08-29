@@ -8,6 +8,7 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
+    "types": ["node"],
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -17,5 +18,5 @@
     "outDir": "./dist"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "src/**/*.spec.ts"]
 }

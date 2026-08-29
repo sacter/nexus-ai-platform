@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
-    "build": "nest build",
+    "build": "tsc -p tsconfig.json --incremental false",
     "test": "jest"
   },
   "jest": {
@@ -33,6 +33,7 @@
     "@nestjs/common": "^11.1.29"
   },
   "devDependencies": {
+    "@types/node": "^24.0.0",
     "typescript": "^6.0.3"
   }
 }
