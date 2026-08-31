@@ -19,8 +19,8 @@ export class ChunkController {
   list(
     @Param('kbId') kbId: string,
     @Query('documentId') documentId?: string,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
+    @Query('page', ParseIntPipe, { optional: true }) page?: number,
+    @Query('pageSize', ParseIntPipe, { optional: true }) pageSize?: number,
   ) {
     return this.chunkService.listChunks(kbId, { documentId, page, pageSize });
   }
