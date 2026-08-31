@@ -77,6 +77,9 @@ cp .env.example .env
 ### 开发
 
 ```bash
+# 构建公共依赖包
+pnpm build
+
 # 启动所有应用（开发模式）
 pnpm dev
 
