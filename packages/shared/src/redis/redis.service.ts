@@ -23,12 +23,35 @@ export class RedisService implements OnModuleInit, OnApplicationShutdown {
     this.client = new Redis({
       host: process.env.REDIS_HOST ?? 'localhost',
       port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+      // password: process.env.REDIS_PASSWORD,
+      // db: Number(process.env.REDIS_DB ?? 0),
       lazyConnect: true,
       maxRetriesPerRequest: null, // BullMQ 要求 null
       enableReadyCheck: false,
     });
-    await this.client.connect();
-    this.logger.log('Redis connected');
+
+    // 关键：监听错误，防止进程直接crash
+    this.client.on('error', (err) => {
+      this.logger.error(`Redis client error`, err);
+    });
+    this.client.on('ready', () => {
+      this.logger.log('Redis client ready');
+    });
+    this.client.on('close', () => {
+      this.logger.warn('Redis connection closed');
+    });
+    this.client.on('reconnecting', (delay) => {
+      this.logger.debug(`Redis reconnecting, delay:${delay}ms`);
+    });
+
+    try {
+      await this.client.connect();
+      this.logger.log('Redis connected success');
+    } catch (error) {
+      this.logger.error('Redis connection faild', error);
+      // 如果希望redis断开允许应用继续启动，注释下面这行，ioredis会后台自动重连
+      // throw error;
+    }
   }
 
   /** 在所有 onModuleDestroy（Worker/Queue 关闭）之后才 quit 共享连接 */
