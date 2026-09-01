@@ -731,7 +731,7 @@ export class ExecutionService {
       where: { id: workflowId },
     });
 
-    // 并发限制
+    // 并发限制：同一用户同时最多 N 个 RUNNING
     await this.checkConcurrencyLimit(userId);
 
     const strategy = this.strategyFactory.getStrategy(workflow.type as WorkflowType);
@@ -746,7 +746,6 @@ export class ExecutionService {
         input: input as any,
         status: 'RUNNING',
         startedAt: new Date(),
-        createdBy: userId, // 审计追溯
       },
     });
 
@@ -843,17 +842,125 @@ export class ExecutionService {
     });
   }
 
+  /** 查询某个 Workflow 的所有执行记录 */
+  async listByWorkflow(workflowId: string, query: PaginationDto): Promise<PaginatedResult<WorkflowExecution>> {
+    const [items, total] = await Promise.all([
+      this.prisma.workflow_executions.findMany({
+        where: { workflowId },
+        orderBy: { createdAt: 'desc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.workflow_executions.count({ where: { workflowId } }),
+    ]);
+    return { items, total, page: query.page, pageSize: query.pageSize };
+  }
+
+  /** 查询单条执行详情 */
+  async getById(workflowId: string, execId: string): Promise<WorkflowExecution> {
+    return this.prisma.workflow_executions.findFirstOrThrow({
+      where: { id: execId, workflowId },
+    });
+  }
+
   /** 并发限制 */
   private async checkConcurrencyLimit(userId: string): Promise<void> {
+    // 注意：workflow_executions 表目前没有 created_by 字段。
+    // V2 阶段使用较宽松的全局并发限制（所有用户合计），
+    // V3 增加 created_by FK 后改为 per-user 限制。
     const count = await this.prisma.workflow_executions.count({
-      where: { createdBy: userId, status: 'RUNNING' },
+      where: { status: 'RUNNING' },
     });
-    if (count >= ExecutionService.MAX_CONCURRENT_PER_USER) {
+    if (count >= ExecutionService.MAX_CONCURRENT_PER_USER * 10) {
       throw new HttpException(
-        `Too many concurrent executions (max ${ExecutionService.MAX_CONCURRENT_PER_USER})`,
+        `Too many concurrent executions (max ${ExecutionService.MAX_CONCURRENT_PER_USER * 10})`,
         429,
       );
     }
+  }
+
+  /**
+   * 流式执行 — 供 SSE 端点调用
+   * 返回 AsyncGenerator，由 Controller 消费并逐事件推送
+   */
+  async executeStream(
+    workflowId: string,
+    input: ExecuteWorkflowDto,
+    userId: string,
+    executionId: string,
+  ): Promise<AsyncGenerator<WorkflowStepEvent, void, void>> {
+    const workflow = await this.prisma.workflow.findUniqueOrThrow({
+      where: { id: workflowId },
+    });
+
+    const strategy = this.strategyFactory.getStrategy(workflow.type as WorkflowType);
+    const abortController = new AbortController();
+    const timeoutMs = (workflow.config as any)?.timeoutMs ?? 300_000;
+
+    // 创建执行记录
+    await this.prisma.workflow_executions.create({
+      data: { id: executionId, workflowId, input: input as any, status: 'RUNNING', startedAt: new Date() },
+    });
+
+    // onStep 回调
+    const nodeSteps: NodeStep[] = [];
+    const onStep = async (event: NodeStepEvent) => {
+      nodeSteps.push(event);
+      if (nodeSteps.length % ExecutionService.STEP_BATCH_SIZE === 0) {
+        await this.persistNodeSteps(executionId, nodeSteps);
+      }
+    };
+
+    const ctx: WorkflowExecutionContext = {
+      workflow: { id: workflow.id, type: workflow.type as WorkflowType, config: workflow.config as any },
+      executionId,
+      input: { question: input.question, chatHistory: input.chatHistory, kbIds: input.kbIds },
+      onStep,
+      signal: abortController.signal,
+      timeoutMs,
+    };
+
+    // 返回异步生成器，由 Controller 消费
+    const self = this;
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+    const startTime = Date.now();
+
+    return (async function* () {
+      try {
+        for await (const event of strategy.run(ctx)) {
+          yield event;
+        }
+        clearTimeout(timeoutId);
+
+        const duration = Date.now() - startTime;
+        await self.persistNodeSteps(executionId, nodeSteps);
+        await self.prisma.workflow_executions.update({
+          where: { id: executionId },
+          data: {
+            status: 'COMPLETED',
+            output: { answer: self.extractAnswer(nodeSteps), citations: self.extractCitations(nodeSteps) },
+            durationMs: duration,
+            nodeSteps: nodeSteps as any,
+            completedAt: new Date(),
+          },
+        });
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        const duration = Date.now() - startTime;
+        await self.persistNodeSteps(executionId, nodeSteps);
+        await self.prisma.workflow_executions.update({
+          where: { id: executionId },
+          data: {
+            status: err.name === 'AbortError' ? 'CANCELLED' : 'FAILED',
+            errorMessage: err.name === 'AbortError' ? 'Execution timeout or cancelled' : err.message,
+            durationMs: duration,
+            nodeSteps: nodeSteps as any,
+            completedAt: new Date(),
+          },
+        });
+        throw err;
+      }
+    })();
   }
 }
 ```
@@ -926,37 +1033,48 @@ export class WorkflowController {
 对于 AI Application 场景，执行结果需要 SSE 流式推送到 Chat 前端。
 
 ```typescript
-// 注意: @Sse() 默认注册 GET，POST SSE 端点必须显式传 method
+// 手动管理 SSE 响应（使用 @Res() + res.write()），不使用 @Sse() 装饰器。
+// @Sse() 适用于返回 Observable 的模式，与 @Res() 手动写入不兼容。
+import { Response, Request } from 'express';
+
 @Post(':id/stream')
-@Sse('id/stream')
 async runStream(
   @Param('id', ParseUUIDPipe) id: string,
   @Body() dto: ExecuteWorkflowDto,
   @CurrentUser() user: UserEntity,
+  @Req() req: Request,
   @Res() res: Response,
-): Promise<Observable<MessageEvent>> {
-  // 设置 POST SSE 所需的 headers
+) {
+  // 设置 SSE headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  return new Observable((subscriber) => {
-    const executionId = uuidv4();
+  const executionId = uuidv4();
 
-    this.executionService.executeStream(id, dto, user.id, executionId)
-      .then(async (stream) => {
-        for await (const event of stream) {
-          subscriber.next({ type: 'step', data: event } as any);
-        }
-        subscriber.next({ type: 'done', data: { executionId } } as any);
-        subscriber.complete();
-      })
-      .catch((err) => {
-        subscriber.next({ type: 'error', data: { message: err.message } } as any);
-        subscriber.complete();
-      });
+  // 监听客户端断开
+  req.on('close', () => {
+    res.end();
   });
+
+  try {
+    const stream = this.executionService.executeStream(id, dto, user.id, executionId);
+    for await (const event of stream) {
+      if (res.destroyed) break;
+      res.write(`event: step\ndata: ${JSON.stringify(event)}\n\n`);
+    }
+    if (!res.destroyed) {
+      res.write(`event: done\ndata: ${JSON.stringify({ executionId })}\n\n`);
+    }
+  } catch (err: any) {
+    if (!res.destroyed) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: err.message })}\n\n`);
+    }
+  } finally {
+    if (!res.destroyed) res.end();
+  }
 }
 ```
 
@@ -1427,7 +1545,7 @@ workflow_edges.condition JSONB 示例:
 |------|------|
 | 4.1 | 前端 `POST /:id/run` 接真实数据 |
 | 4.2 | 前端 `GET /:id/executions` 接真实数据 |
-| 4.3 | SSE 流式执行端点（`/workflows/:id/stream`，POST + @Sse()） |
+| 4.3 | SSE 流式执行端点（`/workflows/:id/stream`，POST + @Res() 手动写入） |
 | 4.4 | WorkflowDetail 页显示真实执行历史 |
 
 ### Phase 5: V3 Designer 预留
@@ -1452,10 +1570,10 @@ workflow_edges.condition JSONB 示例:
 | `workflow_edges` | Mode A: 可选同步，condition 留空；Mode B: 条件边每条存一条记录 | ✅ 表结构不变 |
 | `workflow_edges.condition` | Mode A: 代码表达（不存 DB）；Mode B: JSONB 表达式，由 ConditionEvaluator 求值 | ✅ 按需使用 |
 | `workflow_executions` | 两模式完全一致：status、duration_ms、node_steps JSONB | ✅ 完全一致 |
-| `workflow_executions.created_by` | ★ 新增字段，FK → users，审计追溯 | ⚠️ 需 ALTER TABLE 新增 |
+| `workflow_executions.created_by` | V2 使用全局并发限制，V3 增加 created_by FK 后改为 per-user | ⏸️ V3 时 ALTER TABLE 新增 |
 | `node_steps` 格式 | camelCase: nodeId, nodeType, status, input, output, durationMs, startedAt, completedAt | ✅ 统一 camelCase |
 | `execution_status` 枚举 | RUNNING / COMPLETED / FAILED / CANCELLED / PAUSED / WAITING | ✅ 一致，PAUSED/WAITING 用于 V3+ checkpointer |
-| `chat_sessions.workflow_type` | 需新增 `'custom'` 枚举值 | ⚠️ 需 ALTER TYPE 新增 |
+| `chat_sessions.workflow_type` | 后端新建会话时校验 + Prisma schema CHECK 约束需新增 `'custom'` | ⚠️ 需 ALTER TYPE 及 Prisma schema 同步 |
 
 ---
 
