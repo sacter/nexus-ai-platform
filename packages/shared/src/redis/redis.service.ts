@@ -40,7 +40,7 @@ export class RedisService implements OnModuleInit, OnApplicationShutdown {
     this.client.on('close', () => {
       this.logger.warn('Redis connection closed');
     });
-    this.client.on('reconnecting', (delay) => {
+    this.client.on('reconnecting', (delay: number) => {
       this.logger.debug(`Redis reconnecting, delay:${delay}ms`);
     });
 

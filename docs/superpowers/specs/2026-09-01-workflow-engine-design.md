@@ -2,6 +2,7 @@
 
 > LangChain + LangGraph + DeepAgents 三框架集成设计
 > 覆盖 workflow_nodes / workflow_edges / workflow_executions 完整链路
+> 最后更新: 2026-09-01（优化版 v2）
 
 ---
 
@@ -30,23 +31,29 @@
 ┌──────────────────────────────────────────────────────────────────────┐
 │  Layer 5: DeepAgents Harness  (规划/子Agent/记忆/技能 — 仅复杂策略)     │
 │     createDeepAgent({ model, tools, middleware: [planning, ...] })    │
+│     注意: JS 版 deepagents 可能不成熟，V3+ 需验证可行性；              │
+│     不可用则降级为纯 LangGraph 实现（Plan B）                          │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 4: Execution Runtime  (生命周期/持久化/流式/中止/审计)           │
 │     WorkflowExecutionService — 创建执行记录 → LangGraph stream →      │
-│     写 node_steps → COMPLETED/FAILED                                  │
+│     内存累积 node_steps → 批量写入（每 N 步或 completed/failed）→      │
+│     SSE 推前端 → COMPLETED/FAILED                                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 3: Strategy-Defined Graph  (拓扑定义 — 代码驱动)                │
 │     RagStrategy / ReflectionStrategy / ReWooStrategy / MultiAgent    │
 │     CustomGraphStrategy (V3 Designer)                               │
 │     每个策略 = 一个 LangGraph StateGraph + 参数注入                    │
+│     策略通过注册表模式自注册，非 switch-case 硬编码                     │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 2: Node Registry  (节点实现 — 注册表管理)                       │
 │     GraphNode 接口 + 11 种内置节点 + 注册/发现/组合                    │
-│     横切：日志/审计/Token 计量                                       │
+│     横切：日志/审计/Token 计量（通过 onStep 回调传给 ExecutionService） │
+│     位置: apps/api（非 packages/ai-core，因需要注入 API 侧服务）       │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 1: LangGraph Runtime  (底层图执行引擎)                          │
 │     @langchain/langgraph: StateGraph / CompiledStateGraph /          │
-│     addNode / addEdge / addConditionalEdges / stream                  │
+│     addNode / addEdge / addConditionalEdges / stream / interrupt      │
+│     依赖安装: apps/api 的 package.json（非 packages/ai-core）          │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -66,7 +73,7 @@
                                   │
                          ┌────────┴──────────┐
                          │   StrategyFactory  │
-                         │  按 type 分派       │
+                         │  注册表模式分派     │
                          └────────┬──────────┘
                                   │
               ┌───────────────────┼───────────────────┐
@@ -84,8 +91,9 @@
                          │  ① 创建 execution  │
                          │  ② 调 strategy.run │
                          │  ③ LangGraph stream│
-                         │  ④ 写 node_steps   │
-                         │  ⑤ COMPLETED/FAILED│
+                         │  ④ 内存累积 steps  │
+                         │  ⑤ 批量写 DB + SSE │
+                         │  ⑥ COMPLETED/FAILED│
                          └───────────────────┘
 ```
 
@@ -96,7 +104,7 @@
 ### 2.1 安装依赖
 
 ```json
-// packages/ai-core/package.json
+// apps/api/package.json（注意：依赖安装在 apps/api，非 packages/ai-core）
 {
   "dependencies": {
     "@langchain/langgraph": "^1.2.0",
@@ -106,38 +114,55 @@
 }
 ```
 
+> **设计决策**: LangGraph 依赖安装在 `apps/api` 而非 `packages/ai-core`。
+> `ai-core` 保持纯协议层（零运行时依赖，只用原生 fetch），不引入框架级依赖。
+> LangGraph 的 StateGraph/RunnableConfig 等类型仅在 API 侧使用。
+
 ### 2.2 AgentState 定义
 
 ```typescript
-// packages/ai-core/src/workflow/state.ts
-import { StateSchema, MessagesValue } from '@langchain/langgraph';
-import { z } from 'zod';
+// apps/api/src/modules/workflow/state.ts
+import { Annotation } from '@langchain/langgraph';
+import { BaseMessage } from '@langchain/core/messages';
 
 /**
  * 基础 Agent 状态 — 所有 Workflow 策略共享。
- * 各策略可通过 workflows.config 传入自定义状态扩展。
+ * 使用 LangGraph 的 Annotation API（非 StateSchema，后者不存在）。
+ *
+ * 各策略可通过 workflows.config 传入自定义状态扩展，
+ * 在构造 StateGraph 时通过 channels 参数合并。
  */
-export const AgentStateSchema = new StateSchema({
-  // 消息列表 (LangGraph 内置 reducer: 追加模式)
-  messages: MessagesValue,
 
-  // 当前节点追踪 (用于 node_steps)
-  currentNodeId: z.string().optional(),
-  currentNodeType: z.string().optional(),
+// 消息列表 reducer（追加模式）
+const messagesReducer = (prev: BaseMessage[], next: BaseMessage[]) => [...prev, ...next];
 
-  // 执行上下文 (运行时由 ExecutionService 注入)
-  kbId: z.string().optional(),
-  modelId: z.string().optional(),
-  sessionId: z.string().optional(),
-  promptTemplateId: z.string().optional(),
+export const AgentStateAnnotation = Annotation.Root({
+  // 消息列表 (LangGraph 内置，追加模式)
+  messages: Annotation<BaseMessage[]>({
+    reducer: messagesReducer,
+    default: () => [],
+  }),
 
-  // 检索结果
-  retrievedChunks: z.array(z.any()).optional(),
-  citations: z.array(z.any()).optional(),
+  // ── 执行上下文（运行时由 ExecutionService 注入）──
+  kbId: Annotation<string | undefined>({ default: () => undefined }),
+  modelId: Annotation<string | undefined>({ default: () => undefined }),
+  sessionId: Annotation<string | undefined>({ default: () => undefined }),
+  promptTemplateId: Annotation<string | undefined>({ default: () => undefined }),
 
-  // 错误 (节点级兜底)
-  error: z.string().optional(),
+  // ── 检索结果 ──
+  retrievedChunks: Annotation<any[]>({ default: () => [] }),
+  citations: Annotation<any[]>({ default: () => [] }),
+
+  // ── Reflection 状态（ReflectionStrategy 使用）──
+  iteration: Annotation<number>({ default: () => 0 }),
+  needsImprovement: Annotation<boolean>({ default: () => false }),
+  judgeResult: Annotation<string | undefined>({ default: () => undefined }),
+
+  // ── 错误（节点级兜底）──
+  error: Annotation<string | undefined>({ default: () => undefined }),
 });
+
+export type AgentState = typeof AgentStateAnnotation.State;
 ```
 
 ### 2.3 LangGraph 概念映射
@@ -151,22 +176,33 @@ export const AgentStateSchema = new StateSchema({
 | `CompiledStateGraph` | `.compile()` 后的可执行图 |
 | `graph.stream(input)` | 流式执行，产出的每步事件映射到 node_steps |
 | `RunnableConfig` | 运行时配置（recursionLimit, callbacks 等）|
-| `BaseCheckpointer` | V4.5 用于 Human-in-the-loop 断点恢复 |
+| `interrupt()` + `MemorySaver` | V4.5 Human-in-the-loop 断点恢复（使用 LangGraph 原生机制，替代手动 node_steps 恢复） |
 
 ---
 
 ## 3. Layer 2: Node Registry
 
+> **位置决策**: NodeRegistry 放在 `apps/api/src/modules/workflow/`，而非 `packages/ai-core`。
+> 理由：`ai-core` 是纯协议层（零运行时依赖，zero framework deps），不应引入 NestJS DI 和 API 侧服务依赖。
+> 节点需要注入 `RetrievalService`、`ModelCallerService` 等 API 侧服务，放在 api 侧更合理。
+
 ### 3.1 GraphNode 接口
 
 ```typescript
-// packages/ai-core/src/workflow/node-registry.ts
+// apps/api/src/modules/workflow/node-registry.ts
+import { RunnableConfig } from '@langchain/core/runnables';
+import { AgentState } from './state';
+
+/**
+ * 节点步骤回调 — 由 ExecutionService 提供，避免 NodeRegistry 反向依赖 ExecutionService
+ */
+export type OnStepCallback = (event: NodeStepEvent) => void | Promise<void>;
 
 /**
  * 节点执行上下文
  */
 export interface NodeContext {
-  state: typeof AgentStateSchema;
+  state: AgentState;
   config: RunnableConfig;
   metadata: {
     nodeId: string;
@@ -174,6 +210,23 @@ export interface NodeContext {
     workflowId: string;
     executionId: string;
   };
+  /** 步骤回调：节点内部调用以通知 ExecutionService 写 node_steps */
+  onStep: OnStepCallback;
+}
+
+/**
+ * 节点步骤事件
+ */
+export interface NodeStepEvent {
+  nodeId: string;
+  nodeType: WorkflowNodeType;
+  status: 'running' | 'completed' | 'failed' | 'skipped';
+  input?: Record<string, any>;
+  output?: Record<string, any>;
+  durationMs?: number;
+  errorMessage?: string;
+  startedAt: string;
+  completedAt?: string;
 }
 
 /**
@@ -184,7 +237,7 @@ export interface GraphNode {
   readonly label: string;
 
   /** 核心执行方法 */
-  execute(ctx: NodeContext): Promise<Partial<typeof AgentStateSchema>>;
+  execute(ctx: NodeContext): Promise<Partial<AgentState>>;
 
   /** 校验节点配置（来自 DB config JSONB） */
   validateConfig?(config: Record<string, unknown>): boolean;
@@ -194,8 +247,13 @@ export interface GraphNode {
 ### 3.2 NodeRegistry 实现
 
 ```typescript
-// packages/ai-core/src/workflow/node-registry.ts
+// apps/api/src/modules/workflow/node-registry.ts
 import { Injectable } from '@nestjs/common';
+import { RunnableConfig } from '@langchain/core/runnables';
+import { AgentState } from './state';
+
+type GraphNodeFactory = (config?: Record<string, any>) => GraphNode;
+type LangGraphNodeFn = (state: AgentState, config?: RunnableConfig) => Promise<Partial<AgentState>>;
 
 @Injectable()
 export class NodeRegistry {
@@ -209,30 +267,68 @@ export class NodeRegistry {
     this.factories.set(type, factory);
   }
 
-  /** 获取适配为 LangGraph NodeFunction 的执行函数 */
-  getNodeFn(type: WorkflowNodeType, config?: Record<string, any>): LangGraphNodeFn {
+  /**
+   * 获取适配为 LangGraph NodeFunction 的执行函数。
+   * onStep 回调由 ExecutionService 在创建 ctx 时注入。
+   */
+  getNodeFn(
+    type: WorkflowNodeType,
+    config?: Record<string, any>,
+    onStep?: OnStepCallback,
+  ): LangGraphNodeFn {
     const node = this.resolve(type, config);
 
-    return async (state: typeof AgentStateSchema, runtimeConfig: RunnableConfig) => {
+    return async (state: AgentState, runtimeConfig?: RunnableConfig) => {
       const ctx: NodeContext = {
         state,
-        config: runtimeConfig,
+        config: runtimeConfig ?? {},
         metadata: {
-          nodeId: runtimeConfig.configurable?.nodeId ?? type,
+          nodeId: (runtimeConfig?.configurable as any)?.nodeId ?? type,
           nodeType: type,
-          workflowId: runtimeConfig.configurable?.workflowId ?? '',
-          executionId: runtimeConfig.configurable?.executionId ?? '',
+          workflowId: (runtimeConfig?.configurable as any)?.workflowId ?? '',
+          executionId: (runtimeConfig?.configurable as any)?.executionId ?? '',
         },
+        onStep: onStep ?? (() => {}),
       };
 
-      const start = Date.now();
+      const startTime = Date.now();
+
+      // 发出 running 事件
+      await ctx.onStep({
+        nodeId: ctx.metadata.nodeId,
+        nodeType: type,
+        status: 'running',
+        startedAt: new Date(startTime).toISOString(),
+      });
+
       try {
         const result = await node.execute(ctx);
-        const duration = Date.now() - start;
-        this.emitNodeStep(ctx, result, duration);
+        const durationMs = Date.now() - startTime;
+
+        await ctx.onStep({
+          nodeId: ctx.metadata.nodeId,
+          nodeType: type,
+          status: 'completed',
+          input: { /* 由节点自行填充 */ },
+          output: result,
+          durationMs,
+          startedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+        });
+
         return result;
-      } catch (err) {
-        return { error: formatNodeError(err, type) };
+      } catch (err: any) {
+        const durationMs = Date.now() - startTime;
+        await ctx.onStep({
+          nodeId: ctx.metadata.nodeId,
+          nodeType: type,
+          status: 'failed',
+          errorMessage: err.message,
+          durationMs,
+          startedAt: new Date(startTime).toISOString(),
+          completedAt: new Date().toISOString(),
+        });
+        return { error: `${type} node failed: ${err.message}` };
       }
     };
   }
@@ -245,11 +341,6 @@ export class NodeRegistry {
       this.instances.set(key, factory(config ?? {}));
     }
     return this.instances.get(key)!;
-  }
-
-  /** 节点步骤事件 — ExecutionService 消费 */
-  private emitNodeStep(ctx: NodeContext, result: any, durationMs: number): void {
-    // 通过 EventEmitter 通知 ExecutionService 写 node_steps
   }
 }
 ```
@@ -270,42 +361,83 @@ export class NodeRegistry {
 | `aggregator` | AggregatorNode | 多路结果合并 (Multi-Agent) | `mergeStrategy` |
 | `code` | CodeNode | 代码执行 (V3 沙箱) | `runtime`, `timeout` |
 
-### 3.4 节点注册 — NestJS Module
+### 3.4 节点注册 — NestJS Module（简化版）
 
 ```typescript
 // apps/api/src/modules/workflow/workflow.module.ts
 @Module({
+  imports: [
+    PrismaModule,
+    // 各节点需要的依赖模块
+    RetrievalModule,
+    ModelModule,
+    // ToolModule (V3)
+  ],
   providers: [
     NodeRegistry,
-    // 内置节点实例提供
-    { provide: 'RETRIEVER_NODE', useFactory: (svc) => new RetrieverNode(svc), inject: [RetrievalService] },
-    { provide: 'LLM_NODE', useFactory: (svc) => new LlmNode(svc), inject: [ModelCallerService] },
-    { provide: 'TOOL_NODE', useFactory: (svc) => new ToolNode(svc), inject: [ToolExecutorService] },
-    { provide: 'REFLECTION_NODE', useFactory: (svc) => new ReflectionNode(svc), inject: [ModelCallerService] },
-    { provide: 'PLANNER_NODE', useFactory: (svc) => new PlannerNode(svc), inject: [ModelCallerService] },
-    { provide: 'AGGREGATOR_NODE', useFactory: (svc) => new AggregatorNode(svc), inject: [ModelCallerService] },
-    // 注册到 NodeRegistry
+    WorkflowService,
+    ExecutionService,
+    StrategyFactory,
+
+    // 内置节点直接注册为 provider
+    StartNode,
+    EndNode,
+    ConditionNode,
     {
-      provide: 'NODE_REGISTRATION',
-      useFactory: (register: NodeRegistry, ...nodes: GraphNodeFactory[]) => {
-        register.register('retriever',   nodes[0]);
-        register.register('llm',         nodes[1]);
-        register.register('tool',        nodes[2]);
-        register.register('reflection',  nodes[3]);
-        register.register('planner',     nodes[4]);
-        register.register('aggregator',  nodes[5]);
-        // start/end/condition 作为内置轻量节点，不需要外部注入
-        register.register('start',     () => new StartNode());
-        register.register('end',       () => new EndNode());
-        register.register('condition', () => new ConditionNode());
-        // solver/code V3 时注册
-        return register;
-      },
-      inject: [NodeRegistry, 'RETRIEVER_NODE', 'LLM_NODE', 'TOOL_NODE',
-               'REFLECTION_NODE', 'PLANNER_NODE', 'AGGREGATOR_NODE'],
+      provide: RetrieverNode,
+      useFactory: (svc: RetrievalService) => new RetrieverNode(svc),
+      inject: [RetrievalService],
     },
+    {
+      provide: LlmNode,
+      useFactory: (svc: ModelCallerService) => new LlmNode(svc),
+      inject: [ModelCallerService],
+    },
+    {
+      provide: ReflectionNode,
+      useFactory: (svc: ModelCallerService) => new ReflectionNode(svc),
+      inject: [ModelCallerService],
+    },
+    // Planner / Solver / Aggregator / Tool / Code V3+ 时注册
+
+    // 策略注册（自注册模式）
+    RagStrategy,
+    ReflectionStrategy,
+    // ReWooStrategy, MultiAgentStrategy (V3+)
   ],
+  controllers: [WorkflowController],
+  exports: [ExecutionService, WorkflowService],
 })
+export class WorkflowModule implements OnModuleInit {
+  constructor(
+    private readonly registry: NodeRegistry,
+    private readonly startNode: StartNode,
+    private readonly endNode: EndNode,
+    private readonly conditionNode: ConditionNode,
+    private readonly retrieverNode: RetrieverNode,
+    private readonly llmNode: LlmNode,
+    private readonly reflectionNode: ReflectionNode,
+    // 策略工厂
+    private readonly strategyFactory: StrategyFactory,
+    private readonly ragStrategy: RagStrategy,
+    private readonly reflectionStrategy: ReflectionStrategy,
+  ) {}
+
+  onModuleInit() {
+    // 注册节点
+    this.registry.register('start',      () => this.startNode);
+    this.registry.register('end',        () => this.endNode);
+    this.registry.register('condition',  () => this.conditionNode);
+    this.registry.register('retriever',  () => this.retrieverNode);
+    this.registry.register('llm',        () => this.llmNode);
+    this.registry.register('reflection', () => this.reflectionNode);
+    // solver/code/planner/aggregator/tool V3 时注册
+
+    // 注册策略（自注册模式，替代 switch-case）
+    this.strategyFactory.register(this.ragStrategy);
+    this.strategyFactory.register(this.reflectionStrategy);
+  }
+}
 ```
 
 ---
@@ -332,6 +464,12 @@ export interface WorkflowExecutionContext {
     modelId?: string;
     tools?: Tool[];
   };
+  /** 步骤回调 — 策略内部传给 NodeRegistry.getNodeFn() */
+  onStep: OnStepCallback;
+  /** 超时 AbortSignal — ExecutionService 注入 */
+  signal?: AbortSignal;
+  /** 运行配置 */
+  timeoutMs?: number;
 }
 
 /** 运行时步骤事件 — 写入 node_steps 并转为 SSE */
@@ -352,13 +490,44 @@ export interface WorkflowStrategy {
 
   /**
    * 执行 Workflow，逐步产出事件。
-   * ExecutionService 消费事件 → 写 node_steps → SSE 推前端
+   * ExecutionService 消费事件 → 内存累积 node_steps → 批量写 DB → SSE 推前端
    */
   run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent, void, void>;
 }
 ```
 
-### 4.2 RagStrategy 实现（RAG 示例）
+### 4.2 StrategyFactory（注册表模式，替代 switch-case）
+
+```typescript
+// apps/api/src/modules/workflow/strategies/workflow-strategy.factory.ts
+@Injectable()
+export class StrategyFactory {
+  private strategies = new Map<WorkflowType, WorkflowStrategy>();
+
+  /** 注册策略 — 在 WorkflowModule.onModuleInit() 中调用 */
+  register(strategy: WorkflowStrategy): void {
+    if (this.strategies.has(strategy.type)) {
+      throw new Error(`Strategy for type "${strategy.type}" already registered`);
+    }
+    this.strategies.set(strategy.type, strategy);
+  }
+
+  /** 按类型获取策略 */
+  getStrategy(type: WorkflowType): WorkflowStrategy {
+    const strategy = this.strategies.get(type);
+    if (!strategy) {
+      // rewoo / multi_agent / custom 未注册时统一抛 NotImplemented
+      if (type === 'rewoo' || type === 'multi_agent' || type === 'custom') {
+        throw new NotImplementedException(`${type} strategy is V3+`);
+      }
+      throw new BadRequestException(`Unknown workflow type: ${type}`);
+    }
+    return strategy;
+  }
+}
+```
+
+### 4.3 RagStrategy 实现（RAG 示例）
 
 ```typescript
 // apps/api/src/modules/workflow/strategies/rag.strategy.ts
@@ -368,59 +537,87 @@ export class RagStrategy implements WorkflowStrategy {
 
   constructor(
     private readonly registry: NodeRegistry,
-    private readonly retrievalService: RetrievalService,
-    private readonly modelCallerService: ModelCallerService,
   ) {}
 
   async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
     const config = ctx.workflow.config;
     const { question, chatHistory, kbIds, modelId } = ctx.input;
 
-    // 构建 LangGraph StateGraph
-    const graph = new StateGraph(AgentStateSchema)
+    // 构建 LangGraph StateGraph（使用正确的 Annotation API）
+    const graph = new StateGraph(AgentStateAnnotation)
       .addNode('retriever', this.registry.getNodeFn('retriever', {
         kbId: kbIds?.[0], topK: config.retriever?.topK ?? 20,
-      }))
+      }, ctx.onStep))
       .addNode('llm', this.registry.getNodeFn('llm', {
         modelId: modelId ?? config.llm?.modelId,
         temperature: config.llm?.temperature ?? 0.7,
-      }))
+      }, ctx.onStep))
       .addEdge(START, 'retriever')
       .addEdge('retriever', 'llm')
       .addEdge('llm', END)
       .compile();
 
-    // 流式执行，映射为 WorkflowStepEvent
+    // 起始状态
     const input = {
       messages: [
-        ...(chatHistory ?? []),
-        { role: 'user', content: question },
+        ...(chatHistory ?? []).map(m => m.role === 'user'
+          ? new HumanMessage(m.content)
+          : new AIMessage(m.content)),
+        new HumanMessage(question),
       ],
       kbId: kbIds?.[0],
       modelId: modelId ?? config.llm?.modelId,
     };
 
-    for await (const event of graph.stream(input, {
-      configurable: { workflowId: ctx.workflow.id, executionId: ctx.executionId },
-    })) {
-      for (const [nodeId, output] of Object.entries(event)) {
-        yield {
-          nodeId,
-          nodeType: this.resolveNodeType(nodeId),
-          status: output.error ? 'failed' : 'completed',
-          input: { question },
-          output,
-          durationMs: 0, // LangGraph 不直接暴露 node 耗时，通过 EventEmitter 收集
-          startedAt: new Date().toISOString(),
-          completedAt: new Date().toISOString(),
-        };
+    try {
+      for await (const event of graph.stream(input, {
+        configurable: { workflowId: ctx.workflow.id, executionId: ctx.executionId },
+        signal: ctx.signal, // 支持 AbortController 超时/中断
+      })) {
+        for (const [nodeName, output] of Object.entries(event)) {
+          // nodeName 是 addNode 时传入的字符串（如 'retriever'），
+          // 与 DB workflow_nodes 的映射由前端展示时按 nodeType 匹配。
+          yield {
+            nodeId: nodeName as string,
+            nodeType: this.resolveNodeType(nodeName as string),
+            status: (output as any)?.error ? 'failed' : 'completed',
+            input: { question },
+            output: output as Record<string, any>,
+            durationMs: 0, // 精确耗时由 NodeRegistry.onStep 回调记录
+            startedAt: new Date().toISOString(),
+            completedAt: new Date().toISOString(),
+          };
+        }
       }
+    } catch (err: any) {
+      // 确保 LangGraph 异常也被 yield 为 FAILED 事件
+      yield {
+        nodeId: 'graph',
+        nodeType: 'end',
+        status: 'failed',
+        errorMessage: err.message,
+        startedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+      throw err;
     }
+  }
+
+  private resolveNodeType(nodeName: string): WorkflowNodeType {
+    const map: Record<string, WorkflowNodeType> = {
+      'retriever': 'retriever',
+      'llm': 'llm',
+      'judge': 'reflection',
+      'planner': 'planner',
+      'solver': 'solver',
+      'aggregator': 'aggregator',
+    };
+    return map[nodeName] ?? 'llm';
   }
 }
 ```
 
-### 4.3 ReflectionStrategy 实现（自查修正）
+### 4.4 ReflectionStrategy 实现（自查修正）
 
 ```typescript
 // apps/api/src/modules/workflow/strategies/reflection.strategy.ts
@@ -434,14 +631,14 @@ export class ReflectionStrategy implements WorkflowStrategy {
     const maxIterations = ctx.workflow.config.maxIterations ?? 3;
 
     // 循环图: retriever → llm → judge(condition) → retriever 或 END
-    const graph = new StateGraph(AgentStateSchema)
-      .addNode('retriever', this.registry.getNodeFn('retriever', ctx.workflow.config.retriever))
-      .addNode('llm', this.registry.getNodeFn('llm', ctx.workflow.config.llm))
-      .addNode('judge', this.registry.getNodeFn('reflection', ctx.workflow.config.reflection))
+    const graph = new StateGraph(AgentStateAnnotation)
+      .addNode('retriever', this.registry.getNodeFn('retriever', ctx.workflow.config.retriever, ctx.onStep))
+      .addNode('llm', this.registry.getNodeFn('llm', ctx.workflow.config.llm, ctx.onStep))
+      .addNode('judge', this.registry.getNodeFn('reflection', ctx.workflow.config.reflection, ctx.onStep))
       .addEdge(START, 'retriever')
       .addEdge('retriever', 'llm')
       .addEdge('llm', 'judge')
-      .addConditionalEdges('judge', (state) => {
+      .addConditionalEdges('judge', (state: AgentState) => {
         // 条件路由 — 代码表达, 不依赖 DB condition 字段
         const iteration = state.iteration ?? 0;
         if (state.needsImprovement && iteration < maxIterations) {
@@ -451,33 +648,13 @@ export class ReflectionStrategy implements WorkflowStrategy {
       })
       .compile();
 
-    // ... 执行同 RAG
-  }
-}
-```
-
-### 4.4 StrategyFactory
-
-```typescript
-// apps/api/src/modules/workflow/strategies/workflow-strategy.factory.ts
-@Injectable()
-export class StrategyFactory {
-  constructor(
-    private readonly rag: RagStrategy,
-    private readonly reflection: ReflectionStrategy,
-    // rewoo / multi_agent V3+ 时注册
-    // private readonly rewoo: ReWooStrategy,
-    // private readonly multiAgent: MultiAgentStrategy,
-  ) {}
-
-  getStrategy(type: WorkflowType): WorkflowStrategy {
-    switch (type) {
-      case 'rag':         return this.rag;
-      case 'reflection':  return this.reflection;
-      case 'rewoo':       throw new NotImplementedException('ReWOO strategy is V3+');
-      case 'multi_agent': throw new NotImplementedException('Multi-Agent strategy is V3+');
-      case 'custom':      throw new NotImplementedException('Custom strategy requires V3 Designer');
-      default:            throw new BadRequestException(`Unknown workflow type: ${type}`);
+    try {
+      for await (const event of graph.stream(/* ... */, { signal: ctx.signal })) {
+        // ... 同 RAG
+      }
+    } catch (err: any) {
+      yield { /* ... FAILED event */ };
+      throw err;
     }
   }
 }
@@ -503,26 +680,29 @@ export class StrategyFactory {
 用户 POST /workflows/:id/run
          │
          ▼
- ExecutionService.execute(workflowId, input)
+ ExecutionService.execute(workflowId, input, userId)
          │
          ├── ① 查找 Workflow (含 config)
-         ├── ② StrategyFactory.getStrategy(type)
-         ├── ③ prisma.workflow_executions.create({ status: RUNNING, input, started_at })
+         ├── ② 并发限制：同一用户同时最多 N 个 RUNNING（可配置）
+         ├── ③ 超时控制：AbortSignal.timeout(config.timeoutMs ?? 300_000)
+         ├── ④ StrategyFactory.getStrategy(type)
+         ├── ⑤ prisma.workflow_executions.create({ status: RUNNING, input, started_at, created_by })
          │
-         ├── ④ strategy.run(ctx)  →  AsyncGenerator<WorkflowStepEvent>
+         ├── ⑥ strategy.run(ctx)  →  AsyncGenerator<WorkflowStepEvent>
          │     │
          │     ├── 构建 LangGraph StateGraph
-         │     ├── graph.stream(input)
-         │     ├── 每步产出 → EventEmitter → 写 node_steps
+         │     ├── graph.stream(input, { signal })
+         │     ├── 每步事件 → 内存累积 nodeSteps[]
+         │     ├── 每 N 步或 completed/failed → 批量写 node_steps
          │     └── COMPLETED / FAILED
          │
-         ├── ⑤ prisma.workflow_executions.update({
+         ├── ⑦ prisma.workflow_executions.update({
          │      status: COMPLETED | FAILED,
          │      output, duration_ms, node_steps, completed_at
          │    })
          │
-         ├── ⑥ 审计日志: action=WORKFLOW_EXECUTE
-         └── ⑦ 返回 ExecutionResponse
+         ├── ⑧ 审计日志: action=WORKFLOW_EXECUTE
+         └── ⑨ 返回 ExecutionResponse
 ```
 
 ### 5.2 ExecutionService 实现
@@ -531,6 +711,9 @@ export class StrategyFactory {
 // apps/api/src/modules/workflow/execution.service.ts
 @Injectable()
 export class ExecutionService {
+  private static readonly STEP_BATCH_SIZE = 10; // 每 10 步批量写一次 DB
+  private static readonly MAX_CONCURRENT_PER_USER = 5;
+
   constructor(
     private readonly strategyFactory: StrategyFactory,
     private readonly prisma: PrismaService,
@@ -548,7 +731,13 @@ export class ExecutionService {
       where: { id: workflowId },
     });
 
+    // 并发限制
+    await this.checkConcurrencyLimit(userId);
+
     const strategy = this.strategyFactory.getStrategy(workflow.type as WorkflowType);
+
+    const timeoutMs = (workflow.config as any)?.timeoutMs ?? 300_000; // 默认 5 分钟超时
+    const abortController = new AbortController();
 
     // 创建执行记录
     const execution = await this.prisma.workflow_executions.create({
@@ -557,33 +746,48 @@ export class ExecutionService {
         input: input as any,
         status: 'RUNNING',
         startedAt: new Date(),
+        createdBy: userId, // 审计追溯
       },
     });
+
+    // onStep 回调：内存累积 + 事件发射
+    const nodeSteps: NodeStep[] = [];
+    const onStep = async (event: NodeStepEvent) => {
+      nodeSteps.push(event);
+      this.eventEmitter.emit('workflow.step', { executionId: execution.id, event });
+
+      // 批量写入：每 STEP_BATCH_SIZE 步写一次
+      if (nodeSteps.length % ExecutionService.STEP_BATCH_SIZE === 0) {
+        await this.persistNodeSteps(execution.id, nodeSteps);
+      }
+    };
 
     const ctx: WorkflowExecutionContext = {
       workflow: { id: workflow.id, type: workflow.type as WorkflowType, config: workflow.config as any },
       executionId: execution.id,
       input: { question: input.question, chatHistory: input.chatHistory, kbIds: input.kbIds },
+      onStep,
+      signal: abortController.signal,
+      timeoutMs,
     };
 
-    const nodeSteps: NodeStep[] = [];
     const startTime = Date.now();
 
     try {
+      // 超时控制
+      const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+
       for await (const event of strategy.run(ctx)) {
-        nodeSteps.push(event);
-
-        // 每步持久化（也可批量，但 LangGraph 的节点数通常 < 50）
-        await this.prisma.workflow_executions.update({
-          where: { id: execution.id },
-          data: { nodeSteps: nodeSteps as any },
-        });
-
-        // 通知监听者（如 SSE）
-        this.eventEmitter.emit('workflow.step', { executionId: execution.id, event });
+        // 事件已在 onStep 中处理（内存累积 + 批量写 DB）
+        // 此处仅做 SSE 推送（由 Controller 通过 Observable 处理）
       }
+      clearTimeout(timeoutId);
 
       const duration = Date.now() - startTime;
+
+      // 最终写入剩余 node_steps
+      await this.persistNodeSteps(execution.id, nodeSteps);
+
       const result = await this.prisma.workflow_executions.update({
         where: { id: execution.id },
         data: {
@@ -598,13 +802,17 @@ export class ExecutionService {
       this.auditService.record({ action: 'WORKFLOW_EXECUTE', entityType: 'workflow', entityId: workflowId });
 
       return this.toResponse(result);
-    } catch (err) {
+    } catch (err: any) {
       const duration = Date.now() - startTime;
+
+      // 确保失败时也写入累积的 node_steps
+      await this.persistNodeSteps(execution.id, nodeSteps);
+
       await this.prisma.workflow_executions.update({
         where: { id: execution.id },
         data: {
-          status: 'FAILED',
-          errorMessage: err.message,
+          status: err.name === 'AbortError' ? 'CANCELLED' : 'FAILED',
+          errorMessage: err.name === 'AbortError' ? 'Execution timeout or cancelled' : err.message,
           durationMs: duration,
           nodeSteps: nodeSteps as any,
           completedAt: new Date(),
@@ -614,7 +822,7 @@ export class ExecutionService {
     }
   }
 
-  /** 断点恢复（Human-in-the-loop 预留） */
+  /** 断点恢复（V3+ Human-in-the-loop 预留，使用 LangGraph 原生 checkpointer） */
   async resume(executionId: string): Promise<ExecutionResponse> {
     const execution = await this.prisma.workflow_executions.findUniqueOrThrow({
       where: { id: executionId },
@@ -622,8 +830,30 @@ export class ExecutionService {
     if (execution.status !== 'PAUSED' && execution.status !== 'WAITING') {
       throw new BadRequestException(`Cannot resume execution in status: ${execution.status}`);
     }
-    // 读 nodeSteps 最后完成节点，从 WAITING 节点继续
-    // ...
+    // V3: 使用 LangGraph 的 MemorySaver checkpointer 恢复
+    // graph.stream(null, { configurable: { thread_id: executionId } })
+    throw new NotImplementedException('Resume is V3+');
+  }
+
+  /** 持久化 node_steps */
+  private async persistNodeSteps(executionId: string, steps: NodeStep[]): Promise<void> {
+    await this.prisma.workflow_executions.update({
+      where: { id: executionId },
+      data: { nodeSteps: steps as any },
+    });
+  }
+
+  /** 并发限制 */
+  private async checkConcurrencyLimit(userId: string): Promise<void> {
+    const count = await this.prisma.workflow_executions.count({
+      where: { createdBy: userId, status: 'RUNNING' },
+    });
+    if (count >= ExecutionService.MAX_CONCURRENT_PER_USER) {
+      throw new HttpException(
+        `Too many concurrent executions (max ${ExecutionService.MAX_CONCURRENT_PER_USER})`,
+        429,
+      );
+    }
   }
 }
 ```
@@ -641,7 +871,7 @@ export class WorkflowController {
 
   // CRUD ...
   @Post()
-  async create(@Body() dto: CreateWorkflowDto) { /* ... */ }
+  async create(@Body() dto: CreateWorkflowDto, @CurrentUser() user: UserEntity) { /* ... */ }
 
   @Get()
   async findAll(@Query() query: PaginationDto) { /* ... */ }
@@ -696,41 +926,51 @@ export class WorkflowController {
 对于 AI Application 场景，执行结果需要 SSE 流式推送到 Chat 前端。
 
 ```typescript
-// 可选: SSE 流式执行端点
+// 注意: @Sse() 默认注册 GET，POST SSE 端点必须显式传 method
 @Post(':id/stream')
-@Sse()
+@Sse('id/stream')
 async runStream(
   @Param('id', ParseUUIDPipe) id: string,
   @Body() dto: ExecuteWorkflowDto,
   @CurrentUser() user: UserEntity,
+  @Res() res: Response,
 ): Promise<Observable<MessageEvent>> {
+  // 设置 POST SSE 所需的 headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
   return new Observable((subscriber) => {
     const executionId = uuidv4();
 
     this.executionService.executeStream(id, dto, user.id, executionId)
       .then(async (stream) => {
         for await (const event of stream) {
-          subscriber.next({ type: 'step', data: event });
+          subscriber.next({ type: 'step', data: event } as any);
         }
-        subscriber.next({ type: 'done', data: { executionId } });
+        subscriber.next({ type: 'done', data: { executionId } } as any);
         subscriber.complete();
       })
       .catch((err) => {
-        subscriber.next({ type: 'error', data: { message: err.message } });
+        subscriber.next({ type: 'error', data: { message: err.message } } as any);
         subscriber.complete();
       });
   });
 }
 ```
 
+> **注意**: 如果 SSE 在 Worker 进程中执行，`EventEmitter2` 是进程内的，无法通知 API 进程的 SSE 连接。
+> V2 阶段在 API 进程内同步执行（简单），V3 阶段可迁至 Worker 异步执行时需要通过 Redis Pub/Sub 回传进度。
+
 ### 5.5 node_steps 数据结构
 
-与 DATABASE.md 对齐:
+与 DATABASE.md 对齐，使用 camelCase（JSONB 内标准）：
 
 ```json
 [
   {
-    "nodeId": "retriever-1",
+    "nodeId": "retriever",
     "nodeType": "retriever",
     "status": "completed",
     "input": {"query": "请假流程", "kbIds": ["uuid-hr"]},
@@ -740,7 +980,7 @@ async runStream(
     "completedAt": "2026-09-01T10:00:00.350Z"
   },
   {
-    "nodeId": "llm-1",
+    "nodeId": "llm",
     "nodeType": "llm",
     "status": "completed",
     "input": {"promptTokens": 1200},
@@ -751,6 +991,9 @@ async runStream(
   }
 ]
 ```
+
+> 注意: `nodeId` 是 LangGraph 的节点名（`addNode` 时传入的字符串），不是 DB `workflow_nodes.id`。
+> 前端展示时通过 `nodeType` 匹配到对应节点卡片。
 
 ---
 
@@ -764,10 +1007,21 @@ DeepAgents 是 **可选的 Harness 层**，只在需要**规划/子Agent/文件�
 |------|--------------------|------|
 | `rag` | ❌ 不使用 | 简单链式检索+LLM，LangGraph 原生足够 |
 | `reflection` | ❌ 不使用 | 条件循环已在 LangGraph 内实现 |
-| `rewoo` | ✅ 使用 | DeepAgents 的 `createDeepAgent` + `subagents` middleware 提供 Planner/Worker/Solver 模式 |
-| `multi_agent` | ✅ 使用 | DeepAgents 的 `subagents`/`async_subagents` middleware 实现多 Agent 协作 |
+| `rewoo` | ✅ 使用（优先） / ❌ Plan B 纯 LangGraph | DeepAgents 的 `createDeepAgent` + `subagents` middleware 提供 Planner/Worker/Solver 模式 |
+| `multi_agent` | ✅ 使用（优先） / ❌ Plan B 纯 LangGraph | DeepAgents 的 `subagents`/`async_subagents` middleware 实现多 Agent 协作 |
 
-### 6.2 ReWooStrategy 使用 DeepAgents
+### 6.2 可行性验证（P0 前置）
+
+> **⚠️ 关键风险**: `deepagents` 包是 **Python 优先**的，JavaScript/TypeScript 版本能力可能不同。
+> 在 Phase 2 实现 ReWOO 前，必须先验证 npm `deepagents` 的可用性：
+>
+> 1. 检查 npm 是否存在 `deepagents` 包
+> 2. 验证其导出 API 是否包含 `createDeepAgent`、middleware 体系
+> 3. 验证 `agent.getGraph()` 是否返回 `CompiledStateGraph`
+>
+> **如果不可用，走 Plan B：纯 LangGraph 实现。**
+
+### 6.3 ReWooStrategy 使用 DeepAgents（Plan A）
 
 ```typescript
 // apps/api/src/modules/workflow/strategies/rewoo.strategy.ts (V3+)
@@ -778,33 +1032,49 @@ export class ReWooStrategy implements WorkflowStrategy {
   readonly type = 'rewoo';
 
   async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
-    // 使用 DeepAgents 构建 ReWOO (Reasoning Without Observation) 模式
     const agent = createDeepAgent({
       model: ctx.input.modelId,
       tools: ctx.input.tools ?? [],
-      middleware: [
-        // DeepAgents 内置中间件
-        'planning',              // 任务分解 write_todos
-        'filesystem',            // 文件系统 (sandbox)
-        'subagents',             // 子 Agent 派发
-      ],
+      middleware: ['planning', 'filesystem', 'subagents'],
       permissions: [{ type: 'read', path: '/data' }],
     });
 
-    // 通过 LangGraph 流式执行
     const graph = agent.getGraph(); // 返回 CompiledStateGraph
-    for await (const event of graph.stream({ messages: [userMessage] })) {
-      // 映射为 WorkflowStepEvent 并写入 node_steps
+    for await (const event of graph.stream({ messages: [userMessage] }, { signal: ctx.signal })) {
+      // 映射为 WorkflowStepEvent
     }
   }
 }
 ```
 
-### 6.3 DeepAgents 集成注意事项
+### 6.4 Plan B: 纯 LangGraph 实现 ReWOO（DeepAgents 不可用时）
 
-- `deepagents` 包是 **Python 优先**的，JavaScript/TypeScript 版本能力可能不同。实际集成时需检查 npm `deepagents` 导出 API。
-- 如果 JS 版 deepagents 不成熟，可**降级为纯 LangGraph 实现**（手动实现规划/子Agent 节点）
-- DeepAgents 的 middleware 体系（filesystem/subagents/memory）可部分复用为我们的自定义节点
+如果 JS 版 deepagents 不成熟，用纯 LangGraph 实现 Planner/Worker/Solver：
+
+```typescript
+// Plan B: ReWOO 的纯 LangGraph 实现
+export class ReWooStrategy implements WorkflowStrategy {
+  readonly type = 'rewoo';
+
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+    const graph = new StateGraph(AgentStateAnnotation)
+      .addNode('planner', this.registry.getNodeFn('planner', ctx.workflow.config.planner, ctx.onStep))
+      .addNode('solver', this.registry.getNodeFn('solver', ctx.workflow.config.solver, ctx.onStep))
+      .addEdge(START, 'planner')
+      .addConditionalEdges('planner', (state) => {
+        // 根据 planner 输出的子任务列表，用 LangGraph Send API 并行派发到 solver
+        // 这需要 LangGraph 的 map-reduce 模式
+        return 'solver';
+      })
+      .addEdge('solver', END)
+      .compile();
+
+    for await (const event of graph.stream(/* ... */, { signal: ctx.signal })) {
+      // ...
+    }
+  }
+}
+```
 
 ---
 
@@ -855,11 +1125,17 @@ export class WorkflowService {
     nodes: WorkflowNodeInput[],
     edges: WorkflowEdgeInput[],
   ): Promise<void> {
-    await this.prisma.$transaction([
-      this.prisma.workflow_edge.deleteMany({ where: { workflowId } }),
-      this.prisma.workflow_node.deleteMany({ where: { workflowId } }),
-      this.prisma.workflow_node.createMany({
+    // 注意: Prisma createMany 不返回插入的 ID。
+    // 解决方案：使用客户端生成的 UUID，让前端在发送 edges 时已经带有 node ID。
+    // 或者使用 raw SQL 的 INSERT ... RETURNING id。
+    await this.prisma.$transaction(async (tx) => {
+      await tx.workflowEdge.deleteMany({ where: { workflowId } });
+      await tx.workflowNode.deleteMany({ where: { workflowId } });
+
+      // 使用客户端 ID（前端已生成 UUID）
+      await tx.workflowNode.createMany({
         data: nodes.map((n) => ({
+          id: n.id, // 客户端生成的 UUID
           workflowId,
           type: n.type,
           label: n.label,
@@ -867,9 +1143,22 @@ export class WorkflowService {
           positionY: n.positionY,
           config: n.config ?? {},
         })),
-      }),
-      // ... edges.createMany (需要先查询刚插入的 node id 映射)
-    ]);
+      });
+
+      if (edges?.length) {
+        await tx.workflowEdge.createMany({
+          data: edges.map((e) => ({
+            workflowId,
+            sourceNodeId: e.sourceNodeId,
+            targetNodeId: e.targetNodeId,
+            sourceHandle: e.sourceHandle,
+            targetHandle: e.targetHandle,
+            label: e.label,
+            condition: e.condition ?? undefined,
+          })),
+        });
+      }
+    });
   }
 }
 ```
@@ -878,6 +1167,25 @@ export class WorkflowService {
 
 ```typescript
 // apps/api/src/modules/workflow/dto/create-workflow.dto.ts
+export class WorkflowNodeInputDto {
+  @IsUUID() id: string; // 客户端生成 UUID，解决 createMany 不返回 ID 的问题
+  @IsIn(['start', 'end', 'retriever', 'llm', 'tool', 'condition', 'reflection', 'planner', 'solver', 'aggregator', 'code'])
+  type: string;
+  @IsString() label: string;
+  @IsOptional() @IsNumber() positionX?: number;
+  @IsOptional() @IsNumber() positionY?: number;
+  @IsOptional() @IsObject() config?: Record<string, any>;
+}
+
+export class WorkflowEdgeInputDto {
+  @IsUUID() sourceNodeId: string; // 引用客户端生成的 node ID
+  @IsUUID() targetNodeId: string;
+  @IsOptional() @IsString() sourceHandle?: string;
+  @IsOptional() @IsString() targetHandle?: string;
+  @IsOptional() @IsString() label?: string;
+  @IsOptional() @IsObject() condition?: Record<string, any>;
+}
+
 export class CreateWorkflowDto {
   @IsString() @IsNotEmpty()
   name: string;
@@ -914,39 +1222,63 @@ export class CreateWorkflowDto {
 export class CustomStrategy implements WorkflowStrategy {
   readonly type = 'custom';
 
+  constructor(
+    private readonly registry: NodeRegistry,
+    private readonly prisma: PrismaService, // 懒加载，V2 阶段不注册此策略
+  ) {}
+
   async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
     const [nodes, edges] = await Promise.all([
-      this.prisma.workflow_node.findMany({ where: { workflowId: ctx.workflow.id } }),
-      this.prisma.workflow_edge.findMany({ where: { workflowId: ctx.workflow.id } }),
+      this.prisma.workflowNode.findMany({ where: { workflowId: ctx.workflow.id } }),
+      this.prisma.workflowEdge.findMany({ where: { workflowId: ctx.workflow.id } }),
     ]);
 
     // 从 DB nodes/edges 编译为 LangGraph StateGraph
     const graph = this.compileGraph(nodes, edges);
 
-    for await (const step of graph.stream(ctx.input)) {
+    for await (const step of graph.stream(ctx.input, { signal: ctx.signal })) {
       yield this.toEvent(step);
     }
   }
 
   /** 通用编译：DB nodes → LangGraph StateGraph */
-  private compileGraph(nodes: WorkflowNode[], edges: WorkflowEdge[]): CompiledStateGraph {
-    const builder = new StateGraph(AgentStateSchema);
+  private compileGraph(
+    nodes: WorkflowNode[],
+    edges: WorkflowEdge[],
+  ): CompiledStateGraph {
+    const builder = new StateGraph(AgentStateAnnotation);
 
     // 添加节点
     for (const node of nodes) {
       if (node.type === 'start' || node.type === 'end') continue;
-      builder.addNode(node.id, this.registry.getNodeFn(node.type as WorkflowNodeType, node.config as any));
+      builder.addNode(
+        node.id,
+        this.registry.getNodeFn(node.type as WorkflowNodeType, node.config as any, ctx.onStep),
+      );
     }
 
-    // 添加边（固定边 + 条件边）
-    for (const edge of edges) {
-      if (edge.condition) {
-        // DB condition JSONB → LangGraph 条件路由函数
-        builder.addConditionalEdges(edge.sourceNodeId, (state) => {
-          return evaluateCondition(edge.condition, state) ? edge.targetNodeId : /* fallback */;
-        });
-      } else {
+    // 添加边
+    // 条件边设计：DB 中每条以 condition 为 true 时走的路由单独存一条 edge 记录。
+    // 多条同 source 的条件边在 compile 时合并为一个 router 函数。
+    const edgeGroups = this.groupEdgesBySource(edges);
+
+    for (const [sourceId, sourceEdges] of edgeGroups) {
+      const fixedEdges = sourceEdges.filter(e => !e.condition);
+      const conditionalEdges = sourceEdges.filter(e => e.condition);
+
+      for (const edge of fixedEdges) {
         builder.addEdge(edge.sourceNodeId, edge.targetNodeId);
+      }
+
+      if (conditionalEdges.length > 0) {
+        builder.addConditionalEdges(sourceId, (state) => {
+          for (const edge of conditionalEdges) {
+            if (ConditionEvaluator.evaluate(edge.condition as any, state)) {
+              return edge.targetNodeId;
+            }
+          }
+          return END; // 无条件满足时默认结束
+        });
       }
     }
 
@@ -956,9 +1288,65 @@ export class CustomStrategy implements WorkflowStrategy {
     if (startNode) builder.addEdge(START, startNode.id);
     if (endNode) {
       // 所有无出边的节点 → end
+      const allTargets = new Set(edges.map(e => e.targetNodeId));
+      for (const node of nodes) {
+        if (node.type !== 'end' && !edgeGroups.has(node.id)) {
+          builder.addEdge(node.id, endNode.id);
+        }
+      }
     }
 
     return builder.compile();
+  }
+
+  private groupEdgesBySource(edges: WorkflowEdge[]): Map<string, WorkflowEdge[]> {
+    const map = new Map<string, WorkflowEdge[]>();
+    for (const e of edges) {
+      const list = map.get(e.sourceNodeId) ?? [];
+      list.push(e);
+      map.set(e.sourceNodeId, list);
+    }
+    return map;
+  }
+}
+```
+
+### ConditionEvaluator 定义
+
+```typescript
+// apps/api/src/modules/workflow/strategies/condition-evaluator.ts (V3+)
+
+/**
+ * 条件表达式求值器 — 安全的 JSON-based DSL 求值。
+ * 支持:
+ *   { field: "stateKey", operator: "equals", value: "expected" }
+ *   { and: [...conditions] }
+ *   { or: [...conditions] }
+ *   { not: condition }
+ */
+export class ConditionEvaluator {
+  private static readonly OPERATORS: Record<string, (a: any, b: any) => boolean> = {
+    equals: (a, b) => a === b,
+    notEquals: (a, b) => a !== b,
+    gt: (a, b) => a > b,
+    gte: (a, b) => a >= b,
+    lt: (a, b) => a < b,
+    lte: (a, b) => a <= b,
+    in: (a, b) => Array.isArray(b) && b.includes(a),
+    contains: (a, b) => typeof a === 'string' && a.includes(b),
+  };
+
+  static evaluate(condition: any, state: any): boolean {
+    if (condition.field !== undefined) {
+      const actual = state[condition.field];
+      const op = this.OPERATORS[condition.operator];
+      if (!op) throw new Error(`Unknown operator: ${condition.operator}`);
+      return op(actual, condition.value);
+    }
+    if (condition.and) return condition.and.every((c: any) => this.evaluate(c, state));
+    if (condition.or) return condition.or.some((c: any) => this.evaluate(c, state));
+    if (condition.not) return !this.evaluate(condition.not, state);
+    return false;
   }
 }
 ```
@@ -968,35 +1356,32 @@ export class CustomStrategy implements WorkflowStrategy {
 ```
 workflow_edges.condition JSONB 示例:
 
-{"field": "judge_result", "operator": "equals", "value": "needs_improvement"}
+{"field": "judgeResult", "operator": "equals", "value": "needs_improvement"}
 ```
 
 编译为 LangGraph 条件边：
 
 ```typescript
-builder.addConditionalEdges('judge', (state) => {
-  const cond = edge.condition; // {"field": "judge_result", "equals": "needs_improvement"}
-  const actual = extractField(state, cond.field);      // state.judgeResult
-  if (cond.operator === 'equals' && actual === cond.value) {
-    return 'retriever';  // 条件满足，重新检索
-  }
-  return 'end';          // 条件不满足，结束
-});
+// 条件分支的每条边（source→target_true, source→target_false）各存一条记录
+// edges 表中:
+//   edge1: source=judge, target=retriever, condition={"field":"judgeResult","operator":"equals","value":"needs_improvement"}
+//   edge2: source=judge, target=end,       condition={"field":"judgeResult","operator":"notEquals","value":"needs_improvement"}
 ```
 
 ---
 
 ## 9. 与现有模块的集成依赖
 
-| 依赖 | 提供方 | 用途 |
-|------|-------|------|
-| `NodeRegistry` | `@nexus/ai-core` | 节点注册与发现 |
-| `RetrievalService` | `apps/api` retrieval 模块 | RetrieverNode |
-| `ModelCallerService` | `apps/api` model 模块 | LlmNode, ReflectionNode |
-| `ToolExecutorService` | `apps/api` tool 模块 (V3) | ToolNode |
-| `ChatProvider` | `@nexus/ai-core` | LLM 流式/非流式调用 |
-| `AuditService` | `apps/api` audit-log 模块 | 审计横切 |
-| `SessionLockService` | `apps/api` common 模块 | Chat 端并发控制 |
+| 依赖 | 提供方 | 位置 | 用途 |
+|------|-------|------|------|
+| `NodeRegistry` | `apps/api` workflow 模块 | `apps/api` | 节点注册与发现 |
+| `RetrievalService` | `apps/api` retrieval 模块 | `apps/api` | RetrieverNode |
+| `ModelCallerService` | `apps/api` model 模块 | `apps/api` | LlmNode, ReflectionNode |
+| `ToolExecutorService` | `apps/api` tool 模块 (V3) | `apps/api` | ToolNode |
+| `ChatProvider` | `@nexus/ai-core` | `packages/ai-core` | LLM 流式/非流式调用（纯协议） |
+| `AuditService` | `apps/api` audit-log 模块 | `apps/api` | 审计横切 |
+| `SessionLockService` | `apps/api` common 模块 | `apps/api` | Chat 端并发控制 |
+| `@langchain/langgraph` | npm | `apps/api` | StateGraph 构建与执行 |
 
 ---
 
@@ -1006,32 +1391,35 @@ builder.addConditionalEdges('judge', (state) => {
 
 | Task | 内容 |
 |------|------|
-| 1.1 | 安装 `@langchain/langgraph` / `@langchain/core` 依赖 |
-| 1.2 | 创建 `packages/ai-core/src/workflow/`：AgentStateSchema、GraphNode 接口、NodeRegistry |
-| 1.3 | 实现 11 种内置节点（Start/End/Retriever/LLM/Condition 先做，其余打桩） |
-| 1.4 | WorkflowModule 内注册 NodeRegistry + 节点提供器 |
-| 1.5 | 单测：NodeRegistry 注册/发现、节点 execute 签名 |
+| 1.1 | 安装 `@langchain/langgraph` / `@langchain/core` 到 `apps/api/package.json` |
+| 1.2 | 创建 `apps/api/src/modules/workflow/state.ts`：AgentStateAnnotation（LangGraph Annotation API）|
+| 1.3 | 创建 `apps/api/src/modules/workflow/node-registry.ts`：GraphNode 接口、NodeRegistry、NodeContext、OnStepCallback |
+| 1.4 | 实现 6 种核心内置节点（Start/End/Retriever/LLM/Condition/Reflection 先做，其余打桩） |
+| 1.5 | WorkflowModule 内 onModuleInit 注册 NodeRegistry + 节点 |
+| 1.6 | 单测：NodeRegistry 注册/发现、节点 execute 签名 |
 
 ### Phase 2: 策略层
 
 | Task | 内容 |
 |------|------|
-| 2.1 | 补全 WorkflowStrategy 接口、StrategyFactory |
+| 2.1 | 补全 WorkflowStrategy 接口、StrategyFactory（注册表模式） |
 | 2.2 | 实现 RagStrategy（retriever → llm → end） |
 | 2.3 | 实现 ReflectionStrategy（retriever → llm → judge → retriever\|end） |
-| 2.4 | ReWooStrategy / MultiAgentStrategy 抛 NotImplementdException（预留） |
-| 2.5 | 单测：两种策略的图拓扑正确性、条件路由 |
+| 2.4 | ReWooStrategy / MultiAgentStrategy 抛 NotImplementedException（预留） |
+| 2.5 | 验证 npm `deepagents` 可用性，决定 Plan A 或 Plan B |
+| 2.6 | 单测：两种策略的图拓扑正确性、条件路由 |
 
 ### Phase 3: 执行层
 
 | Task | 内容 |
 |------|------|
-| 3.1 | 实现 ExecutionService.execute() — 核心链路 |
+| 3.1 | 实现 ExecutionService.execute() — 核心链路（含超时/并发限制/批量写入） |
 | 3.2 | 实现 Controller 的 run/executions/listExecutions/resume 端点 |
-| 3.3 | node_steps 持久化 + 审计日志 |
+| 3.3 | node_steps 批量持久化 + 审计日志 |
 | 3.4 | 改造 WorkflowService CRUD 接真实 Prisma |
-| 3.5 | 改造 CreateWorkflowDto 增加 config JSONB |
-| 3.6 | 集成测试：POST /workflows → POST /run → GET /executions |
+| 3.5 | 改造 CreateWorkflowDto 增加 nodes/edges 字段（客户端生成 UUID） |
+| 3.6 | `workflow_executions` 增加 `created_by` 字段（Prisma schema + DB migration） |
+| 3.7 | 集成测试：POST /workflows → POST /run → GET /executions |
 
 ### Phase 4: 前端接线 + SSE
 
@@ -1039,7 +1427,7 @@ builder.addConditionalEdges('judge', (state) => {
 |------|------|
 | 4.1 | 前端 `POST /:id/run` 接真实数据 |
 | 4.2 | 前端 `GET /:id/executions` 接真实数据 |
-| 4.3 | SSE 流式执行端点（`/workflows/:id/stream`） |
+| 4.3 | SSE 流式执行端点（`/workflows/:id/stream`，POST + @Sse()） |
 | 4.4 | WorkflowDetail 页显示真实执行历史 |
 
 ### Phase 5: V3 Designer 预留
@@ -1047,9 +1435,10 @@ builder.addConditionalEdges('judge', (state) => {
 | Task | 内容 |
 |------|------|
 | 5.1 | CustomStrategy + compileGraph 通用编译器 |
-| 5.2 | DB nodes/edges → LangGraph StateGraph 的双向映射 |
-| 5.3 | condition JSONB 表达式解析引擎 |
+| 5.2 | ConditionEvaluator 表达式解析引擎 |
+| 5.3 | DB nodes/edges → LangGraph StateGraph 的双向映射 |
 | 5.4 | Vue Flow Designer 拖拽 → 保存 → run 闭环 |
+| 5.5 | LangGraph `interrupt()` + `MemorySaver` checkpointer 接入 Human-in-the-loop |
 
 ---
 
@@ -1059,12 +1448,14 @@ builder.addConditionalEdges('judge', (state) => {
 |---------|--------------|--------|
 | `workflows.type` | Mode A: `'rag'`/`'reflection'`/...; Mode B: `'custom'` | ✅ 新增 `'custom'` 枚举 |
 | `workflows.config` | 策略参数注入（Mode A+B 都使用） | ✅ 一致 |
-| `workflow_nodes` | Mode A: 可选同步（前端展示）；Mode B: 必须 | ✅ 表结构不变 |
-| `workflow_edges` | Mode A: 可选同步，condition 留空；Mode B: 必须，condition 使用 | ✅ 表结构不变 |
-| `workflow_edges.condition` | Mode A: 代码表达（不存 DB）；Mode B: JSONB 表达式编译为 LangGraph 条件边 | ✅ 按需使用 |
+| `workflow_nodes` | Mode A: 可选同步（前端展示）；Mode B: 必须。客户端生成 UUID | ✅ 表结构不变 |
+| `workflow_edges` | Mode A: 可选同步，condition 留空；Mode B: 条件边每条存一条记录 | ✅ 表结构不变 |
+| `workflow_edges.condition` | Mode A: 代码表达（不存 DB）；Mode B: JSONB 表达式，由 ConditionEvaluator 求值 | ✅ 按需使用 |
 | `workflow_executions` | 两模式完全一致：status、duration_ms、node_steps JSONB | ✅ 完全一致 |
-| `node_steps` 格式 | 与 DATABASE.md 对齐：node_id, node_type, status, input, output, duration_ms, started_at, completed_at | ✅ 一致 |
-| `execution_status` 枚举 | RUNNING / COMPLETED / FAILED / CANCELLED / PAUSED / WAITING | ✅ 一致，PAUSED/WAITING 用于 resume 预留 |
+| `workflow_executions.created_by` | ★ 新增字段，FK → users，审计追溯 | ⚠️ 需 ALTER TABLE 新增 |
+| `node_steps` 格式 | camelCase: nodeId, nodeType, status, input, output, durationMs, startedAt, completedAt | ✅ 统一 camelCase |
+| `execution_status` 枚举 | RUNNING / COMPLETED / FAILED / CANCELLED / PAUSED / WAITING | ✅ 一致，PAUSED/WAITING 用于 V3+ checkpointer |
+| `chat_sessions.workflow_type` | 需新增 `'custom'` 枚举值 | ⚠️ 需 ALTER TYPE 新增 |
 
 ---
 
@@ -1085,30 +1476,39 @@ builder.addConditionalEdges('judge', (state) => {
 │  │  POST /workflows    GET /:id/run    GET /:id/executions       │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                              │                                       │
-│  ┌─────────── WorkflowModule ───────────────────────────────────┐   │
+│  ┌─────────── WorkflowModule (apps/api) ─────────────────────────┐  │
 │  │                                                               │   │
 │  │  ┌───── WorkflowService ─────┐  ┌───── ExecutionService ──┐  │   │
 │  │  │ CRUD + graph sync        │  │ execute / resume / list  │  │   │
-│  │  └──────────────────────────┘  └──────────┬───────────────┘  │   │
+│  │  │ (客户端生成 UUID)          │  │ 超时控制 / 并发限制      │  │   │
+│  │  └──────────────────────────┘  │ 批量写 node_steps        │  │   │
+│  │                                └──────────┬───────────────┘  │   │
 │  │                                           │                    │   │
 │  │  ┌───── StrategyFactory ──────────────────┼─────────────┐    │   │
+│  │  │  注册表模式（自注册，非 switch-case）     │             │    │   │
 │  │  │  Rag │ Reflection │ ReWOO │ MultiAgent │ Custom     │    │   │
 │  │  └────────────────────────────────────────┼─────────────┘    │   │
 │  │                                           │                    │   │
 │  │  ┌───── NodeRegistry ─────────────────────┴─────────────┐    │   │
 │  │  │  retriever │ llm │ tool │ reflection │ planner │ ...  │    │   │
-│  │  │  ┌──横切: 事件发射 → ExecutionService ─────────┐     │    │   │
+│  │  │  ┌── onStep 回调 → 内存累积 → 批量写 DB ───────┐     │    │   │
 │  │  └─────────────────────────────────────────────────────┘    │   │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                              │                                       │
-│  ┌────── @nexus/ai-core ────┼──────────────────────────────────┐   │
-│  │  AgentStateSchema        │  LangGraph StateGraph             │   │
-│  │  GraphNode interface      │  addNode / addEdge / stream      │   │
-│  │  NodeRegistry             │  @langchain/langgraph            │   │
-│  └───────────────────────────┼──────────────────────────────────┘   │
+│  ┌────── @langchain/langgraph ─────────────────────────────────┐   │
+│  │  StateGraph / Annotation / addNode / addEdge / stream       │   │
+│  │  addConditionalEdges / interrupt / MemorySaver              │   │
+│  └──────────────────────────────────────────────────────────────┘   │
 │                              │                                       │
-│  ┌──── deepagents (可选) ────┼──────────────────────────────────┐   │
+│  ┌────── @nexus/ai-core (纯协议层) ────────────────────────────┐   │
+│  │  ChatProvider / ChatRequest / ChatChunk                      │   │
+│  │  EmbeddingProvider / EmbeddingService                        │   │
+│  │  (零运行时依赖，不使用 LangGraph)                               │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+│                              │                                       │
+│  ┌──── deepagents (可选，V3+ 验证可行性) ─────────────────────────┐  │
 │  │  createDeepAgent          │  middleware: planning/subagents   │   │
+│  │  Plan B: 纯 LangGraph 实现 Planner/Worker/Solver              │   │
 │  └──────────────────────────────────────────────────────────────┘   │
 │                                                                      │
 │  ┌────────────── 依赖模块 ──────────────────────────────────┐       │
@@ -1120,5 +1520,23 @@ builder.addConditionalEdges('judge', (state) => {
 ┌─────────────────────────────────────────────────────────────────────┐
 │  Prisma (PostgreSQL + pgvector)                                      │
 │  workflows · workflow_nodes · workflow_edges · workflow_executions   │
+│  workflow_executions.created_by (★ 新增)                             │
 └─────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 13. 设计决策记录（ADR）
+
+| # | 决策 | 理由 | 替代方案 |
+|---|------|------|---------|
+| 1 | **NodeRegistry 放在 `apps/api`** | `ai-core` 是纯协议层，不应引入 NestJS DI 和 API 侧服务依赖 | 曾考虑放 `packages/ai-core`，但会导致反向依赖 |
+| 2 | **LangGraph 依赖安装在 `apps/api`** | 同上，保持 `ai-core` 零运行时依赖 | 曾考虑放 `packages/ai-core` |
+| 3 | **onStep 回调模式（非 EventEmitter）** | 避免 NodeRegistry 反向依赖 ExecutionService；更清晰的依赖方向 | 曾考虑 EventEmitter2，但跨层耦合 |
+| 4 | **StrategyFactory 注册表模式** | 新增策略无需改 Factory 代码（OCP 原则） | 曾考虑 switch-case，但每次新增策略都要改 |
+| 5 | **node_steps 批量写入** | 避免每步一次 DB UPDATE 的性能问题 | 曾考虑每步实时写入，但 50+ 节点场景性能差 |
+| 6 | **客户端生成 UUID** | 解决 Prisma `createMany` 不返回 ID 的问题 | 曾考虑 raw SQL 或循环 create |
+| 7 | **V2 在 API 进程内同步执行** | 简单，SSE 推送无跨进程问题 | V3 可迁至 Worker 异步执行（需 Redis Pub/Sub） |
+| 8 | **LangGraph checkpointer 做断点恢复** | 使用框架原生能力，不重复造轮子 | 曾考虑手动读 node_steps 恢复，但 checkpointer 更可靠 |
+| 9 | **AgentStateAnnotation 使用 Annotation API** | `StateSchema` 类在 LangGraph.js 中不存在 | 无 |
+| 10 | **Plan B 纯 LangGraph 实现 ReWOO** | DeepAgents JS 版可能不可用 | 优先使用 DeepAgents |
