@@ -29,10 +29,10 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Layer 5: DeepAgents Harness  (规划/子Agent/记忆/技能 — 仅复杂策略)     │
-│     createDeepAgent({ model, tools, middleware: [planning, ...] })    │
-│     注意: JS 版 deepagents 可能不成熟，V3+ 需验证可行性；              │
-│     不可用则降级为纯 LangGraph 实现（Plan B）                          │
+│  Layer 5: DeepAgents Harness  (规划/子Agent/记忆/技能 — 仅复杂策略)      │
+│     createDeepAgent({ model, tools, middleware: [planning, ...] })   │
+│     注意: JS 版 deepagents 可能不成熟，V3+ 需验证可行性；                 │
+│     不可用则降级为纯 LangGraph 实现或python实现（Plan B）                 │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 4: Execution Runtime  (生命周期/持久化/流式/中止/审计)           │
 │     WorkflowExecutionService — 创建执行记录 → LangGraph stream →      │
@@ -72,8 +72,8 @@
                          └────────┬──────────┘
                                   │
                          ┌────────┴──────────┐
-                         │   StrategyFactory  │
-                         │  注册表模式分派     │
+                         │   StrategyFactory │
+                         │    注册表模式分派   │
                          └────────┬──────────┘
                                   │
               ┌───────────────────┼───────────────────┐
@@ -81,20 +81,20 @@
      ┌────────┴────────┐  ┌──────┴──────┐  ┌────────┴────────┐
      │ type='rag'      │  │ type='...'  │  │ type='custom'   │
      │ → RagStrategy   │  │ → 其他策略   │  │ → CustomStrategy│
-     │ 代码定义拓扑     │  │  代码定义    │  │  DB 编译拓扑     │
+     │ 代码定义拓扑      │  │  代码定义    │  │  DB 编译拓扑     │
      └────────┬────────┘  └──────┬──────┘  └────────┬────────┘
               │                   │                   │
               └───────────────────┼───────────────────┘
                                   │
-                         ┌────────┴──────────┐
-                         │  ExecutionService  │
-                         │  ① 创建 execution  │
-                         │  ② 调 strategy.run │
-                         │  ③ LangGraph stream│
-                         │  ④ 内存累积 steps  │
-                         │  ⑤ 批量写 DB + SSE │
-                         │  ⑥ COMPLETED/FAILED│
-                         └───────────────────┘
+                         ┌────────┴─────────────┐
+                         │  ExecutionService    │
+                         │  ① 创建 execution    │
+                         │  ② 调 strategy.run   │
+                         │  ③ LangGraph stream │
+                         │  ④ 内存累积 steps    │
+                         │  ⑤ 批量写 DB + SSE   │
+                         │  ⑥ COMPLETED/FAILED │
+                         └──────────────────────┘
 ```
 
 ---
@@ -131,6 +131,27 @@ import { BaseMessage } from '@langchain/core/messages';
  *
  * 各策略可通过 workflows.config 传入自定义状态扩展，
  * 在构造 StateGraph 时通过 channels 参数合并。
+ * 
+  messages        — 消息列表（llm / 所有节点）
+  kbId            — 知识库 ID（retriever）
+  kbIds           — 多知识库（retriever）
+  modelId         — 模型 ID（llm / reflection）
+  sessionId       — 会话 ID（通用）
+  promptTemplateId — 提示词模板（llm）
+  toolIds         — 工具列表（tool）
+  retrievedChunks — 检索结果（retriever）
+  citations       — 引用信息（retriever）
+  context         — 格式化上下文文本（llm）
+  iteration       — 迭代次数（reflection）
+  needsImprovement — 是否需要改进（reflection）
+  judgeResult     — 评判结果（reflection）
+  plan            — 子任务计划（planner）
+  currentSubtask  — 当前子任务（solver）
+  subtaskResults  — 子任务结果集（solver）
+  agentOutputs    — 多 Agent 输出（aggregator）
+  aggregatedResult — 合并结果（aggregator）
+  toolResults     — 工具执行结果（tool）
+  error           — 错误信息（所有节点）
  */
 
 // 消息列表 reducer（追加模式）
@@ -145,18 +166,33 @@ export const AgentStateAnnotation = Annotation.Root({
 
   // ── 执行上下文（运行时由 ExecutionService 注入）──
   kbId: Annotation<string | undefined>({ default: () => undefined }),
+  kbIds: Annotation<string[]>({ default: () => [] }),
   modelId: Annotation<string | undefined>({ default: () => undefined }),
   sessionId: Annotation<string | undefined>({ default: () => undefined }),
   promptTemplateId: Annotation<string | undefined>({ default: () => undefined }),
+  toolIds: Annotation<string[]>({ default: () => [] }),
 
   // ── 检索结果 ──
   retrievedChunks: Annotation<any[]>({ default: () => [] }),
   citations: Annotation<any[]>({ default: () => [] }),
+  context: Annotation<string | undefined>({ default: () => undefined }),
 
   // ── Reflection 状态（ReflectionStrategy 使用）──
   iteration: Annotation<number>({ default: () => 0 }),
   needsImprovement: Annotation<boolean>({ default: () => false }),
   judgeResult: Annotation<string | undefined>({ default: () => undefined }),
+
+  // ── ReWOO 规划/求解（Planner + Solver 使用）──
+  plan: Annotation<any | undefined>({ default: () => undefined }),
+  currentSubtask: Annotation<string | undefined>({ default: () => undefined }),
+  subtaskResults: Annotation<any[]>({ default: () => [] }),
+
+  // ── Multi-Agent 聚合（Aggregator 使用）──
+  agentOutputs: Annotation<any[]>({ default: () => [] }),
+  aggregatedResult: Annotation<any | undefined>({ default: () => undefined }),
+
+  // ── 工具执行结果 ──
+  toolResults: Annotation<any[]>({ default: () => [] }),
 
   // ── 错误（节点级兜底）──
   error: Annotation<string | undefined>({ default: () => undefined }),
@@ -472,18 +508,7 @@ export interface WorkflowExecutionContext {
   timeoutMs?: number;
 }
 
-/** 运行时步骤事件 — 写入 node_steps 并转为 SSE */
-export interface WorkflowStepEvent {
-  nodeId: string;
-  nodeType: WorkflowNodeType;
-  status: 'running' | 'completed' | 'failed' | 'skipped';
-  input?: Record<string, any>;
-  output?: Record<string, any>;
-  durationMs?: number;
-  errorMessage?: string;
-  startedAt: string;
-  completedAt?: string;
-}
+/** 运行时步骤事件 — 写入 node_steps 并转为 SSE（类型定义见 Layer 2 NodeStepEvent） */
 
 export interface WorkflowStrategy {
   readonly type: WorkflowType;
@@ -492,7 +517,7 @@ export interface WorkflowStrategy {
    * 执行 Workflow，逐步产出事件。
    * ExecutionService 消费事件 → 内存累积 node_steps → 批量写 DB → SSE 推前端
    */
-  run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent, void, void>;
+  run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent, void, void>;
 }
 ```
 
@@ -539,7 +564,7 @@ export class RagStrategy implements WorkflowStrategy {
     private readonly registry: NodeRegistry,
   ) {}
 
-  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent> {
     const config = ctx.workflow.config;
     const { question, chatHistory, kbIds, modelId } = ctx.input;
 
@@ -627,7 +652,7 @@ export class ReflectionStrategy implements WorkflowStrategy {
 
   constructor(private readonly registry: NodeRegistry) {}
 
-  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent> {
     const maxIterations = ctx.workflow.config.maxIterations ?? 3;
 
     // 循环图: retriever → llm → judge(condition) → retriever 或 END
@@ -688,7 +713,7 @@ export class ReflectionStrategy implements WorkflowStrategy {
          ├── ④ StrategyFactory.getStrategy(type)
          ├── ⑤ prisma.workflow_executions.create({ status: RUNNING, input, started_at, created_by })
          │
-         ├── ⑥ strategy.run(ctx)  →  AsyncGenerator<WorkflowStepEvent>
+         ├── ⑥ strategy.run(ctx)  →  AsyncGenerator<NodeStepEvent>
          │     │
          │     ├── 构建 LangGraph StateGraph
          │     ├── graph.stream(input, { signal })
@@ -888,7 +913,7 @@ export class ExecutionService {
     input: ExecuteWorkflowDto,
     userId: string,
     executionId: string,
-  ): Promise<AsyncGenerator<WorkflowStepEvent, void, void>> {
+  ): Promise<AsyncGenerator<NodeStepEvent, void, void>> {
     const workflow = await this.prisma.workflow.findUniqueOrThrow({
       where: { id: workflowId },
     });
@@ -1149,7 +1174,7 @@ import { createDeepAgent } from 'deepagents';
 export class ReWooStrategy implements WorkflowStrategy {
   readonly type = 'rewoo';
 
-  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent> {
     const agent = createDeepAgent({
       model: ctx.input.modelId,
       tools: ctx.input.tools ?? [],
@@ -1159,7 +1184,7 @@ export class ReWooStrategy implements WorkflowStrategy {
 
     const graph = agent.getGraph(); // 返回 CompiledStateGraph
     for await (const event of graph.stream({ messages: [userMessage] }, { signal: ctx.signal })) {
-      // 映射为 WorkflowStepEvent
+      // 映射为 NodeStepEvent
     }
   }
 }
@@ -1174,7 +1199,7 @@ export class ReWooStrategy implements WorkflowStrategy {
 export class ReWooStrategy implements WorkflowStrategy {
   readonly type = 'rewoo';
 
-  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent> {
     const graph = new StateGraph(AgentStateAnnotation)
       .addNode('planner', this.registry.getNodeFn('planner', ctx.workflow.config.planner, ctx.onStep))
       .addNode('solver', this.registry.getNodeFn('solver', ctx.workflow.config.solver, ctx.onStep))
@@ -1326,6 +1351,8 @@ export class CreateWorkflowDto {
   @Type(() => WorkflowEdgeInputDto)
   edges?: WorkflowEdgeInputDto[];
 }
+// 注意：ValidationPipe 需配置 { transform: true }，否则 @Type 装饰器不会将
+// 纯 JSON 对象转换为 class 实例，导致 @ValidateNested 校验失效。
 ```
 
 ---
@@ -1345,14 +1372,14 @@ export class CustomStrategy implements WorkflowStrategy {
     private readonly prisma: PrismaService, // 懒加载，V2 阶段不注册此策略
   ) {}
 
-  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<WorkflowStepEvent> {
+  async *run(ctx: WorkflowExecutionContext): AsyncGenerator<NodeStepEvent> {
     const [nodes, edges] = await Promise.all([
       this.prisma.workflowNode.findMany({ where: { workflowId: ctx.workflow.id } }),
       this.prisma.workflowEdge.findMany({ where: { workflowId: ctx.workflow.id } }),
     ]);
 
     // 从 DB nodes/edges 编译为 LangGraph StateGraph
-    const graph = this.compileGraph(nodes, edges);
+    const graph = this.compileGraph(nodes, edges, ctx.onStep);
 
     for await (const step of graph.stream(ctx.input, { signal: ctx.signal })) {
       yield this.toEvent(step);
@@ -1363,16 +1390,32 @@ export class CustomStrategy implements WorkflowStrategy {
   private compileGraph(
     nodes: WorkflowNode[],
     edges: WorkflowEdge[],
+    onStep: OnStepCallback,
   ): CompiledStateGraph {
     const builder = new StateGraph(AgentStateAnnotation);
 
     // 添加节点
+    // 可执行节点类型：排除 start/end
+    const EXECUTABLE_NODE_TYPES = new Set<WorkflowNodeType>([
+      'retriever', 'llm', 'condition', 'reflection',
+      'tool', 'planner', 'worker', 'solver', 'code',
+    ]);
     for (const node of nodes) {
-      if (node.type === 'start' || node.type === 'end') continue;
-      builder.addNode(
-        node.id,
-        this.registry.getNodeFn(node.type as WorkflowNodeType, node.config as any, ctx.onStep),
+      if (node.type === 'end') continue;
+      if (node.type === 'start') {
+        // start 节点作为 passthrough node 加入 StateGraph，使 START 可以连接到它
+        builder.addNode(node.id, async (state) => state);
+        continue;
+      }
+      if (!EXECUTABLE_NODE_TYPES.has(node.type as WorkflowNodeType)) {
+        throw new Error(`Unknown executable node type: ${node.type}`);
+      }
+      const nodeFn = this.registry.getNodeFn(
+        node.type as WorkflowNodeType,
+        node.config as any,
+        onStep,
       );
+      builder.addNode(node.id, nodeFn);
     }
 
     // 添加边
@@ -1406,7 +1449,6 @@ export class CustomStrategy implements WorkflowStrategy {
     if (startNode) builder.addEdge(START, startNode.id);
     if (endNode) {
       // 所有无出边的节点 → end
-      const allTargets = new Set(edges.map(e => e.targetNodeId));
       for (const node of nodes) {
         if (node.type !== 'end' && !edgeGroups.has(node.id)) {
           builder.addEdge(node.id, endNode.id);
@@ -1464,6 +1506,8 @@ export class ConditionEvaluator {
     if (condition.and) return condition.and.every((c: any) => this.evaluate(c, state));
     if (condition.or) return condition.or.some((c: any) => this.evaluate(c, state));
     if (condition.not) return !this.evaluate(condition.not, state);
+    // 未知条件格式：返回 false 作为安全默认（不触发路由分支）
+    // 生产环境建议通过 logger.warn 记录，便于排查 DB 中 condition 配置错误
     return false;
   }
 }
@@ -1538,6 +1582,7 @@ workflow_edges.condition JSONB 示例:
 | 3.5 | 改造 CreateWorkflowDto 增加 nodes/edges 字段（客户端生成 UUID） |
 | 3.6 | `workflow_executions` 增加 `created_by` 字段（Prisma schema + DB migration） |
 | 3.7 | 集成测试：POST /workflows → POST /run → GET /executions |
+| 3.8 | `chat_sessions.workflow_type` CHECK 约束新增 `'custom'`（Prisma schema + DB ALTER TYPE） |
 
 ### Phase 4: 前端接线 + SSE
 
@@ -1598,8 +1643,8 @@ workflow_edges.condition JSONB 示例:
 │  │                                                               │   │
 │  │  ┌───── WorkflowService ─────┐  ┌───── ExecutionService ──┐  │   │
 │  │  │ CRUD + graph sync        │  │ execute / resume / list  │  │   │
-│  │  │ (客户端生成 UUID)          │  │ 超时控制 / 并发限制      │  │   │
-│  │  └──────────────────────────┘  │ 批量写 node_steps        │  │   │
+│  │  │ (客户端生成 UUID)          │  │ 超时控制 / 并发限制        │  │   │
+│  │  └──────────────────────────┘  │ 批量写 node_steps         │  │   │
 │  │                                └──────────┬───────────────┘  │   │
 │  │                                           │                    │   │
 │  │  ┌───── StrategyFactory ──────────────────┼─────────────┐    │   │
