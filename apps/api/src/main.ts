@@ -13,7 +13,9 @@ async function bootstrap() {
     return this.toString();
   };
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'],
+  });
 
   // ── CORS ──
   app.enableCors({
