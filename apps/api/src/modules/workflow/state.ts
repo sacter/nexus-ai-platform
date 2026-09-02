@@ -41,39 +41,37 @@ export const AgentStateAnnotation = Annotation.Root({
   }),
 
   // ── 执行上下文（运行时由 ExecutionService 注入）──
-  kbId: Annotation<string | undefined>({ default: () => undefined }),
-  kbIds: Annotation<string[]>({ default: () => [] }),
-  modelId: Annotation<string | undefined>({ default: () => undefined }),
-  sessionId: Annotation<string | undefined>({ default: () => undefined }),
-  promptTemplateId: Annotation<string | undefined>({
-    default: () => undefined,
-  }),
-  toolIds: Annotation<string[]>({ default: () => [] }),
+  kbId: Annotation<string | undefined>(),
+  kbIds: Annotation<string[]>(),
+  modelId: Annotation<string | undefined>(),
+  sessionId: Annotation<string | undefined>(),
+  promptTemplateId: Annotation<string | undefined>(),
+  toolIds: Annotation<string[]>(),
 
   // ── 检索结果 ──
-  retrievedChunks: Annotation<any[]>({ default: () => [] }),
-  citations: Annotation<any[]>({ default: () => [] }),
-  context: Annotation<string | undefined>({ default: () => undefined }),
+  retrievedChunks: Annotation<any[]>(),
+  citations: Annotation<any[]>(),
+  context: Annotation<string | undefined>(),
 
   // ── Reflection 状态（ReflectionStrategy 使用）──
-  iteration: Annotation<number>({ default: () => 0 }),
-  needsImprovement: Annotation<boolean>({ default: () => false }),
-  judgeResult: Annotation<string | undefined>({ default: () => undefined }),
+  iteration: Annotation<number>(),
+  needsImprovement: Annotation<boolean>(),
+  judgeResult: Annotation<string | undefined>(),
 
   // ── ReWOO 规划/求解（Planner + Solver 使用）──
-  plan: Annotation<unknown>({ default: () => undefined }),
-  currentSubtask: Annotation<string | undefined>({ default: () => undefined }),
-  subtaskResults: Annotation<any[]>({ default: () => [] }),
+  plan: Annotation<unknown>(),
+  currentSubtask: Annotation<string | undefined>(),
+  subtaskResults: Annotation<any[]>(),
 
   // ── Multi-Agent 聚合（Aggregator 使用）──
-  agentOutputs: Annotation<any[]>({ default: () => [] }),
-  aggregatedResult: Annotation<unknown>({ default: () => undefined }),
+  agentOutputs: Annotation<any[]>(),
+  aggregatedResult: Annotation<unknown>(),
 
   // ── 工具执行结果 ──
-  toolResults: Annotation<any[]>({ default: () => [] }),
+  toolResults: Annotation<any[]>(),
 
   // ── 错误（节点级兜底）──
-  error: Annotation<string | undefined>({ default: () => undefined }),
+  error: Annotation<string | undefined>(),
 });
 
 export type AgentState = typeof AgentStateAnnotation.State;
