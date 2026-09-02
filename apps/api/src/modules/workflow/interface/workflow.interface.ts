@@ -1,4 +1,4 @@
-import { NodeStepEvent } from './node-registry';
+import { NodeStepEvent } from './node.interface';
 
 export type WorkflowType =
   'rag' | 'reflection' | 'rewoo' | 'multi_agent' | 'custom';

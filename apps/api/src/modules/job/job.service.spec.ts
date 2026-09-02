@@ -93,7 +93,10 @@ describe('JobService', () => {
           jobType: 'INDEX',
           document: expect.objectContaining({
             kbId: 'kb-1',
-            name: expect.objectContaining({ contains: '需求', mode: 'insensitive' }),
+            name: expect.objectContaining({
+              contains: '需求',
+              mode: 'insensitive',
+            }),
           }),
         }),
         skip: 10,
@@ -105,12 +108,18 @@ describe('JobService', () => {
   it('findOne：任务不存在 → NotFound', async () => {
     prisma.indexJob.findUnique.mockResolvedValue(null);
 
-    await expect(service.findOne('missing')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne('missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('cancel：仅允许 PENDING/RUNNING，并把任务标记为失败', async () => {
-    prisma.indexJob.findUnique.mockResolvedValue(mockJobRow({ status: 'RUNNING' }));
-    prisma.indexJob.findUnique.mockResolvedValueOnce(mockJobRow({ status: 'RUNNING' }));
+    prisma.indexJob.findUnique.mockResolvedValue(
+      mockJobRow({ status: 'RUNNING' }),
+    );
+    prisma.indexJob.findUnique.mockResolvedValueOnce(
+      mockJobRow({ status: 'RUNNING' }),
+    );
 
     const result = await service.cancel('job-1');
 
@@ -127,13 +136,19 @@ describe('JobService', () => {
   });
 
   it('cancel：已完成任务 → BadRequest', async () => {
-    prisma.indexJob.findUnique.mockResolvedValue(mockJobRow({ status: 'DONE' }));
+    prisma.indexJob.findUnique.mockResolvedValue(
+      mockJobRow({ status: 'DONE' }),
+    );
 
-    await expect(service.cancel('job-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.cancel('job-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('retry：失败任务重置为待执行并递增重试次数', async () => {
-    prisma.indexJob.findUnique.mockResolvedValue(mockJobRow({ status: 'FAILED' }));
+    prisma.indexJob.findUnique.mockResolvedValue(
+      mockJobRow({ status: 'FAILED' }),
+    );
 
     const result = await service.retry('job-1');
 
@@ -156,6 +171,8 @@ describe('JobService', () => {
       mockJobRow({ status: 'FAILED', bizId: null }),
     );
 
-    await expect(service.retry('job-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.retry('job-1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 });

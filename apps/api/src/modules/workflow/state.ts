@@ -41,7 +41,7 @@ export const AgentStateAnnotation = Annotation.Root({
   }),
 
   // ── 执行上下文（运行时由 ExecutionService 注入）──
-  kbId: Annotation<string | undefined>(),
+  kbId: Annotation<string>(),
   kbIds: Annotation<string[]>(),
   modelId: Annotation<string | undefined>(),
   sessionId: Annotation<string | undefined>(),
@@ -73,5 +73,3 @@ export const AgentStateAnnotation = Annotation.Root({
   // ── 错误（节点级兜底）──
   error: Annotation<string | undefined>(),
 });
-
-export type AgentState = typeof AgentStateAnnotation.State;

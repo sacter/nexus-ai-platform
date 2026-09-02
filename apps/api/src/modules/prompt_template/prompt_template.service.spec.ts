@@ -1,7 +1,4 @@
-import {
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
 import { PromptTemplateService } from './prompt_template.service';
 
@@ -213,7 +210,12 @@ describe('PromptTemplateService', () => {
     prisma.promptTemplate.findUnique.mockResolvedValue({ id: 'pt-1' });
     prisma.promptTemplateVersion.findMany.mockResolvedValue([
       mockVersion({ createdByUser: { username: 'alice' } }),
-      mockVersion({ id: 'v-1', versionNumber: 1, variables: 'bad-json', createdByUser: null }),
+      mockVersion({
+        id: 'v-1',
+        versionNumber: 1,
+        variables: 'bad-json',
+        createdByUser: null,
+      }),
     ]);
 
     const versions = await service.listVersions('pt-1');

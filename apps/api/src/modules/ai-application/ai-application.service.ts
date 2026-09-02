@@ -181,7 +181,9 @@ export class AiApplicationService {
     });
     if (!tool) throw new NotFoundException('工具不存在');
     const bound = await this.prisma.aiApplicationTool.findUnique({
-      where: { applicationId_toolId: { applicationId: id, toolId: dto.toolId } },
+      where: {
+        applicationId_toolId: { applicationId: id, toolId: dto.toolId },
+      },
       select: { id: true },
     });
     if (bound) throw new ConflictException('工具已绑定');

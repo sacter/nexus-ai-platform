@@ -32,7 +32,14 @@ export interface IndexJobRow {
 
 type JobWithRelations = Prisma.IndexJobGetPayload<{
   include: {
-    document: { select: { id: true; name: true; kbId: true; kb: { select: { id: true; name: true } } } };
+    document: {
+      select: {
+        id: true;
+        name: true;
+        kbId: true;
+        kb: { select: { id: true; name: true } };
+      };
+    };
     version: { select: { id: true; versionNumber: true } };
   };
 }>;

@@ -83,7 +83,10 @@ export class PromptTemplateService {
       : [];
     const byId = new Map(currents.map((v) => [v.id, v]));
     return templates.map((t) =>
-      this.toRow(t, t.currentVersionId ? byId.get(t.currentVersionId) : undefined),
+      this.toRow(
+        t,
+        t.currentVersionId ? byId.get(t.currentVersionId) : undefined,
+      ),
     );
   }
 

@@ -31,10 +31,7 @@ describe('SessionService.create', () => {
     prisma.chatSession.create.mockResolvedValue({ id: 's-1', title: 'x' });
     prisma.chatSessionTool.createMany.mockResolvedValue({ count: 2 });
 
-    await service.create(
-      { title: '会话', aiApplicationId: 'app-1' },
-      'user-1',
-    );
+    await service.create({ title: '会话', aiApplicationId: 'app-1' }, 'user-1');
 
     expect(prisma.chatSession.create).toHaveBeenCalledWith({
       data: {
@@ -101,7 +98,11 @@ describe('SessionService.create', () => {
     prisma.chatSession.create.mockResolvedValue({ id: 's-3', title: 'z' });
     await service.create({ title: '简单' }, 'user-1');
     expect(prisma.chatSession.create).toHaveBeenCalledWith({
-      data: { title: '简单', userId: 'user-1', workflowType: DEFAULT_WORKFLOW_TYPE },
+      data: {
+        title: '简单',
+        userId: 'user-1',
+        workflowType: DEFAULT_WORKFLOW_TYPE,
+      },
     });
   });
 });

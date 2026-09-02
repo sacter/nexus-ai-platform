@@ -24,7 +24,11 @@ function mockAppRow(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date('2026-08-02'),
     kb: { id: 'kb-1', name: '财务制度库' },
     workflow: { id: 'wf-1', name: 'RAG 检索', type: 'rag' },
-    model: { id: 'model-1', displayName: 'DeepSeek Chat', provider: 'deepseek' },
+    model: {
+      id: 'model-1',
+      displayName: 'DeepSeek Chat',
+      provider: 'deepseek',
+    },
     promptTemplate: null,
     tools: [],
     ...overrides,
@@ -32,14 +36,16 @@ function mockAppRow(overrides: Record<string, unknown> = {}) {
 }
 
 type PrismaMock = {
-  [K in
-    | 'aiApplication'
-    | 'aiApplicationTool'
-    | 'knowledgeBase'
-    | 'workflow'
-    | 'model'
-    | 'promptTemplate'
-    | 'tool']: Record<string, jest.Mock>;
+  [
+    K in
+      | 'aiApplication'
+      | 'aiApplicationTool'
+      | 'knowledgeBase'
+      | 'workflow'
+      | 'model'
+      | 'promptTemplate'
+      | 'tool'
+  ]: Record<string, jest.Mock>;
 } & { $transaction: jest.Mock };
 
 function makePrismaMock(): PrismaMock {
@@ -184,9 +190,9 @@ describe('AiApplicationService', () => {
   it('update：应用不存在 → NotFound', async () => {
     prisma.aiApplication.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.update('ghost', { name: 'x' }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.update('ghost', { name: 'x' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   it('bindTool：重复绑定 → Conflict', async () => {
