@@ -14,6 +14,8 @@ import { ReflectionNode } from './nodes/reflection.node';
 import { WorkflowStrategyFactory } from './strategies/workflow-strategy.factory';
 import { RagStrategy } from './strategies/rag.strategy';
 import { ReflectionStrategy } from './strategies/reflection.strategy';
+import { RewooStrategy } from './strategies/rewoo.strategy';
+import { MultiAgentStrategy } from './strategies/multi-agent.strategy';
 // 模块
 import { RetrievalModule } from '../retrieval/retrieval.module';
 import { ModelModule } from '../model/model.module';
@@ -38,6 +40,8 @@ import { ModelModule } from '../model/model.module';
     // 策略
     RagStrategy,
     ReflectionStrategy,
+    RewooStrategy,
+    MultiAgentStrategy,
   ],
   exports: [ExecutionService, WorkflowService, NodeRegistry],
 })
@@ -53,6 +57,8 @@ export class WorkflowModule implements OnModuleInit {
     private readonly workflowStrategyFactory: WorkflowStrategyFactory,
     private readonly ragStrategy: RagStrategy,
     private readonly reflectionStrategy: ReflectionStrategy,
+    private readonly multiAgentStrategy: MultiAgentStrategy,
+    private readonly rewooStrategy: RewooStrategy,
   ) {}
 
   onModuleInit() {
@@ -67,5 +73,7 @@ export class WorkflowModule implements OnModuleInit {
     // 注册策略
     this.workflowStrategyFactory.register(this.ragStrategy);
     this.workflowStrategyFactory.register(this.reflectionStrategy);
+    this.workflowStrategyFactory.register(this.multiAgentStrategy);
+    this.workflowStrategyFactory.register(this.rewooStrategy);
   }
 }
