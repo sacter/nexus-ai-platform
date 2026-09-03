@@ -57,8 +57,8 @@ export class WorkflowModule implements OnModuleInit {
     private readonly workflowStrategyFactory: WorkflowStrategyFactory,
     private readonly ragStrategy: RagStrategy,
     private readonly reflectionStrategy: ReflectionStrategy,
-    private readonly multiAgentStrategy: MultiAgentStrategy,
     private readonly rewooStrategy: RewooStrategy,
+    private readonly multiAgentStrategy: MultiAgentStrategy,
   ) {}
 
   onModuleInit() {
