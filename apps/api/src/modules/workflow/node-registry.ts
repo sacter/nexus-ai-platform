@@ -31,7 +31,8 @@ export class NodeRegistry {
   }
 
   /**
-   * 获取一个节点函数，用于执行节点。
+   * 获取适配为 LangGraph NodeFunction 的执行函数。
+   * onStep 回调由 ExecutionService 在创建 ctx 时注入。
    * @param type 节点类型
    * @param config 节点配置
    * @param onStep 步骤回调函数
@@ -61,6 +62,7 @@ export class NodeRegistry {
 
       const startTime = Date.now();
 
+      // 发出 running 事件
       await ctx.onStep({
         nodeId: ctx.metadata.nodeId,
         nodeType: type,

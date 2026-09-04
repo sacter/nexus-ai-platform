@@ -29,31 +29,29 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│  Layer 5: DeepAgents Harness  (规划/子Agent/记忆/技能 — 仅复杂策略)      │
-│     createDeepAgent({ model, tools, middleware: [planning, ...] })   │
-│     注意: JS 版 deepagents 可能不成熟，V3+ 需验证可行性；                 │
-│     不可用则降级为纯 LangGraph 实现或python实现（Plan B）                 │
+│  Layer 1: LangGraph Runtime  (底层图执行引擎)                          │
+│     @langchain/langgraph: StateGraph / CompiledStateGraph /          │
+│     addNode / addEdge / addConditionalEdges / stream / interrupt     │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Layer 4: Execution Runtime  (生命周期/持久化/流式/中止/审计)           │
-│     WorkflowExecutionService — 创建执行记录 → LangGraph stream →      │
-│     内存累积 node_steps → 批量写入（每 N 步或 completed/failed）→      │
-│     SSE 推前端 → COMPLETED/FAILED                                     │
+│  Layer 2: Node Registry  (节点实现 — 注册表管理)                        │
+│     GraphNode 接口 + 11 种内置节点 + 注册/发现/组合                      │
+│     横切：日志/审计/Token 计量（通过 onStep 回调传给 ExecutionService）   │
 ├──────────────────────────────────────────────────────────────────────┤
 │  Layer 3: Strategy-Defined Graph  (拓扑定义 — 代码驱动)                │
 │     RagStrategy / ReflectionStrategy / ReWooStrategy / MultiAgent    │
 │     CustomGraphStrategy (V3 Designer)                               │
 │     每个策略 = 一个 LangGraph StateGraph + 参数注入                    │
-│     策略通过注册表模式自注册，非 switch-case 硬编码                     │
+│     策略通过注册表模式自注册，非 switch-case 硬编码                       │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Layer 2: Node Registry  (节点实现 — 注册表管理)                       │
-│     GraphNode 接口 + 11 种内置节点 + 注册/发现/组合                    │
-│     横切：日志/审计/Token 计量（通过 onStep 回调传给 ExecutionService） │
-│     位置: apps/api（非 packages/ai-core，因需要注入 API 侧服务）       │
+│  Layer 4: Execution Runtime  (生命周期/持久化/流式/中止/审计)            │
+│     WorkflowExecutionService — 创建执行记录 → LangGraph stream →      │
+│     内存累积 node_steps → 批量写入（每 N 步或 completed/failed）→        │
+│     SSE 推前端 → COMPLETED/FAILED                                     │
 ├──────────────────────────────────────────────────────────────────────┤
-│  Layer 1: LangGraph Runtime  (底层图执行引擎)                          │
-│     @langchain/langgraph: StateGraph / CompiledStateGraph /          │
-│     addNode / addEdge / addConditionalEdges / stream / interrupt      │
-│     依赖安装: apps/api 的 package.json（非 packages/ai-core）          │
+│  Layer 5: DeepAgents Harness  (规划/子Agent/记忆/技能 — 仅复杂策略)      │
+│     createDeepAgent({ model, tools, middleware: [planning, ...] })   │
+│     注意: JS 版 deepagents 可能不成熟，V3+ 需验证可行性；                 │
+│     不可用则降级为纯 LangGraph 实现或python实现（Plan B）                 │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,11 +76,11 @@
                                   │
               ┌───────────────────┼───────────────────┐
               │                   │                   │
-     ┌────────┴────────┐  ┌──────┴──────┐  ┌────────┴────────┐
-     │ type='rag'      │  │ type='...'  │  │ type='custom'   │
-     │ → RagStrategy   │  │ → 其他策略   │  │ → CustomStrategy│
-     │ 代码定义拓扑      │  │  代码定义    │  │  DB 编译拓扑     │
-     └────────┬────────┘  └──────┬──────┘  └────────┬────────┘
+     ┌────────┴────────┐   ┌──────┴──────┐   ┌────────┴────────┐
+     │ type='rag'      │   │ type='...'  │   │ type='custom'   │
+     │ → RagStrategy   │   │ → 其他策略   │   │ → CustomStrategy│
+     │ 代码定义拓扑      │   │  代码定义    │   │  DB 编译拓扑     │
+     └────────┬────────┘   └──────┬──────┘   └────────┬────────┘
               │                   │                   │
               └───────────────────┼───────────────────┘
                                   │

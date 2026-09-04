@@ -29,15 +29,16 @@ import { ModelModule } from '../model/model.module';
     NodeRegistry,
     WorkflowStrategyFactory,
 
-    // 内置节点
+    // 内置节点直接注册为 provider
     StartNode,
     EndNode,
     ConditionNode,
     RetrieverNode,
     LlmNode,
     ReflectionNode,
+    // Planner / Solver / Aggregator / Tool / Code V3+ 时注册
 
-    // 策略
+    // 策略注册（自注册模式）
     RagStrategy,
     ReflectionStrategy,
     RewooStrategy,
@@ -55,6 +56,7 @@ export class WorkflowModule implements OnModuleInit {
     private readonly llmNode: LlmNode,
     private readonly reflectionNode: ReflectionNode,
     private readonly workflowStrategyFactory: WorkflowStrategyFactory,
+    // 策略工厂
     private readonly ragStrategy: RagStrategy,
     private readonly reflectionStrategy: ReflectionStrategy,
     private readonly rewooStrategy: RewooStrategy,
@@ -70,7 +72,7 @@ export class WorkflowModule implements OnModuleInit {
     this.registry.register('llm', () => this.llmNode);
     this.registry.register('reflection', () => this.reflectionNode);
 
-    // 注册策略
+    // 注册策略（自注册模式，替代 switch-case）
     this.workflowStrategyFactory.register(this.ragStrategy);
     this.workflowStrategyFactory.register(this.reflectionStrategy);
     this.workflowStrategyFactory.register(this.multiAgentStrategy);
