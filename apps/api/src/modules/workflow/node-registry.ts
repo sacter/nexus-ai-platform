@@ -6,6 +6,7 @@ import {
   OnStepCallback,
   GraphNode,
 } from './interface/node.interface';
+import { WorkflowNodeType } from './interface/workflow.interface';
 
 type GraphNodeFactory = (config?: Record<string, unknown>) => GraphNode;
 type LangGraphNodeFn = (
@@ -39,7 +40,7 @@ export class NodeRegistry {
    * @returns 节点函数
    */
   getNodeFn(
-    type: string,
+    type: WorkflowNodeType,
     config?: Record<string, any>,
     onStep?: OnStepCallback,
   ): LangGraphNodeFn {

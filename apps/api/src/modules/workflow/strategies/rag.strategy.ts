@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { StateGraph, START, END } from '@langchain/langgraph';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
-import { NodeRegistry, NodeStepEvent } from '../node-registry';
+import { NodeRegistry } from '../node-registry';
+import { NodeStepEvent } from '../interface/node.interface';
 import { AgentStateAnnotation } from '../state';
 import {
   WorkflowStrategy,
   WorkflowExecutionContext,
 } from '../interface/workflow-strategy.interface';
+import { WorkflowNodeType } from '../interface/workflow.interface';
 
 @Injectable()
 export class RagStrategy implements WorkflowStrategy {
@@ -30,8 +32,9 @@ export class RagStrategy implements WorkflowStrategy {
     const llmNode = this.registry.getNodeFn(
       'llm',
       {
-        modelId: modelId ?? config.llm?.modelId,
-        temperature: config.llm?.temperature ?? 0.7,
+        modelId: modelId ?? (config.llm as { modelId: string })?.modelId,
+        temperature:
+          (config.llm as { temperature: number })?.temperature ?? 0.7,
       },
       ctx.onStep,
     );
@@ -53,36 +56,39 @@ export class RagStrategy implements WorkflowStrategy {
         new HumanMessage(question),
       ],
       kbId: kbIds?.[0],
-      modelId: modelId ?? config.llm?.modelId,
+      modelId: modelId ?? (config.llm as { modelId: string })?.modelId,
     };
 
     try {
-      for await (const event of graph.stream(input, {
+      const stream = await graph.stream(input, {
         configurable: {
           workflowId: ctx.workflow.id,
           executionId: ctx.executionId,
         },
         signal: ctx.signal,
-      })) {
+      });
+      for await (const event of stream) {
         for (const [nodeName, output] of Object.entries(event)) {
           yield {
             nodeId: nodeName,
             nodeType: this.resolveNodeType(nodeName),
-            status: (output as any)?.error ? 'failed' : 'completed',
+            status: (output as { error: string })?.error
+              ? 'failed'
+              : 'completed',
             input: { question },
-            output: output as Record<string, any>,
+            output: output,
             durationMs: 0,
             startedAt: new Date().toISOString(),
             completedAt: new Date().toISOString(),
           };
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       yield {
         nodeId: 'graph',
         nodeType: 'end',
         status: 'failed',
-        errorMessage: err.message,
+        errorMessage: (err as Error).message,
         startedAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
       };
@@ -90,8 +96,8 @@ export class RagStrategy implements WorkflowStrategy {
     }
   }
 
-  private resolveNodeType(nodeName: string): string {
-    const map: Record<string, string> = {
+  private resolveNodeType(nodeName: string): WorkflowNodeType {
+    const map: Record<string, WorkflowNodeType> = {
       retriever: 'retriever',
       llm: 'llm',
       judge: 'reflection',
