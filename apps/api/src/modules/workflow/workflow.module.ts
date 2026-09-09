@@ -10,6 +10,7 @@ import { RetrieverNode } from './nodes/retriever.node';
 import { LlmNode } from './nodes/llm.node';
 import { ConditionNode } from './nodes/condition.node';
 import { ReflectionNode } from './nodes/reflection.node';
+import { RouterNode } from './nodes/router.node';
 // 策略工厂
 import { WorkflowStrategyFactory } from './strategies/workflow-strategy.factory';
 import { RagStrategy } from './strategies/rag.strategy';
@@ -36,6 +37,7 @@ import { ModelModule } from '../model/model.module';
     RetrieverNode,
     LlmNode,
     ReflectionNode,
+    RouterNode,
     // Planner / Solver / Aggregator / Tool / Code V3+ 时注册
 
     // 策略注册（自注册模式）
@@ -48,13 +50,14 @@ import { ModelModule } from '../model/model.module';
 })
 export class WorkflowModule implements OnModuleInit {
   constructor(
-    private readonly registry: NodeRegistry,
+    private readonly nodeRegistry: NodeRegistry,
     private readonly startNode: StartNode,
     private readonly endNode: EndNode,
     private readonly conditionNode: ConditionNode,
     private readonly retrieverNode: RetrieverNode,
     private readonly llmNode: LlmNode,
     private readonly reflectionNode: ReflectionNode,
+    private readonly routerNode: RouterNode,
     private readonly workflowStrategyFactory: WorkflowStrategyFactory,
     // 策略工厂
     private readonly ragStrategy: RagStrategy,
@@ -65,12 +68,13 @@ export class WorkflowModule implements OnModuleInit {
 
   onModuleInit() {
     // 注册节点
-    this.registry.register('start', () => this.startNode);
-    this.registry.register('end', () => this.endNode);
-    this.registry.register('condition', () => this.conditionNode);
-    this.registry.register('retriever', () => this.retrieverNode);
-    this.registry.register('llm', () => this.llmNode);
-    this.registry.register('reflection', () => this.reflectionNode);
+    this.nodeRegistry.register('start', () => this.startNode);
+    this.nodeRegistry.register('end', () => this.endNode);
+    this.nodeRegistry.register('condition', () => this.conditionNode);
+    this.nodeRegistry.register('retriever', () => this.retrieverNode);
+    this.nodeRegistry.register('llm', () => this.llmNode);
+    this.nodeRegistry.register('reflection', () => this.reflectionNode);
+    this.nodeRegistry.register('router', () => this.routerNode);
 
     // 注册策略（自注册模式，替代 switch-case）
     this.workflowStrategyFactory.register(this.ragStrategy);

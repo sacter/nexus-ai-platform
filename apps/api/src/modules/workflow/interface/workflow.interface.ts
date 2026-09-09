@@ -14,7 +14,8 @@ export type WorkflowNodeType =
   | 'planner'
   | 'solver'
   | 'aggregator'
-  | 'code';
+  | 'code'
+  | 'router';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';

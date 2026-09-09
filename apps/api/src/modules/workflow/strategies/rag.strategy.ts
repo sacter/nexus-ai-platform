@@ -39,10 +39,25 @@ export class RagStrategy implements WorkflowStrategy {
       ctx.onStep,
     );
 
+    const routerNode = this.registry.getNodeFn(
+      'router',
+      {
+        kbId: kbIds?.[0],
+        modelId: modelId ?? (config.llm as { modelId: string })?.modelId,
+      },
+      ctx.onStep,
+    );
+
     const graph = new StateGraph(AgentStateAnnotation)
+      .addNode('router', routerNode)
       .addNode('retriever', retrieverNode)
       .addNode('llm', llmNode)
-      .addEdge(START, 'retriever')
+      .addEdge(START, 'router')
+      .addConditionalEdges(
+        'router',
+        (state: typeof AgentStateAnnotation.State) =>
+          state.routerDecision === 'retrieve' ? 'retriever' : 'llm',
+      )
       .addEdge('retriever', 'llm')
       .addEdge('llm', END)
       .compile();
@@ -98,6 +113,7 @@ export class RagStrategy implements WorkflowStrategy {
 
   private resolveNodeType(nodeName: string): WorkflowNodeType {
     const map: Record<string, WorkflowNodeType> = {
+      router: 'router',
       retriever: 'retriever',
       llm: 'llm',
       judge: 'reflection',

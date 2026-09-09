@@ -31,6 +31,7 @@ const messagesReducer = (prev: BaseMessage[], next: BaseMessage[]) => [
     agentOutputs    — 多 Agent 输出（aggregator）
     aggregatedResult — 合并结果（aggregator）
     toolResults     — 工具执行结果（tool）
+    routerDecision  — Router 决策（'retrieve' | 'direct_answer'，RagStrategy 使用）
     error           — 错误信息（所有节点）
  */
 
@@ -69,6 +70,9 @@ export const AgentStateAnnotation = Annotation.Root({
 
   // ── 工具执行结果 ──
   toolResults: Annotation<any[]>(),
+
+  // ── Router 决策（RagStrategy 使用）──
+  routerDecision: Annotation<string | undefined>(),
 
   // ── 错误（节点级兜底）──
   error: Annotation<string | undefined>(),

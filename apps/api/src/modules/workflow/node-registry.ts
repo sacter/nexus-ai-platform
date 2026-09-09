@@ -47,11 +47,24 @@ export class NodeRegistry {
     const node = this.resolve(type, config);
 
     return async (state: AgentState, runtimeConfig?: RunnableConfig) => {
+      // 将 domain config（如 kbId, topK, modelId, temperature）合并到
+      // RunnableConfig.configurable 中，使节点 execute 可通过
+      // ctx.config.configurable 读取，避免参数传递断裂。
+      const mergedConfig: RunnableConfig = runtimeConfig
+        ? {
+            ...runtimeConfig,
+            configurable: {
+              ...runtimeConfig.configurable,
+              ...config,
+            },
+          }
+        : { configurable: { ...config } };
+
       const { nodeId, workflowId, executionId } =
-        runtimeConfig?.configurable ?? {};
+        mergedConfig?.configurable ?? {};
       const ctx: NodeContext = {
         state,
-        config: runtimeConfig ?? {},
+        config: mergedConfig ?? {},
         metadata: {
           nodeId: (nodeId as string) ?? type,
           nodeType: type,
