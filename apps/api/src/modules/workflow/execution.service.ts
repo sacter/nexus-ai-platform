@@ -54,6 +54,7 @@ export class ExecutionService {
         input: { ...input } as Prisma.InputJsonValue,
         status: 'RUNNING',
         startedAt: new Date(),
+        createdBy: userId,
       },
     });
 
@@ -185,7 +186,7 @@ export class ExecutionService {
     const timeoutMs = (workflow.config as any)?.timeoutMs ?? 300_000;
 
     await this.prisma.workflowExecution.create({
-      data: { id: executionId, workflowId, input: input as any, status: 'RUNNING', startedAt: new Date() },
+      data: { id: executionId, workflowId, input: input as any, status: 'RUNNING', startedAt: new Date(), createdBy: userId },
     });
 
     const nodeSteps: NodeStep[] = [];
@@ -249,15 +250,13 @@ export class ExecutionService {
 
   /** 并发限制 */
   private async checkConcurrencyLimit(userId: string): Promise<void> {
-    // 注意：workflow_executions 表目前没有 created_by 字段。
-    // V2 阶段使用较宽松的全局并发限制（所有用户合计），
-    // V3 增加 created_by FK 后改为 per-user 限制。
+    // 按用户限制并发执行数（依赖 created_by 字段）
     const count = await this.prisma.workflowExecution.count({
-      where: { status: 'RUNNING' },
+      where: { status: 'RUNNING', createdBy: userId },
     });
-    if (count >= ExecutionService.MAX_CONCURRENT_PER_USER * 10) {
+    if (count >= ExecutionService.MAX_CONCURRENT_PER_USER) {
       throw new HttpException(
-        `Too many concurrent executions (max ${ExecutionService.MAX_CONCURRENT_PER_USER * 10})`,
+        `Too many concurrent executions (max ${ExecutionService.MAX_CONCURRENT_PER_USER} per user)`,
         429,
       );
     }

@@ -145,6 +145,7 @@ model User {
   models            Model[]             // ★
   tools             Tool[]              // ★
   workflows         Workflow[]          // ★
+  workflowExecutions WorkflowExecution[] // ★
   systemSettings    SystemSetting[]
 
   @@map("users")
@@ -619,6 +620,7 @@ model WorkflowExecution {
   workflowId     String?         @map("workflow_id") @db.Uuid
   applicationId  String?         @map("application_id") @db.Uuid
   sessionId      String?         @map("session_id") @db.Uuid
+  createdBy      String?         @map("created_by") @db.Uuid          // ★ 发起执行的用户
   input          Json            @default("{}") @db.JsonB
   output         Json?
   status         ExecutionStatus @default(RUNNING)
@@ -632,10 +634,12 @@ model WorkflowExecution {
   workflow     Workflow?        @relation(fields: [workflowId], references: [id], onDelete: SetNull)
   application  AiApplication?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   session      ChatSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdByUser User?           @relation(fields: [createdBy], references: [id])
 
   @@index([workflowId])
   @@index([applicationId])
   @@index([sessionId])
+  @@index([createdBy])                                              // ★
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@map("workflow_executions")

@@ -139,8 +139,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 │ id (PK)          │     │ workflow_id (FK) ────│─── workflows
 │ provider         │     │ application_id (FK)──│─── ai_applications
 │ model_name       │     │ session_id (FK) ─────│─── chat_sessions
-│ type             │     │ input (JSONB)        │
-│ display_name     │     │ output (JSONB)       │
+│ type             │     │ created_by (FK) ─────│───► users
+│ display_name     │     │ input (JSONB)        │
 │ description      │     │ status               │
 │ config (JSONB)   │     │ duration_ms          │
 │ api_key_id (FK)──│──┐  │ error_message        │
@@ -866,6 +866,7 @@ CREATE TABLE workflow_executions (
     workflow_id     UUID               NOT NULL REFERENCES workflows(id) ON DELETE SET NULL,
     application_id  UUID                        DEFAULT NULL REFERENCES ai_applications(id) ON DELETE SET NULL,
     session_id      UUID                        DEFAULT NULL REFERENCES chat_sessions(id) ON DELETE SET NULL,
+    created_by      UUID                        DEFAULT NULL REFERENCES users(id),       -- ★ 发起执行的用户
 
     -- ★ 输入 / 输出
     input           JSONB              NOT NULL DEFAULT '{}',
@@ -897,6 +898,7 @@ CREATE TABLE workflow_executions (
 CREATE INDEX idx_wf_exec_workflow_id    ON workflow_executions(workflow_id);
 CREATE INDEX idx_wf_exec_application_id ON workflow_executions(application_id);
 CREATE INDEX idx_wf_exec_session_id     ON workflow_executions(session_id);
+CREATE INDEX idx_wf_exec_created_by     ON workflow_executions(created_by);               -- ★
 CREATE INDEX idx_wf_exec_status         ON workflow_executions(status);
 CREATE INDEX idx_wf_exec_created_at     ON workflow_executions(created_at DESC);
 
@@ -905,6 +907,7 @@ COMMENT ON COLUMN workflow_executions.status IS 'RUNNING=执行中, COMPLETED=�
 COMMENT ON COLUMN workflow_executions.node_steps IS 'JSONB 数组: 每个 Node 的执行输入/输出/耗时/状态, 断点上下文用于长流程恢复执行';
 COMMENT ON COLUMN workflow_executions.session_id IS '关联 Chat Session, 可追溯到具体对话';
 COMMENT ON COLUMN workflow_executions.application_id IS '关联 AI Application, 记录使用哪个应用';
+COMMENT ON COLUMN workflow_executions.created_by IS '★ 发起执行的用户, 用于 per-user 并发限制和审计追溯';
 ```
 
 ### 4.18 ai_applications — AI 应用表 (★ V2 核心新增)
@@ -1188,6 +1191,7 @@ model User {
   models            Model[]             // ★
   tools             Tool[]              // ★
   workflows         Workflow[]          // ★
+  workflowExecutions WorkflowExecution[] // ★
 
   @@map("users")
 }
@@ -1633,6 +1637,7 @@ model WorkflowExecution {
   workflowId     String?         @map("workflow_id") @db.Uuid
   applicationId  String?         @map("application_id") @db.Uuid
   sessionId      String?         @map("session_id") @db.Uuid
+  createdBy      String?         @map("created_by") @db.Uuid          // ★ 发起执行的用户
   input          Json            @default("{}") @db.JsonB
   output         Json?
   status         ExecutionStatus @default(RUNNING)
@@ -1646,10 +1651,12 @@ model WorkflowExecution {
   workflow     Workflow?        @relation(fields: [workflowId], references: [id], onDelete: SetNull)
   application  AiApplication?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
   session      ChatSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  createdByUser User?           @relation(fields: [createdBy], references: [id])
 
   @@index([workflowId])
   @@index([applicationId])
   @@index([sessionId])
+  @@index([createdBy])                                              // ★
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@map("workflow_executions")
@@ -1860,10 +1867,12 @@ SELECT
     we.node_steps,
     app.name AS application_name,
     wf.name AS workflow_name,
+    u.username AS created_by_name,
     we.started_at, we.completed_at
 FROM workflow_executions we
 LEFT JOIN ai_applications app ON app.id = we.application_id
 LEFT JOIN workflows wf ON wf.id = we.workflow_id
+LEFT JOIN users u ON u.id = we.created_by           -- ★
 WHERE we.session_id = $1
 ORDER BY we.created_at DESC;
 ```
@@ -2036,6 +2045,7 @@ V2.0 (AI Application Platform):
   - chat_messages.metadata 新增 execution_id 字段 (约定, JSONB 内)
   - audit_logs 新增枚举值: AI_APP_CREATE/DELETE/UPDATE, MODEL_REGISTER/DELETE,
     WORKFLOW_CREATE/UPDATE/EXECUTE
+  - workflow_executions 新增 created_by 列 (FK → users, 用于 per-user 并发限制)
 
   数据迁移:
   - 已有 api_keys 数据不动, models 表作为新注册入口
