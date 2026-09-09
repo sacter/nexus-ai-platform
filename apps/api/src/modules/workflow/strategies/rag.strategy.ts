@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { StateGraph, START, END } from '@langchain/langgraph';
 import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { NodeRegistry } from '../node-registry';
-import { NodeStepEvent } from '../interface/node.interface';
 import { AgentStateAnnotation } from '../state';
+import { resolveNodeType } from '../utils/node-type.util';
+import { NodeStepEvent } from '../interface/node.interface';
+import { AgentState } from '../interface/state.interface';
 import {
   WorkflowStrategy,
   WorkflowExecutionContext,
 } from '../interface/workflow-strategy.interface';
-import { WorkflowNodeType } from '../interface/workflow.interface';
 
 @Injectable()
 export class RagStrategy implements WorkflowStrategy {
@@ -53,14 +54,13 @@ export class RagStrategy implements WorkflowStrategy {
       .addNode('retriever', retrieverNode)
       .addNode('llm', llmNode)
       .addEdge(START, 'router')
-      .addConditionalEdges(
-        'router',
-        (state: typeof AgentStateAnnotation.State) =>
-          state.routerDecision === 'retrieve' ? 'retriever' : 'llm',
+      .addConditionalEdges('router', (state: AgentState) =>
+        state.routerDecision === 'retrieve' ? 'retriever' : 'llm',
       )
       .addEdge('retriever', 'llm')
       .addEdge('llm', END)
       .compile();
+
     const input = {
       messages: [
         ...(chatHistory ?? []).map((m) =>
@@ -86,7 +86,7 @@ export class RagStrategy implements WorkflowStrategy {
         for (const [nodeName, output] of Object.entries(event)) {
           yield {
             nodeId: nodeName,
-            nodeType: this.resolveNodeType(nodeName),
+            nodeType: resolveNodeType(nodeName),
             status: (output as { error: string })?.error
               ? 'failed'
               : 'completed',
@@ -109,18 +109,5 @@ export class RagStrategy implements WorkflowStrategy {
       };
       throw err;
     }
-  }
-
-  private resolveNodeType(nodeName: string): WorkflowNodeType {
-    const map: Record<string, WorkflowNodeType> = {
-      router: 'router',
-      retriever: 'retriever',
-      llm: 'llm',
-      judge: 'reflection',
-      planner: 'planner',
-      solver: 'solver',
-      aggregator: 'aggregator',
-    };
-    return map[nodeName] ?? 'llm';
   }
 }
