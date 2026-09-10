@@ -1,21 +1,31 @@
 import { NodeStepEvent } from './node.interface';
 
-export type WorkflowType =
-  'rag' | 'reflection' | 'rewoo' | 'multi_agent' | 'custom';
+export const WORKFLOW_TYPES = [
+  'rag',
+  'reflection',
+  'rewoo',
+  'multi_agent',
+  'custom',
+] as const;
 
-export type WorkflowNodeType =
-  | 'start'
-  | 'end'
-  | 'retriever'
-  | 'llm'
-  | 'tool'
-  | 'condition'
-  | 'reflection'
-  | 'planner'
-  | 'solver'
-  | 'aggregator'
-  | 'code'
-  | 'router';
+export type WorkflowType = (typeof WORKFLOW_TYPES)[number];
+
+/** WorkflowNodeType 枚举值数组 — 唯一维护点，同步给 @IsIn 和 Prisma 类型 */
+export const WORKFLOW_NODE_TYPES = [
+  'start',
+  'end',
+  'retriever',
+  'llm',
+  'tool',
+  'condition',
+  'reflection',
+  'planner',
+  'solver',
+  'aggregator',
+  'code',
+] as const;
+
+export type WorkflowNodeType = (typeof WORKFLOW_NODE_TYPES)[number] | 'router';
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';

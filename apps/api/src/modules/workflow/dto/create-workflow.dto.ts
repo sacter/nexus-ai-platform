@@ -7,27 +7,20 @@ import {
   IsUUID,
   ValidateNested,
   IsIn,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  WORKFLOW_NODE_TYPES,
+  WORKFLOW_TYPES,
+} from '../interface/workflow.interface';
 
 export class WorkflowNodeInputDto {
   @IsUUID()
   id!: string;
 
-  @IsIn([
-    'start',
-    'end',
-    'retriever',
-    'llm',
-    'tool',
-    'condition',
-    'reflection',
-    'planner',
-    'solver',
-    'aggregator',
-    'code',
-  ])
-  type!: string;
+  @IsIn(WORKFLOW_NODE_TYPES)
+  type!: (typeof WORKFLOW_NODE_TYPES)[number];
 
   @IsString()
   label!: string;
@@ -72,10 +65,11 @@ export class WorkflowEdgeInputDto {
 export class CreateWorkflowDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(256)
   name!: string;
 
-  @IsIn(['rag', 'reflection', 'rewoo', 'multi_agent', 'custom'])
-  type!: string;
+  @IsIn(WORKFLOW_TYPES)
+  type!: (typeof WORKFLOW_TYPES)[number];
 
   @IsOptional()
   @IsString()

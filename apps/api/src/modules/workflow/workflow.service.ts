@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
-import type { Prisma } from '@prisma/client';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
 import type {
@@ -87,7 +86,7 @@ export class WorkflowService {
           positionX: n.positionX ?? 0,
           positionY: n.positionY ?? 0,
           config: n.config ?? {},
-        })) as Prisma.WorkflowNodeCreateManyInput[],
+        })),
       });
 
       if (edges?.length) {

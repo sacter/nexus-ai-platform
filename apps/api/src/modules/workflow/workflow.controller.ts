@@ -19,6 +19,7 @@ import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
 import { ExecuteWorkflowDto } from './dto/execute-workflow.dto';
 import { PaginationDto } from './dto/pagination.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('workflows')
 export class WorkflowController {
@@ -28,8 +29,11 @@ export class WorkflowController {
   ) {}
 
   @Post()
-  create(@Body() createWorkflowDto: CreateWorkflowDto) {
-    return this.workflowService.create(createWorkflowDto, 'system');
+  create(
+    @Body() createWorkflowDto: CreateWorkflowDto,
+    @CurrentUser('sub') sub: string,
+  ) {
+    return this.workflowService.create(createWorkflowDto, sub);
   }
 
   @Get()
