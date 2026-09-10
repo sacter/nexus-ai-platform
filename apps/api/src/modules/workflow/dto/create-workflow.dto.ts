@@ -1,32 +1,97 @@
 import {
   IsNotEmpty,
-  IsInt,
   IsString,
   IsObject,
-  MaxLength,
   IsOptional,
+  IsNumber,
+  IsUUID,
+  ValidateNested,
+  IsIn,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class WorkflowNodeInputDto {
+  @IsUUID()
+  id!: string;
+
+  @IsIn([
+    'start',
+    'end',
+    'retriever',
+    'llm',
+    'tool',
+    'condition',
+    'reflection',
+    'planner',
+    'solver',
+    'aggregator',
+    'code',
+  ])
+  type!: string;
+
+  @IsString()
+  label!: string;
+
+  @IsOptional()
+  @IsNumber()
+  positionX?: number;
+
+  @IsOptional()
+  @IsNumber()
+  positionY?: number;
+
+  @IsOptional()
+  @IsObject()
+  config?: Record<string, any>;
+}
+
+export class WorkflowEdgeInputDto {
+  @IsUUID()
+  sourceNodeId!: string;
+
+  @IsUUID()
+  targetNodeId!: string;
+
+  @IsOptional()
+  @IsString()
+  sourceHandle?: string;
+
+  @IsOptional()
+  @IsString()
+  targetHandle?: string;
+
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @IsOptional()
+  @IsObject()
+  condition?: Record<string, any>;
+}
 
 export class CreateWorkflowDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(256)
   name!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(32)
+  @IsIn(['rag', 'reflection', 'rewoo', 'multi_agent', 'custom'])
   type!: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsInt()
-  @IsNotEmpty()
-  version!: number;
-
+  @IsOptional()
   @IsObject()
-  @IsNotEmpty()
-  config!: object;
+  config?: Record<string, any>;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => WorkflowNodeInputDto)
+  nodes?: WorkflowNodeInputDto[];
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => WorkflowEdgeInputDto)
+  edges?: WorkflowEdgeInputDto[];
 }

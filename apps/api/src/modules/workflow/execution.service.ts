@@ -207,7 +207,7 @@ export class ExecutionService {
   }
 
   /** 查询单条执行详情 */
-  async getById(workflowId: string, execId: string): Promise<any> {
+  async getById(workflowId: string, execId: string): Promise<unknown> {
     return this.prisma.workflowExecution.findFirstOrThrow({
       where: { id: execId, workflowId },
     });
