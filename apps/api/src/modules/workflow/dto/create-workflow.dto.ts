@@ -4,7 +4,6 @@ import {
   IsObject,
   IsOptional,
   IsNumber,
-  IsUUID,
   ValidateNested,
   IsIn,
   MaxLength,
@@ -16,8 +15,9 @@ import {
 } from '../interface/workflow.interface';
 
 export class WorkflowNodeInputDto {
-  @IsUUID()
-  id!: string;
+  @IsString()
+  @IsNotEmpty()
+  clientId!: string;
 
   @IsIn(WORKFLOW_NODE_TYPES)
   type!: (typeof WORKFLOW_NODE_TYPES)[number];
@@ -39,11 +39,13 @@ export class WorkflowNodeInputDto {
 }
 
 export class WorkflowEdgeInputDto {
-  @IsUUID()
-  sourceNodeId!: string;
+  @IsString()
+  @IsNotEmpty()
+  sourceClientId!: string;
 
-  @IsUUID()
-  targetNodeId!: string;
+  @IsString()
+  @IsNotEmpty()
+  targetClientId!: string;
 
   @IsOptional()
   @IsString()

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@nexus/database';
 import { Prisma } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
 import type {
@@ -82,29 +83,41 @@ export class WorkflowService {
     await tx.workflowEdge.deleteMany({ where: { workflowId } });
     await tx.workflowNode.deleteMany({ where: { workflowId } });
 
-    await tx.workflowNode.createMany({
-      data: nodes.map((n) => ({
-        // id: n.id,
+    // 为每个 node 分配正式 UUID id，并建立 clientId → uuid 映射
+    const clientIdToUuid = new Map<string, string>();
+    const nodeData = nodes.map((n) => {
+      const id = uuidv4();
+      clientIdToUuid.set(n.clientId, id);
+      return {
+        id,
         workflowId,
         type: n.type,
         label: n.label,
         positionX: n.positionX ?? 0,
         positionY: n.positionY ?? 0,
         config: n.config ?? {},
-      })),
+      };
     });
+
+    await tx.workflowNode.createMany({ data: nodeData });
 
     if (edges?.length) {
       await tx.workflowEdge.createMany({
-        data: edges.map((e) => ({
-          workflowId,
-          sourceNodeId: e.sourceNodeId,
-          targetNodeId: e.targetNodeId,
-          sourceHandle: e.sourceHandle,
-          targetHandle: e.targetHandle,
-          label: e.label,
-          condition: e.condition ?? undefined,
-        })),
+        data: edges
+          .filter(
+            (e) =>
+              clientIdToUuid.has(e.sourceClientId) &&
+              clientIdToUuid.has(e.targetClientId),
+          )
+          .map((e) => ({
+            workflowId,
+            sourceNodeId: clientIdToUuid.get(e.sourceClientId)!,
+            targetNodeId: clientIdToUuid.get(e.targetClientId)!,
+            sourceHandle: e.sourceHandle,
+            targetHandle: e.targetHandle,
+            label: e.label,
+            condition: e.condition ?? undefined,
+          })),
       });
     }
   }
